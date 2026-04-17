@@ -11,14 +11,13 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @OpenAPIDefinition(
         info = @Info(
-                title = "Projeto Usuários",
-                description = "Exemplo de implementação de JWT com Spring Security",
+                title = "SGPJ - Sistema de Gestão de Processos Jurídicos",
+                description = "Solução web para centralização e gestão de processos jurídicos, " +
+                        "criada como projeto de extensão acadêmico.",
                 contact = @Contact(
-                        name = "Diego",
-                        url = "https://github.com/BandTec/spring-security-jwt-exemplo",
-                        email = "diego.lima@sptech.school"
+                        name = "Github SGPJ",
+                        url = "https://github.com/Projeto-de-Extensao-GP-06"
                 ),
-                license = @License(name = "UNLICENSED"),
                 version = "1.0.0"
         )
 )

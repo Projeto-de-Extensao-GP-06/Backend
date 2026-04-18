@@ -1,7 +1,7 @@
 package br.com.sgpj.dto;
 
 public record UsuarioTokenDto(
-        Long userId,
+        Long id,
         String nome,
         String email,
         String token

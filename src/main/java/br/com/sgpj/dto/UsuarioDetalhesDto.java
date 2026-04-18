@@ -15,10 +15,13 @@ public class UsuarioDetalhesDto implements UserDetails {
 
   private final String senha;
 
+  private final Boolean ativo;
+
   public UsuarioDetalhesDto(Usuario usuario) {
     this.nome = usuario.getNome();
     this.email = usuario.getEmail();
     this.senha = usuario.getSenha();
+    this.ativo = usuario.getAtivo();
   }
 
   public String getNome() {
@@ -57,6 +60,6 @@ public class UsuarioDetalhesDto implements UserDetails {
 
   @Override
   public boolean isEnabled() {
-    return true;
+    return Boolean.TRUE.equals(ativo);
   }
 }

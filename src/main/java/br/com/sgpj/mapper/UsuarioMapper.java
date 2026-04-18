@@ -12,15 +12,26 @@ public class UsuarioMapper {
   private UsuarioMapper() {}
 
   public static Usuario toEntity(UsuarioCriacaoDto dto) {
-    return new Usuario(null, dto.nome(), dto.email(), dto.senha());
+    Usuario usuario = new Usuario();
+    usuario.setNome(dto.nome());
+    usuario.setEmail(dto.email());
+    usuario.setSenha(dto.senha());
+    return usuario;
   }
 
   public static Usuario toEntity(UsuarioLoginDto dto) {
-    return new Usuario(null, null, dto.email(), dto.senha());
+    Usuario usuario = new Usuario();
+    usuario.setEmail(dto.email());
+    usuario.setSenha(dto.senha());
+    return usuario;
   }
 
   public static UsuarioTokenDto toTokenDto(Usuario usuario, String token) {
-    return new UsuarioTokenDto(usuario.getId(), usuario.getNome(), usuario.getEmail(), token);
+    return new UsuarioTokenDto(
+            usuario.getId(),
+            usuario.getNome(),
+            usuario.getEmail(),
+            token);
   }
 
   /**
@@ -31,10 +42,20 @@ public class UsuarioMapper {
    * para o frontend identificar o usuário na sessão.</p>
    */
   public static UsuarioSessaoDto toSessaoDto(UsuarioTokenDto tokenDto) {
-    return new UsuarioSessaoDto(tokenDto.userId(), tokenDto.nome(), tokenDto.email());
+    return new UsuarioSessaoDto(
+            tokenDto.id(),
+            tokenDto.nome(),
+            tokenDto.email());
   }
 
   public static UsuarioListarDto toListarDto(Usuario usuario) {
-    return new UsuarioListarDto(usuario.getId(), usuario.getNome(), usuario.getEmail());
+    return new UsuarioListarDto(
+            usuario.getId(),
+            usuario.getNome(),
+            usuario.getEmail(),
+            usuario.getCargo() != null ? usuario.getCargo().getId() : null,
+            usuario.getCargo() != null ? usuario.getCargo().getNome() : null,
+            usuario.getCriadoEm(),
+            usuario.getAtivo());
   }
 }

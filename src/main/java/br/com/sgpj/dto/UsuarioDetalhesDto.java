@@ -1,13 +1,17 @@
 package br.com.sgpj.dto;
 
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import br.com.sgpj.entity.Usuario;
 
 import java.util.Collection;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 public class UsuarioDetalhesDto implements UserDetails {
+
+  private final Long id;
 
   private final String nome;
 
@@ -15,13 +19,50 @@ public class UsuarioDetalhesDto implements UserDetails {
 
   private final String senha;
 
+  private final Collection<? extends GrantedAuthority> authorities;
   private final Boolean ativo;
 
   public UsuarioDetalhesDto(Usuario usuario) {
+    this.id = usuario.getId();
     this.nome = usuario.getNome();
     this.email = usuario.getEmail();
     this.senha = usuario.getSenha();
-    this.ativo = usuario.getAtivo();
+    this.authorities = loadAuthorities(usuario);
+  }
+
+  /**
+   * Carrega as autoridades (permissões) do usuário baseado em seu cargo.
+   *
+   * <p>Se o usuário tiver um cargo associado, suas permissões são carregadas
+   * a partir da tabela cargo_permissao. Caso contrário, retorna uma coleção vazia.</p>
+   *
+   * @param usuario entidade de usuário com cargo associado
+   * @return coleção de autoridades (roles/permissions) do usuário
+   */
+  private Collection<? extends GrantedAuthority> loadAuthorities(Usuario usuario) {
+    Set<GrantedAuthority> authorities = new HashSet<>();
+
+    // Adiciona o cargo como uma authority com prefixo ROLE_
+    if (usuario.getCargo() != null) {
+      String cargoAuthority = "ROLE_" + usuario.getCargo().getNome().toUpperCase().replace(" ", "_");
+      authorities.add(new SimpleGrantedAuthority(cargoAuthority));
+
+      // Adiciona todas as permissões associadas ao cargo
+      if (usuario.getCargo().getPermissoes() != null) {
+        usuario.getCargo().getPermissoes().forEach(cargoPermissao -> {
+          if (cargoPermissao.getPermissao() != null) {
+            String permissaoAuthority = cargoPermissao.getPermissao().getNome().toUpperCase();
+            authorities.add(new SimpleGrantedAuthority(permissaoAuthority));
+          }
+        });
+      }
+    }
+
+    return authorities;
+  }
+
+  public Long getId() {
+    return id;
   }
 
   public String getNome() {
@@ -30,7 +71,7 @@ public class UsuarioDetalhesDto implements UserDetails {
 
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
-    return List.of();
+    return authorities;
   }
 
   @Override

@@ -65,4 +65,9 @@ public class UsuarioService {
   public List<UsuarioListarDto> listarTodos() {
     return usuarioRepository.findAll().stream().map(UsuarioMapper::toListarDto).toList();
   }
+
+  public Usuario obterPorId(Long id) {
+    return usuarioRepository.findById(id)
+            .orElseThrow(() -> new UsuarioNaoEncontradoException("Usuário com ID " + id + " não encontrado"));
+  }
 }

@@ -22,8 +22,15 @@ public class Usuario {
     @Column(nullable = false, length = 250)
     private String senha;
 
-    @ManyToOne
-    private Cargo cargo;
+  @ManyToOne
+  @JoinColumn(name = "cargo_id")
+  private Cargo cargo;
+
+  private LocalDate criadoEm;
+
+  private boolean ativo;
+
+  public Usuario() {}
 
     @Column(nullable = false, name = "criado_em")
     private LocalDate criadoEm = LocalDate.now();
@@ -33,17 +40,29 @@ public class Usuario {
 
     public Usuario() {}
 
-    public Usuario(Long id, String nome, String email, String senha, Cargo cargo, LocalDate criadoEm, Boolean ativo) {
-        this.id = id;
-        this.nome = nome;
-        this.email = email;
-        this.senha = senha;
-        this.cargo = cargo;
-        this.criadoEm = criadoEm;
-        this.ativo = ativo;
-    }
+  public Usuario(String nome, String email, String senha) {
+    this.nome = nome;
+    this.email = email;
+    this.senha = senha;
+  }
 
-    public Long getId() {
+  public Usuario(Long id, String email, String senha) {
+    this.id = id;
+    this.email = email;
+    this.senha = senha;
+  }
+
+  public Usuario(Long id, String nome, String email, String senha, Cargo cargo, LocalDate criadoEm, boolean ativo) {
+    this.id = id;
+    this.nome = nome;
+    this.email = email;
+    this.senha = senha;
+    this.cargo = cargo;
+    this.criadoEm = criadoEm;
+    this.ativo = ativo;
+  }
+
+  public Long getId() {
     return id;
     }
 
@@ -73,29 +92,17 @@ public class Usuario {
 
     public void setSenha(String senha) {
     this.senha = senha;
-    }
+  }
 
-    public Cargo getCargo() {
-        return cargo;
-    }
+  public Cargo getCargo() {return cargo;}
 
-    public void setCargo(Cargo cargo) {
-        this.cargo = cargo;
-    }
+  public void setCargo(Cargo cargo) {this.cargo = cargo;}
 
-    public LocalDate getCriadoEm() {
-        return criadoEm;
-    }
+  public LocalDate getCriadoEm() {return criadoEm;}
 
-    public void setCriadoEm(LocalDate criadoEm) {
-        this.criadoEm = criadoEm;
-    }
+  public void setCriadoEm(LocalDate criadoEm) {this.criadoEm = criadoEm;}
 
-    public Boolean getAtivo() {
-        return ativo;
-    }
+  public boolean isAtivo() {return ativo;}
 
-    public void setAtivo(Boolean ativo) {
-        this.ativo = ativo;
-    }
+  public void setAtivo(boolean ativo) {this.ativo = ativo;}
 }

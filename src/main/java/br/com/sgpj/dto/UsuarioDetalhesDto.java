@@ -20,6 +20,7 @@ public class UsuarioDetalhesDto implements UserDetails {
   private final String senha;
 
   private final Collection<? extends GrantedAuthority> authorities;
+  private final Boolean ativo;
 
   public UsuarioDetalhesDto(Usuario usuario) {
     this.id = usuario.getId();
@@ -100,6 +101,6 @@ public class UsuarioDetalhesDto implements UserDetails {
 
   @Override
   public boolean isEnabled() {
-    return true;
+    return Boolean.TRUE.equals(ativo);
   }
 }

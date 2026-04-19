@@ -2,6 +2,8 @@ package br.com.sgpj.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.time.LocalDate;
+
 public record UsuarioListarDto(
 
         @Schema(description = "Id do usuário", example = "1")
@@ -11,5 +13,17 @@ public record UsuarioListarDto(
         String nome,
 
         @Schema(description = "Email do usuário", example = "john@doe.com")
-        String email
+        String email,
+
+        @Schema(description = "Id do cargo do usuário", example = "2")
+        Long cargoId,
+
+        @Schema(description = "Nome do cargo do usuário", example = "Administrador")
+        String cargoNome,
+
+        @Schema(description = "Data de criação do usuário", example = "2026-04-18")
+        LocalDate criadoEm,
+
+        @Schema(description = "Indica se o usuário está ativo", example = "true")
+        Boolean ativo
 ) {}

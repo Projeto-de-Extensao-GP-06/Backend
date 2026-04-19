@@ -14,7 +14,7 @@ import java.util.List;
  *  cookie em cada requisição.</p>
  */
 public record UsuarioSessaoDto(
-        Long userId,
+        Long id,
         String nome,
         String email,
         CargoDto cargo,

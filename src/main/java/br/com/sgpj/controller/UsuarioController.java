@@ -9,6 +9,7 @@ import br.com.sgpj.dto.UsuarioTokenDto;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.mapper.UsuarioMapper;
 import br.com.sgpj.service.UsuarioService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,6 +24,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/usuarios")
+@Tag(name = "Usuários")
 public class UsuarioController {
 
     public static final String COOKIE_NOME = "authToken";

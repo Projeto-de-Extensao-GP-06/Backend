@@ -75,6 +75,7 @@ public class SecurityConfiguracao {
             "/swagger-ui.html",
             "/swagger-resources",
             "/swagger-resources/**",
+            "/swagger-custom.css",
             "/configuration/ui",
             "/configuration/security",
             "/api/public/**",

@@ -1,5 +1,7 @@
 package br.com.sgpj.dto;
 
+import java.util.List;
+
 /**
  * Dados do usuário retornados no body da resposta de login.
  *
@@ -14,5 +16,15 @@ package br.com.sgpj.dto;
 public record UsuarioSessaoDto(
         Long userId,
         String nome,
-        String email
-) {}
+        String email,
+        CargoDto cargo,
+        List<String> permissoes
+) {
+    /**
+     * DTO simples para o cargo do usuário
+     */
+    public record CargoDto(
+            Long id,
+            String nome
+    ) {}
+}

@@ -7,6 +7,9 @@ import br.com.sgpj.dto.UsuarioSessaoDto;
 import br.com.sgpj.dto.UsuarioTokenDto;
 import br.com.sgpj.entity.Usuario;
 
+import java.util.Collections;
+import java.util.List;
+
 public class UsuarioMapper {
 
   private UsuarioMapper() {}
@@ -30,8 +33,30 @@ public class UsuarioMapper {
    * via {@code Set-Cookie}. Este DTO carrega apenas os dados necessários
    * para o frontend identificar o usuário na sessão.</p>
    */
-  public static UsuarioSessaoDto toSessaoDto(UsuarioTokenDto tokenDto) {
-    return new UsuarioSessaoDto(tokenDto.userId(), tokenDto.nome(), tokenDto.email());
+  public static UsuarioSessaoDto toSessaoDto(UsuarioTokenDto tokenDto, Usuario usuario) {
+    UsuarioSessaoDto.CargoDto cargoDto = null;
+    List<String> permissoes = Collections.emptyList();
+
+    if (usuario.getCargo() != null) {
+      cargoDto = new UsuarioSessaoDto.CargoDto(
+              usuario.getCargo().getId(),
+              usuario.getCargo().getNome()
+      );
+
+      if (usuario.getCargo().getPermissoes() != null) {
+        permissoes = usuario.getCargo().getPermissoes().stream()
+                .map(cargoPermissao -> cargoPermissao.getPermissao().getNome())
+                .toList();
+      }
+    }
+
+    return new UsuarioSessaoDto(
+            tokenDto.userId(),
+            tokenDto.nome(),
+            tokenDto.email(),
+            cargoDto,
+            permissoes
+    );
   }
 
   public static UsuarioListarDto toListarDto(Usuario usuario) {

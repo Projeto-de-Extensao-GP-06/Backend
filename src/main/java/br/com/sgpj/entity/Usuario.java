@@ -1,12 +1,9 @@
 package br.com.sgpj.entity;
 
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "usuario")
@@ -25,6 +22,14 @@ public class Usuario {
   @Column(nullable = false, length = 250)
   private String senha;
 
+  @ManyToOne
+  @JoinColumn(name = "cargo_id")
+  private Cargo cargo;
+
+  private LocalDate criadoEm;
+
+  private boolean ativo;
+
   public Usuario() {}
 
   public Usuario(Long id, String nome, String email, String senha) {
@@ -32,6 +37,28 @@ public class Usuario {
     this.nome = nome;
     this.email = email;
     this.senha = senha;
+  }
+
+  public Usuario(String nome, String email, String senha) {
+    this.nome = nome;
+    this.email = email;
+    this.senha = senha;
+  }
+
+  public Usuario(Long id, String email, String senha) {
+    this.id = id;
+    this.email = email;
+    this.senha = senha;
+  }
+
+  public Usuario(Long id, String nome, String email, String senha, Cargo cargo, LocalDate criadoEm, boolean ativo) {
+    this.id = id;
+    this.nome = nome;
+    this.email = email;
+    this.senha = senha;
+    this.cargo = cargo;
+    this.criadoEm = criadoEm;
+    this.ativo = ativo;
   }
 
   public Long getId() {
@@ -65,4 +92,16 @@ public class Usuario {
   public void setSenha(String senha) {
     this.senha = senha;
   }
+
+  public Cargo getCargo() {return cargo;}
+
+  public void setCargo(Cargo cargo) {this.cargo = cargo;}
+
+  public LocalDate getCriadoEm() {return criadoEm;}
+
+  public void setCriadoEm(LocalDate criadoEm) {this.criadoEm = criadoEm;}
+
+  public boolean isAtivo() {return ativo;}
+
+  public void setAtivo(boolean ativo) {this.ativo = ativo;}
 }

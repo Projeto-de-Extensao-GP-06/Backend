@@ -49,16 +49,19 @@ public class UsuarioController {
      */
     @PostMapping("/login")
     public ResponseEntity<UsuarioSessaoDto> login(
-            @RequestBody @Valid UsuarioLoginDto usuarioLoginDto,
+            @RequestBody @Valid UsuarioLoginDto usuarioLoginRequestDto,
             HttpServletResponse response) {
 
-        final Usuario usuario = UsuarioMapper.toEntity(usuarioLoginDto);
+        final Usuario usuario = UsuarioMapper.toEntity(usuarioLoginRequestDto);
         UsuarioTokenDto autenticado = usuarioService.autenticar(usuario);
 
         adicionarCookie(response, autenticado.token(), Duration.ofSeconds(jwtValidity));
 
-        // Body retorna apenas dados de sessao - sem o token
-        UsuarioSessaoDto sessao = UsuarioMapper.toSessaoDto(autenticado);
+        // Busca o usuário novamente para obter cargo e permissões
+        Usuario usuarioComPermissoes = usuarioService.obterPorId(autenticado.userId());
+        
+        // Body retorna dados de sessão com cargo e permissões
+        UsuarioSessaoDto sessao = UsuarioMapper.toSessaoDto(autenticado, usuarioComPermissoes);
         return ResponseEntity.ok(sessao);
     }
 

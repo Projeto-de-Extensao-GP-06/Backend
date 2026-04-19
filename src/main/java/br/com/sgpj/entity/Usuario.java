@@ -23,6 +23,7 @@ public class Usuario {
     private String senha;
 
     @ManyToOne
+    @JoinColumn(name = "cargo_id")
     private Cargo cargo;
 
     @Column(nullable = false, name = "criado_em")

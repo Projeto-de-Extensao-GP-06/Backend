@@ -5,6 +5,7 @@ import br.com.sgpj.dto.UsuarioListarDto;
 import br.com.sgpj.dto.UsuarioLoginDto;
 import br.com.sgpj.dto.UsuarioSessaoDto;
 import br.com.sgpj.dto.UsuarioTokenDto;
+import br.com.sgpj.entity.Cargo;
 import br.com.sgpj.entity.Usuario;
 
 import java.util.Collections;
@@ -14,11 +15,12 @@ public class UsuarioMapper {
 
   private UsuarioMapper() {}
 
-  public static Usuario toEntity(UsuarioCriacaoDto dto) {
+  public static Usuario toEntity(UsuarioCriacaoDto dto, Cargo cargo) {
     Usuario usuario = new Usuario();
     usuario.setNome(dto.nome());
     usuario.setEmail(dto.email());
     usuario.setSenha(dto.senha());
+    usuario.setCargo(cargo);
     return usuario;
   }
 

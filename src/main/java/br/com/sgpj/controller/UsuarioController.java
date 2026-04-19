@@ -41,8 +41,7 @@ public class UsuarioController {
     @PostMapping
     @SecurityRequirement(name = "Bearer")
     public ResponseEntity<Void> criar(@RequestBody @Valid UsuarioCriacaoDto usuarioCriacaoDto) {
-        final Usuario novoUsuario = UsuarioMapper.toEntity(usuarioCriacaoDto);
-        this.usuarioService.criar(novoUsuario);
+        this.usuarioService.criar(usuarioCriacaoDto);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 

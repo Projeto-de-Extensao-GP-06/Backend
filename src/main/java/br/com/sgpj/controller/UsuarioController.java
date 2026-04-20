@@ -59,7 +59,7 @@ public class UsuarioController {
         adicionarCookie(response, autenticado.token(), Duration.ofSeconds(jwtValidity));
 
         // Busca o usuário novamente para obter cargo e permissões
-        Usuario usuarioComPermissoes = usuarioService.obterPorId(autenticado.userId());
+        Usuario usuarioComPermissoes = usuarioService.obterPorId(autenticado.id());
         
         // Body retorna dados de sessão com cargo e permissões
         UsuarioSessaoDto sessao = UsuarioMapper.toSessaoDto(autenticado, usuarioComPermissoes);

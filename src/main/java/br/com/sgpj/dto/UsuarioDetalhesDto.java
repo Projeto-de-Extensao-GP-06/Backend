@@ -27,6 +27,7 @@ public class UsuarioDetalhesDto implements UserDetails {
     this.nome = usuario.getNome();
     this.email = usuario.getEmail();
     this.senha = usuario.getSenha();
+    this.ativo = usuario.isAtivo();
     this.authorities = loadAuthorities(usuario);
   }
 

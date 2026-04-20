@@ -4,6 +4,7 @@ package br.com.sgpj.entity;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "usuario")
@@ -26,19 +27,11 @@ public class Usuario {
   @JoinColumn(name = "cargo_id")
   private Cargo cargo;
 
-  private LocalDate criadoEm;
+  private LocalDateTime criadoEm;
 
   private boolean ativo;
 
   public Usuario() {}
-
-    @Column(nullable = false, name = "criado_em")
-    private LocalDate criadoEm = LocalDate.now();
-
-    @Column(nullable = false, name = "ativo")
-    private Boolean ativo = true;
-
-    public Usuario() {}
 
   public Usuario(String nome, String email, String senha) {
     this.nome = nome;
@@ -52,7 +45,7 @@ public class Usuario {
     this.senha = senha;
   }
 
-  public Usuario(Long id, String nome, String email, String senha, Cargo cargo, LocalDate criadoEm, boolean ativo) {
+  public Usuario(Long id, String nome, String email, String senha, Cargo cargo, LocalDateTime criadoEm, boolean ativo) {
     this.id = id;
     this.nome = nome;
     this.email = email;
@@ -98,9 +91,9 @@ public class Usuario {
 
   public void setCargo(Cargo cargo) {this.cargo = cargo;}
 
-  public LocalDate getCriadoEm() {return criadoEm;}
+  public LocalDateTime getCriadoEm() {return criadoEm;}
 
-  public void setCriadoEm(LocalDate criadoEm) {this.criadoEm = criadoEm;}
+  public void setCriadoEm(LocalDateTime criadoEm) {this.criadoEm = criadoEm;}
 
   public boolean isAtivo() {return ativo;}
 

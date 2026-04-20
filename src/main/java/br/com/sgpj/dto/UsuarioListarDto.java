@@ -3,6 +3,7 @@ package br.com.sgpj.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public record UsuarioListarDto(
 
@@ -22,7 +23,7 @@ public record UsuarioListarDto(
         String cargoNome,
 
         @Schema(description = "Data de criação do usuário", example = "2026-04-18")
-        LocalDate criadoEm,
+        LocalDateTime criadoEm,
 
         @Schema(description = "Indica se o usuário está ativo", example = "true")
         Boolean ativo

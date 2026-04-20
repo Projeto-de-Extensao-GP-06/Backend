@@ -8,6 +8,8 @@ import br.com.sgpj.dto.UsuarioTokenDto;
 import br.com.sgpj.entity.Cargo;
 import br.com.sgpj.entity.Usuario;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
@@ -20,6 +22,7 @@ public class UsuarioMapper {
     usuario.setNome(dto.nome());
     usuario.setEmail(dto.email());
     usuario.setSenha(dto.senha());
+    usuario.setCriadoEm(LocalDateTime.now());
     usuario.setCargo(cargo);
     return usuario;
   }
@@ -64,7 +67,7 @@ public class UsuarioMapper {
     }
 
     return new UsuarioSessaoDto(
-            tokenDto.userId(),
+            tokenDto.id(),
             tokenDto.nome(),
             tokenDto.email(),
             cargoDto,
@@ -80,6 +83,6 @@ public class UsuarioMapper {
             usuario.getCargo() != null ? usuario.getCargo().getId() : null,
             usuario.getCargo() != null ? usuario.getCargo().getNome() : null,
             usuario.getCriadoEm(),
-            usuario.getAtivo());
+            usuario.isAtivo());
   }
 }

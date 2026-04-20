@@ -88,6 +88,13 @@ public class UsuarioService {
             .toList();
   }
 
+  public List<UsuarioListarDto> buscarPorNomeOuEmail(String pesquisa) {
+    return usuarioRepository.findByNomeContainingIgnoreCaseOrEmailContainingIgnoreCase(pesquisa.trim(), pesquisa.trim())
+            .stream()
+            .map(UsuarioMapper::toListarDto)
+            .toList();
+  }
+
   public Usuario obterPorId(Long id) {
     return usuarioRepository.findById(id)
             .orElseThrow(() -> new UsuarioNaoEncontradoException("Usuário com ID " + id + " não encontrado"));

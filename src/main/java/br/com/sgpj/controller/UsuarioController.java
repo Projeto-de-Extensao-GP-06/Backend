@@ -97,6 +97,17 @@ public class UsuarioController {
         return ResponseEntity.ok(usuariosEncontrados);
     }
 
+    @GetMapping("/pesquisar")
+    @SecurityRequirement(name = "Bearer")
+    public ResponseEntity<List<UsuarioListarDto>> pesquisarPorNomeOuEmail(@RequestParam String pesquisa) {
+        List<UsuarioListarDto> usuariosEncontrados = usuarioService.buscarPorNomeOuEmail(pesquisa);
+
+        if (usuariosEncontrados.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(usuariosEncontrados);
+    }
+
     /**
      * Cria e adiciona o cookie de autenticação na resposta HTTP.
      *

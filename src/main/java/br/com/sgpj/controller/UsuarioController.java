@@ -86,6 +86,17 @@ public class UsuarioController {
         return ResponseEntity.ok(usuariosEncontrados);
     }
 
+    @GetMapping("/funcao")
+    @SecurityRequirement(name = "Bearer")
+    public ResponseEntity<List<UsuarioListarDto>> listarPorFuncao(@RequestParam String funcao) {
+        List<UsuarioListarDto> usuariosEncontrados = usuarioService.listarPorFuncao(funcao);
+
+        if (usuariosEncontrados.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(usuariosEncontrados);
+    }
+
     /**
      * Cria e adiciona o cookie de autenticação na resposta HTTP.
      *

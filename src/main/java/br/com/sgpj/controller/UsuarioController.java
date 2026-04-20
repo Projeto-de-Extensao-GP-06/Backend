@@ -129,4 +129,12 @@ public class UsuarioController {
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
+
+    @DeleteMapping("/{id}")
+    @SecurityRequirement(name = "Bearer")
+    public ResponseEntity<Void> deletar(@PathVariable Long id) {
+        this.usuarioService.deletar(id);
+        return ResponseEntity.noContent().build();
+    }
+
 }

@@ -99,4 +99,10 @@ public class UsuarioService {
     return usuarioRepository.findById(id)
             .orElseThrow(() -> new UsuarioNaoEncontradoException("Usuário com ID " + id + " não encontrado"));
   }
+
+  public Void deletar(Long id) {
+    obterPorId(id);
+    usuarioRepository.deleteById(id);
+    return null;
+  }
 }

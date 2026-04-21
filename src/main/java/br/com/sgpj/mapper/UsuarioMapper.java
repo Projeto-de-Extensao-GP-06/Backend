@@ -1,14 +1,9 @@
 package br.com.sgpj.mapper;
 
-import br.com.sgpj.dto.UsuarioCriacaoDto;
-import br.com.sgpj.dto.UsuarioListarDto;
-import br.com.sgpj.dto.UsuarioLoginDto;
-import br.com.sgpj.dto.UsuarioSessaoDto;
-import br.com.sgpj.dto.UsuarioTokenDto;
+import br.com.sgpj.dto.*;
 import br.com.sgpj.entity.Cargo;
 import br.com.sgpj.entity.Usuario;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -17,7 +12,7 @@ public class UsuarioMapper {
 
   private UsuarioMapper() {}
 
-  public static Usuario toEntity(UsuarioCriacaoDto dto, Cargo cargo) {
+  public static Usuario toEntity(UsuarioCriacaoRequest dto, Cargo cargo) {
     Usuario usuario = new Usuario();
     usuario.setNome(dto.nome());
     usuario.setEmail(dto.email());
@@ -27,15 +22,25 @@ public class UsuarioMapper {
     return usuario;
   }
 
-  public static Usuario toEntity(UsuarioLoginDto dto) {
+  public static Usuario toEntity(UsuarioAtualizacaoRequest dto, Cargo cargo) {
+    Usuario usuario = new Usuario();
+    usuario.setNome(dto.nome());
+    usuario.setEmail(dto.email());
+    usuario.setSenha(dto.senha());
+    usuario.setCargo(cargo);
+    usuario.setAtivo(dto.ativo());
+    return usuario;
+  }
+
+  public static Usuario toEntity(UsuarioLoginRequest dto) {
     Usuario usuario = new Usuario();
     usuario.setEmail(dto.email());
     usuario.setSenha(dto.senha());
     return usuario;
   }
 
-  public static UsuarioTokenDto toTokenDto(Usuario usuario, String token) {
-    return new UsuarioTokenDto(
+  public static UsuarioTokenResponse toTokenDto(Usuario usuario, String token) {
+    return new UsuarioTokenResponse(
             usuario.getId(),
             usuario.getNome(),
             usuario.getEmail(),
@@ -49,12 +54,12 @@ public class UsuarioMapper {
    * via {@code Set-Cookie}. Este DTO carrega apenas os dados necessários
    * para o frontend identificar o usuário na sessão.</p>
    */
-  public static UsuarioSessaoDto toSessaoDto(UsuarioTokenDto tokenDto, Usuario usuario) {
-    UsuarioSessaoDto.CargoDto cargoDto = null;
+  public static UsuarioSessaoResponse toSessaoDto(UsuarioTokenResponse tokenDto, Usuario usuario) {
+    UsuarioSessaoResponse.CargoDto cargoDto = null;
     List<String> permissoes = Collections.emptyList();
 
     if (usuario.getCargo() != null) {
-      cargoDto = new UsuarioSessaoDto.CargoDto(
+      cargoDto = new UsuarioSessaoResponse.CargoDto(
               usuario.getCargo().getId(),
               usuario.getCargo().getNome()
       );
@@ -66,7 +71,7 @@ public class UsuarioMapper {
       }
     }
 
-    return new UsuarioSessaoDto(
+    return new UsuarioSessaoResponse(
             tokenDto.id(),
             tokenDto.nome(),
             tokenDto.email(),
@@ -75,8 +80,8 @@ public class UsuarioMapper {
     );
   }
 
-  public static UsuarioListarDto toListarDto(Usuario usuario) {
-    return new UsuarioListarDto(
+  public static UsuarioListarResponse toListarDto(Usuario usuario) {
+    return new UsuarioListarResponse(
             usuario.getId(),
             usuario.getNome(),
             usuario.getEmail(),

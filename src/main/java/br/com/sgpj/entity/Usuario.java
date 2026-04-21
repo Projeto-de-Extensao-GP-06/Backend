@@ -55,6 +55,14 @@ public class Usuario {
     this.ativo = ativo;
   }
 
+  public Usuario(String nome, String email, String senha, Cargo cargo, boolean ativo) {
+    this.nome = nome;
+    this.email = email;
+    this.senha = senha;
+    this.cargo = cargo;
+    this.ativo = ativo;
+  }
+
   public Long getId() {
     return id;
     }

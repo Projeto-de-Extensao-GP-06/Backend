@@ -4,11 +4,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
-public record UsuarioLoginDto(
+public record UsuarioLoginRequest(
 
         @NotBlank(message = "E-mail é obrigatório")
         @Email
-        @Schema(description = "E-mail do usuário", example = "john@doe.com")
+        @Schema(description = "E-mail do usuário", example = "thauany@gmail.com")
         String email,
 
         @NotBlank(message = "Senha é obrigatória")

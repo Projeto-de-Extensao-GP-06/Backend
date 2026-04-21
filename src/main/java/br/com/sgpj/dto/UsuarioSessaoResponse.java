@@ -13,7 +13,7 @@ import java.util.List;
  *  controlar rotas). A autenticação real continua sendo validada pelo
  *  cookie em cada requisição.</p>
  */
-public record UsuarioSessaoDto(
+public record UsuarioSessaoResponse(
         Long id,
         String nome,
         String email,

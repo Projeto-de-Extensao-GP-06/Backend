@@ -1,9 +1,10 @@
 package br.com.sgpj.service;
 
 import br.com.sgpj.config.jwt.GerenciadorTokenJwt;
-import br.com.sgpj.dto.UsuarioCriacaoDto;
-import br.com.sgpj.dto.UsuarioListarDto;
-import br.com.sgpj.dto.UsuarioTokenDto;
+import br.com.sgpj.dto.UsuarioAtualizacaoRequest;
+import br.com.sgpj.dto.UsuarioCriacaoRequest;
+import br.com.sgpj.dto.UsuarioListarResponse;
+import br.com.sgpj.dto.UsuarioTokenResponse;
 import br.com.sgpj.entity.Cargo;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.CargoNaoEncontradoException;
@@ -44,7 +45,7 @@ public class UsuarioService {
     this.cargoRepository = cargoRepository;
   }
 
-  public void criar(UsuarioCriacaoDto request) {
+  public void criar(UsuarioCriacaoRequest request) {
     if (usuarioRepository.existsByEmail(request.email())) {
       throw new EmailDuplicadoException(request.email());
     }
@@ -61,7 +62,32 @@ public class UsuarioService {
     usuarioRepository.save(novoUsuario);
   }
 
-  public UsuarioTokenDto autenticar(Usuario usuario) {
+
+  public UsuarioListarResponse atualizarUsuario(UsuarioAtualizacaoRequest request, Long id) {
+    Optional<Usuario> usuarioAtual = usuarioRepository.findById(id);
+
+    if (usuarioAtual.isEmpty()){
+      throw new UsuarioNaoEncontradoException("Usuário não encontrado para esse ID: " + id);
+    }
+
+    Optional<Cargo> cargo = cargoRepository.findById(request.cargoId());
+
+    if (cargo.isEmpty()) {
+      throw new CargoNaoEncontradoException("Cargo não encontrado para esse ID: " + request.cargoId());
+    }
+
+
+
+    Usuario usuarioEditado = UsuarioMapper.toEntity(request, cargo.get());
+    usuarioEditado.setId(id);
+    usuarioEditado.setCriadoEm(usuarioAtual.get().getCriadoEm());
+    String senhaCriptografada = passwordEncoder.encode(usuarioEditado.getSenha());
+    usuarioEditado.setSenha(senhaCriptografada);
+    usuarioRepository.save(usuarioEditado);
+    return UsuarioMapper.toListarDto(usuarioEditado);
+  }
+
+  public UsuarioTokenResponse autenticar(Usuario usuario) {
     final UsernamePasswordAuthenticationToken credentials = new UsernamePasswordAuthenticationToken(
           usuario.getEmail(), usuario.getSenha());
 
@@ -77,18 +103,18 @@ public class UsuarioService {
     return UsuarioMapper.toTokenDto(usuarioAutenticado, token);
   }
 
-  public List<UsuarioListarDto> listarTodos() {
+  public List<UsuarioListarResponse> listarTodos() {
     return usuarioRepository.findAll().stream().map(UsuarioMapper::toListarDto).toList();
   }
 
-  public List<UsuarioListarDto> listarPorFuncao(String funcao) {
+  public List<UsuarioListarResponse> listarPorFuncao(String funcao) {
     return usuarioRepository.findByCargo_NomeIgnoreCase(funcao.trim())
             .stream()
             .map(UsuarioMapper::toListarDto)
             .toList();
   }
 
-  public List<UsuarioListarDto> buscarPorNomeOuEmail(String pesquisa) {
+  public List<UsuarioListarResponse> buscarPorNomeOuEmail(String pesquisa) {
     return usuarioRepository.findByNomeContainingIgnoreCaseOrEmailContainingIgnoreCase(pesquisa.trim(), pesquisa.trim())
             .stream()
             .map(UsuarioMapper::toListarDto)

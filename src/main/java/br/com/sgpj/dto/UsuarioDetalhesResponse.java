@@ -9,7 +9,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-public class UsuarioDetalhesDto implements UserDetails {
+public class UsuarioDetalhesResponse implements UserDetails {
 
   private final Long id;
 
@@ -22,7 +22,7 @@ public class UsuarioDetalhesDto implements UserDetails {
   private final Collection<? extends GrantedAuthority> authorities;
   private final Boolean ativo;
 
-  public UsuarioDetalhesDto(Usuario usuario) {
+  public UsuarioDetalhesResponse(Usuario usuario) {
     this.id = usuario.getId();
     this.nome = usuario.getNome();
     this.email = usuario.getEmail();

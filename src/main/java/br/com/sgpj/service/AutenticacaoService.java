@@ -1,6 +1,6 @@
 package br.com.sgpj.service;
 
-import br.com.sgpj.dto.UsuarioDetalhesDto;
+import br.com.sgpj.dto.UsuarioDetalhesResponse;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.repository.UsuarioRepository;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -24,6 +24,6 @@ public class AutenticacaoService implements UserDetailsService {
             .orElseThrow(() -> new UsernameNotFoundException(
                     String.format("usuário: %s não encontrado", username)));
 
-    return new UsuarioDetalhesDto(usuario);
+    return new UsuarioDetalhesResponse(usuario);
   }
 }

@@ -1,11 +1,7 @@
 package br.com.sgpj.controller;
 
+import br.com.sgpj.dto.*;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import br.com.sgpj.dto.UsuarioCriacaoDto;
-import br.com.sgpj.dto.UsuarioListarDto;
-import br.com.sgpj.dto.UsuarioLoginDto;
-import br.com.sgpj.dto.UsuarioSessaoDto;
-import br.com.sgpj.dto.UsuarioTokenDto;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.mapper.UsuarioMapper;
 import br.com.sgpj.service.UsuarioService;
@@ -40,8 +36,8 @@ public class UsuarioController {
 
     @PostMapping
     @SecurityRequirement(name = "Bearer")
-    public ResponseEntity<Void> criar(@RequestBody @Valid UsuarioCriacaoDto usuarioCriacaoDto) {
-        this.usuarioService.criar(usuarioCriacaoDto);
+    public ResponseEntity<Void> criar(@RequestBody @Valid UsuarioCriacaoRequest usuarioCriacaoRequest) {
+        this.usuarioService.criar(usuarioCriacaoRequest);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
@@ -49,12 +45,12 @@ public class UsuarioController {
      * Autentica o usuário e retorna o token JWT como cookie HttpOnly.
      */
     @PostMapping("/login")
-    public ResponseEntity<UsuarioSessaoDto> login(
-            @RequestBody @Valid UsuarioLoginDto usuarioLoginRequestDto,
+    public ResponseEntity<UsuarioSessaoResponse> login(
+            @RequestBody @Valid UsuarioLoginRequest usuarioLoginRequestDto,
             HttpServletResponse response) {
 
         final Usuario usuario = UsuarioMapper.toEntity(usuarioLoginRequestDto);
-        UsuarioTokenDto autenticado = usuarioService.autenticar(usuario);
+        UsuarioTokenResponse autenticado = usuarioService.autenticar(usuario);
 
         adicionarCookie(response, autenticado.token(), Duration.ofSeconds(jwtValidity));
 
@@ -62,7 +58,7 @@ public class UsuarioController {
         Usuario usuarioComPermissoes = usuarioService.obterPorId(autenticado.id());
         
         // Body retorna dados de sessão com cargo e permissões
-        UsuarioSessaoDto sessao = UsuarioMapper.toSessaoDto(autenticado, usuarioComPermissoes);
+        UsuarioSessaoResponse sessao = UsuarioMapper.toSessaoDto(autenticado, usuarioComPermissoes);
         return ResponseEntity.ok(sessao);
     }
 
@@ -77,8 +73,8 @@ public class UsuarioController {
 
     @GetMapping
     @SecurityRequirement(name = "Bearer")
-    public ResponseEntity<List<UsuarioListarDto>> listarTodos() {
-        List<UsuarioListarDto> usuariosEncontrados = usuarioService.listarTodos();
+    public ResponseEntity<List<UsuarioListarResponse>> listarTodos() {
+        List<UsuarioListarResponse> usuariosEncontrados = usuarioService.listarTodos();
 
         if (usuariosEncontrados.isEmpty()) {
             return ResponseEntity.noContent().build();
@@ -88,8 +84,8 @@ public class UsuarioController {
 
     @GetMapping("/funcao")
     @SecurityRequirement(name = "Bearer")
-    public ResponseEntity<List<UsuarioListarDto>> listarPorFuncao(@RequestParam String funcao) {
-        List<UsuarioListarDto> usuariosEncontrados = usuarioService.listarPorFuncao(funcao);
+    public ResponseEntity<List<UsuarioListarResponse>> listarPorFuncao(@RequestParam String funcao) {
+        List<UsuarioListarResponse> usuariosEncontrados = usuarioService.listarPorFuncao(funcao);
 
         if (usuariosEncontrados.isEmpty()) {
             return ResponseEntity.noContent().build();
@@ -99,14 +95,25 @@ public class UsuarioController {
 
     @GetMapping("/pesquisar")
     @SecurityRequirement(name = "Bearer")
-    public ResponseEntity<List<UsuarioListarDto>> pesquisarPorNomeOuEmail(@RequestParam String pesquisa) {
-        List<UsuarioListarDto> usuariosEncontrados = usuarioService.buscarPorNomeOuEmail(pesquisa);
+    public ResponseEntity<List<UsuarioListarResponse>> pesquisarPorNomeOuEmail(@RequestParam String pesquisa) {
+        List<UsuarioListarResponse> usuariosEncontrados = usuarioService.buscarPorNomeOuEmail(pesquisa);
 
         if (usuariosEncontrados.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok(usuariosEncontrados);
     }
+
+
+    @PutMapping("/{id}")
+    @SecurityRequirement(name = "Bearer")
+    public ResponseEntity<UsuarioListarResponse> atualizarUsuario(@Valid @RequestBody UsuarioAtualizacaoRequest atualizacao, @PathVariable Long id){
+        UsuarioListarResponse usuarioEditado = usuarioService.atualizarUsuario(atualizacao, id);
+
+        return ResponseEntity.status(HttpStatus.OK).body(usuarioEditado);
+    }
+
+
 
     /**
      * Cria e adiciona o cookie de autenticação na resposta HTTP.

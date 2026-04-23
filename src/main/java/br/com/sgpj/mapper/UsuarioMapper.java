@@ -19,6 +19,7 @@ public class UsuarioMapper {
     usuario.setSenha(dto.senha());
     usuario.setCriadoEm(LocalDateTime.now());
     usuario.setCargo(cargo);
+    usuario.setAtivo(true);
     return usuario;
   }
 

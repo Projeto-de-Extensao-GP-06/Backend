@@ -127,8 +127,9 @@ public class UsuarioService {
   }
 
   public Void deletar(Long id) {
-    obterPorId(id);
-    usuarioRepository.deleteById(id);
+    Usuario user = obterPorId(id);
+    user.setAtivo(false);
+    usuarioRepository.save(user);
     return null;
   }
 }

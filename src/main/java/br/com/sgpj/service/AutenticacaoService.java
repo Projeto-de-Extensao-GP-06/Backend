@@ -1,8 +1,9 @@
 package br.com.sgpj.service;
 
+import br.com.sgpj.adapter.database.UsuarioPersistenciaAdapter;
 import br.com.sgpj.dto.UsuarioDetalhesResponse;
 import br.com.sgpj.entity.Usuario;
-import br.com.sgpj.repository.UsuarioRepository;
+import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -11,18 +12,22 @@ import org.springframework.stereotype.Service;
 @Service
 public class AutenticacaoService implements UserDetailsService {
 
-  private final UsuarioRepository usuarioRepository;
+  private final UsuarioPersistenciaAdapter usuarioPersistenciaAdapter;
 
-  public AutenticacaoService(UsuarioRepository usuarioRepository) {
-    this.usuarioRepository = usuarioRepository;
+  public AutenticacaoService(UsuarioPersistenciaAdapter usuarioPersistenciaAdapter) {
+    this.usuarioPersistenciaAdapter = usuarioPersistenciaAdapter;
   }
 
   // Metodo da interface implementada
   @Override
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-    Usuario usuario = usuarioRepository.findByEmail(username)
-            .orElseThrow(() -> new UsernameNotFoundException(
-                    String.format("usuário: %s não encontrado", username)));
+    Usuario usuario;
+
+    try {
+      usuario = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(username);
+    } catch (UsuarioNaoEncontradoException exception) {
+      throw new UsernameNotFoundException(String.format("usuário: %s não encontrado", username), exception);
+    }
 
     return new UsuarioDetalhesResponse(usuario);
   }

@@ -2,10 +2,10 @@ package br.com.sgpj.service;
 
 import br.com.sgpj.adapter.database.UsuarioPersistenciaAdapter;
 import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
-import br.com.sgpj.dto.UsuarioAtualizacaoRequest;
-import br.com.sgpj.dto.UsuarioCriacaoRequest;
-import br.com.sgpj.dto.UsuarioListarResponse;
-import br.com.sgpj.dto.UsuarioTokenResponse;
+import br.com.sgpj.dto.request.UsuarioAtualizacaoRequest;
+import br.com.sgpj.dto.request.UsuarioCriacaoRequest;
+import br.com.sgpj.dto.response.UsuarioListarResponse;
+import br.com.sgpj.dto.response.UsuarioTokenResponse;
 import br.com.sgpj.entity.Cargo;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.EmailDuplicadoException;

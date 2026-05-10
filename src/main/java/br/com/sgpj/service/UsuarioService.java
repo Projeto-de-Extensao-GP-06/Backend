@@ -22,14 +22,18 @@ public class UsuarioService {
   private final PasswordEncoder passwordEncoder;
   private final UsuarioPersistenciaAdapter usuarioPersistenciaAdapter;
   private final UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter;
+  private final OtpService otpService;
+  private final EmailService emailService;
 
-  public UsuarioService(
-          PasswordEncoder passwordEncoder,
-          UsuarioPersistenciaAdapter usuarioPersistenciaAdapter,
-          UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter) {
+  public UsuarioService(PasswordEncoder passwordEncoder,
+                        UsuarioPersistenciaAdapter usuarioPersistenciaAdapter,
+                        UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter,
+                        OtpService otpService, EmailService emailService) {
     this.passwordEncoder = passwordEncoder;
     this.usuarioPersistenciaAdapter = usuarioPersistenciaAdapter;
     this.usuarioAutenticacaoAdapter = usuarioAutenticacaoAdapter;
+    this.otpService = otpService;
+    this.emailService = emailService;
   }
 
   public void criar(UsuarioCriacaoRequest request) {
@@ -99,5 +103,11 @@ public class UsuarioService {
     user.setAtivo(false);
     usuarioPersistenciaAdapter.salvar(user);
     return null;
+  }
+
+  public void enviarRedefinirSenhaOtp(String email) {
+    Usuario usuario = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(email);
+    String otp = otpService.generateOtp(email);
+    emailService.sendForgotPasswordOtp(email, usuario.getNome(), otp);
   }
 }

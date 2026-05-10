@@ -16,4 +16,18 @@ public class OtpService {
     private final SecureRandom secureRandom = new SecureRandom();
 
     private record OtpData(String otp, LocalDateTime expiryTime) {}
+
+    public String generateOtp(String email) {
+
+        // Validação para evitar chaves duplicadas no otpCache
+        if (otpCache.containsKey(email)) {
+            otpCache.remove(email);
+        }
+
+        String otp = String.format("%06d", secureRandom.nextInt(1000000));
+        LocalDateTime expiryTime = LocalDateTime.now().plusMinutes(EXPIRE_MINS);
+        otpCache.put(email, new OtpData(otp, expiryTime));
+
+        return otp;
+    }
 }

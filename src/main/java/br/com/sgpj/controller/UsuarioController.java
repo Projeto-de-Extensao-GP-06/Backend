@@ -1,12 +1,10 @@
 package br.com.sgpj.controller;
 
-import br.com.sgpj.dto.request.EnviarRedefinirSenhaOtpRequest;
-import br.com.sgpj.dto.request.UsuarioAtualizacaoRequest;
-import br.com.sgpj.dto.request.UsuarioCriacaoRequest;
-import br.com.sgpj.dto.request.UsuarioLoginRequest;
+import br.com.sgpj.dto.request.*;
 import br.com.sgpj.dto.response.UsuarioListarResponse;
 import br.com.sgpj.dto.response.UsuarioSessaoResponse;
 import br.com.sgpj.dto.response.UsuarioTokenResponse;
+import br.com.sgpj.service.OtpService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.mapper.UsuarioMapper;
@@ -36,8 +34,11 @@ public class UsuarioController {
 
     private final UsuarioService usuarioService;
 
-    public UsuarioController(UsuarioService usuarioService) {
+    private final OtpService otpService;
+
+    public UsuarioController(UsuarioService usuarioService, OtpService otpService) {
         this.usuarioService = usuarioService;
+        this.otpService = otpService;
     }
 
     @PostMapping
@@ -159,6 +160,23 @@ public class UsuarioController {
         usuarioService.enviarRedefinirSenhaOtp(request.email());
 
         return ResponseEntity.ok("Se o e-mail estiver cadastrado, um código será enviado em instantes.");
+    }
+
+    @PostMapping("/validar-otp")
+    public ResponseEntity<String> validateOtp(@RequestBody ValidarOtpRequest request) {
+        if (request.email() == null || request.email().isBlank()) {
+            return ResponseEntity.badRequest().body("Insira um endereço de e-mail válido.");
+        }
+
+        if (request.otp() == null || request.otp().isBlank()) {
+            return ResponseEntity.badRequest().body("Insira uma OTP válida.");
+        }
+
+        if (otpService.isOtpValid(request.email(), request.otp())) {
+            return ResponseEntity.ok("Código validado com sucesso!");
+        } else {
+            return ResponseEntity.badRequest().body("Código inválido ou expirado.");
+        }
     }
 
 }

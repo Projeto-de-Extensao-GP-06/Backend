@@ -1,5 +1,6 @@
 package br.com.sgpj.controller;
 
+import br.com.sgpj.dto.request.EnviarRedefinirSenhaOtpRequest;
 import br.com.sgpj.dto.request.UsuarioAtualizacaoRequest;
 import br.com.sgpj.dto.request.UsuarioCriacaoRequest;
 import br.com.sgpj.dto.request.UsuarioLoginRequest;
@@ -147,6 +148,17 @@ public class UsuarioController {
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
         this.usuarioService.deletar(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/enviar-redefinir-senha-otp")
+    public ResponseEntity<String> enviarRedefinirSenhaOtp(@RequestBody EnviarRedefinirSenhaOtpRequest request) {
+        if (request.email() == null || request.email().isBlank()) {
+            return ResponseEntity.badRequest().body("Insira um endereço de e-mail válido.");
+        }
+
+        usuarioService.enviarRedefinirSenhaOtp(request.email());
+
+        return ResponseEntity.ok("Se o e-mail estiver cadastrado, um código será enviado em instantes.");
     }
 
 }

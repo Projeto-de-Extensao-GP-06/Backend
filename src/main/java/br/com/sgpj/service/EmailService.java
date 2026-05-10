@@ -1,5 +1,6 @@
 package br.com.sgpj.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.scheduling.annotation.Async;
@@ -9,6 +10,9 @@ import org.springframework.stereotype.Service;
 public class EmailService {
 
     private final JavaMailSender mailSender;
+
+    @Value("${spring.mail.username.from}")
+    private String remetente;
 
     public EmailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
@@ -23,6 +27,7 @@ public class EmailService {
     @Async
     public void sendEmail(String to, String subject, String body) {
         SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(remetente);
         message.setTo(to);
         message.setSubject(subject);
         message.setText(body);
@@ -32,7 +37,7 @@ public class EmailService {
 
     private String createForgotPasswordBody(String nomeUsuario, String otp) {
         return String.format("""
-                Olá %s,
+                Olá, %s!
                 
                 Para continuar o processo de redefinição de senha, por favor, utilize o código de verificação abaixo:
                 

@@ -15,7 +15,11 @@ public class OtpService {
 
     private final SecureRandom secureRandom = new SecureRandom();
 
-    private record OtpData(String otp, LocalDateTime expiryTime) {}
+    private record OtpData(String otp, LocalDateTime expiryTime) {
+        boolean isExpired(LocalDateTime expiryTime) {
+            return LocalDateTime.now().isAfter(expiryTime);
+        }
+    }
 
     public String generateOtp(String email) {
 
@@ -29,5 +33,28 @@ public class OtpService {
         otpCache.put(email, new OtpData(otp, expiryTime));
 
         return otp;
+    }
+
+    public boolean isOtpValid(String email, String inputOtp) {
+        if (inputOtp != null) {
+            inputOtp = inputOtp.trim();
+        }
+        OtpData data = otpCache.get(email);
+
+        if (data == null) {
+            return false;
+        }
+
+        if (data.isExpired(data.expiryTime)) {
+            otpCache.remove(email);
+            return false;
+        }
+
+        if (data.otp().equals(inputOtp)) {
+            otpCache.remove(email);
+            return true;
+        }
+
+        return false;
     }
 }

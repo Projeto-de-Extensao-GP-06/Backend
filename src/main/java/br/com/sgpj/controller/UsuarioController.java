@@ -34,11 +34,8 @@ public class UsuarioController {
 
     private final UsuarioService usuarioService;
 
-    private final OtpService otpService;
-
-    public UsuarioController(UsuarioService usuarioService, OtpService otpService) {
+    public UsuarioController(UsuarioService usuarioService) {
         this.usuarioService = usuarioService;
-        this.otpService = otpService;
     }
 
     @PostMapping

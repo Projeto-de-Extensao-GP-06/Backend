@@ -10,6 +10,7 @@ import br.com.sgpj.entity.Cargo;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.EmailDuplicadoException;
 import br.com.sgpj.mapper.UsuarioMapper;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -106,6 +107,10 @@ public class UsuarioService {
   }
 
   public void enviarRedefinirSenhaOtp(String email) {
+    if (email == null || email.isBlank()) {
+      throw new IllegalArgumentException("Insira um endereço de e-mail válido");
+    }
+
     Usuario usuario = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(email);
     String otp = otpService.generateOtp(email);
     emailService.sendForgotPasswordOtp(email, usuario.getNome(), otp);

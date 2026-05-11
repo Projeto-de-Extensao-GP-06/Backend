@@ -153,12 +153,7 @@ public class UsuarioController {
 
     @PostMapping("/enviar-redefinir-senha-otp")
     public ResponseEntity<String> enviarRedefinirSenhaOtp(@RequestBody EnviarRedefinirSenhaOtpRequest request) {
-        if (request.email() == null || request.email().isBlank()) {
-            return ResponseEntity.badRequest().body("Insira um endereço de e-mail válido.");
-        }
-
         usuarioService.enviarRedefinirSenhaOtp(request.email());
-
         return ResponseEntity.ok("Se o e-mail estiver cadastrado, um código será enviado em instantes.");
     }
 

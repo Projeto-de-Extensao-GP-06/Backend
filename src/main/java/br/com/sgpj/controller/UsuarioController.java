@@ -159,15 +159,7 @@ public class UsuarioController {
 
     @PostMapping("/validar-otp")
     public ResponseEntity<String> validateOtp(@RequestBody ValidarOtpRequest request) {
-        if (request.email() == null || request.email().isBlank()) {
-            return ResponseEntity.badRequest().body("Insira um endereço de e-mail válido.");
-        }
-
-        if (request.otp() == null || request.otp().isBlank()) {
-            return ResponseEntity.badRequest().body("Insira uma OTP válida.");
-        }
-
-        if (otpService.isOtpValid(request.email(), request.otp())) {
+        if (usuarioService.validarOtp(request)) {
             return ResponseEntity.ok("Código validado com sucesso!");
         } else {
             return ResponseEntity.badRequest().body("Código inválido ou expirado.");

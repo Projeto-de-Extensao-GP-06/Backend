@@ -4,6 +4,7 @@ import br.com.sgpj.adapter.database.UsuarioPersistenciaAdapter;
 import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
 import br.com.sgpj.dto.request.UsuarioAtualizacaoRequest;
 import br.com.sgpj.dto.request.UsuarioCriacaoRequest;
+import br.com.sgpj.dto.request.ValidarOtpRequest;
 import br.com.sgpj.dto.response.UsuarioListarResponse;
 import br.com.sgpj.dto.response.UsuarioTokenResponse;
 import br.com.sgpj.entity.Cargo;
@@ -114,5 +115,17 @@ public class UsuarioService {
     Usuario usuario = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(email);
     String otp = otpService.generateOtp(email);
     emailService.sendForgotPasswordOtp(email, usuario.getNome(), otp);
+  }
+
+  public boolean validarOtp(ValidarOtpRequest request) {
+    if (request.email() == null || request.email().isBlank()) {
+      throw new IllegalArgumentException("Insira um endereço de e-mail válido");
+    }
+
+    if (request.otp() == null || request.otp().isBlank()) {
+      throw new IllegalArgumentException("Insira uma OTP válida.");
+    }
+
+    return otpService.isOtpValid(request.email(), request.otp());
   }
 }

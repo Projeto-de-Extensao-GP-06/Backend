@@ -117,6 +117,16 @@ public class UsuarioService {
     emailService.sendForgotPasswordOtp(email, usuario.getNome(), otp);
   }
 
+  public void enviarDefinirSenhaOtp(String email) {
+    if (email == null || email.isBlank()) {
+      throw new IllegalArgumentException("Insira um endereço de e-mail válido");
+    }
+
+    Usuario usuario = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(email);
+    String otp = otpService.generateOtp(email);
+    emailService.sendSetPasswordOtp(email, usuario.getNome(), otp);
+  }
+
   public boolean validarOtp(ValidarOtpRequest request) {
     if (request.email() == null || request.email().isBlank()) {
       throw new IllegalArgumentException("Insira um endereço de e-mail válido");

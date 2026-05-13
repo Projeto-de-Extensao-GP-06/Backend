@@ -4,7 +4,6 @@ import br.com.sgpj.dto.request.*;
 import br.com.sgpj.dto.response.UsuarioListarResponse;
 import br.com.sgpj.dto.response.UsuarioSessaoResponse;
 import br.com.sgpj.dto.response.UsuarioTokenResponse;
-import br.com.sgpj.service.OtpService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.mapper.UsuarioMapper;
@@ -151,7 +150,7 @@ public class UsuarioController {
 
     @PostMapping("/enviar-redefinir-senha-otp")
     @PreAuthorize("permitAll()")
-    public ResponseEntity<String> enviarRedefinirSenhaOtp(@RequestBody EnviarRedefinirSenhaOtpRequest request) {
+    public ResponseEntity<String> enviarRedefinirSenhaOtp(@RequestBody EnviarOtpRequest request) {
         usuarioService.enviarRedefinirSenhaOtp(request.email());
         return ResponseEntity.ok("Se o e-mail estiver cadastrado, um código será enviado em instantes.");
     }

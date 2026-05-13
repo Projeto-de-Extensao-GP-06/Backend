@@ -85,6 +85,8 @@ public class SecurityConfiguracao {
             "/actuator/*",
             "/usuarios/login/**",
             "/usuarios/logout/**",
+            "/usuarios/enviar-redefinir-senha-otp/**",
+            "/usuarios/validar-otp/**",
             "/error/**"
     };
 

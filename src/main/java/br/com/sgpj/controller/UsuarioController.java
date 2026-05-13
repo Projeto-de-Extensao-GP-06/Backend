@@ -17,6 +17,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
@@ -149,12 +150,14 @@ public class UsuarioController {
     }
 
     @PostMapping("/enviar-redefinir-senha-otp")
+    @PreAuthorize("permitAll()")
     public ResponseEntity<String> enviarRedefinirSenhaOtp(@RequestBody EnviarRedefinirSenhaOtpRequest request) {
         usuarioService.enviarRedefinirSenhaOtp(request.email());
         return ResponseEntity.ok("Se o e-mail estiver cadastrado, um código será enviado em instantes.");
     }
 
     @PostMapping("/validar-otp")
+    @PreAuthorize("permitAll()")
     public ResponseEntity<String> validateOtp(@RequestBody ValidarOtpRequest request) {
         if (usuarioService.validarOtp(request)) {
             return ResponseEntity.ok("Código validado com sucesso!");

@@ -155,6 +155,13 @@ public class UsuarioController {
         return ResponseEntity.ok("Se o e-mail estiver cadastrado, um código será enviado em instantes.");
     }
 
+    @PostMapping("/enviar-definir-senha-otp")
+    @PreAuthorize("permitAll()")
+    public ResponseEntity<String> enviarDefinirSenhaOtp(@RequestBody EnviarOtpRequest request) {
+        usuarioService.enviarDefinirSenhaOtp(request.email());
+        return ResponseEntity.ok("Se o e-mail estiver cadastrado, um código será enviado em instantes.");
+    }
+
     @PostMapping("/validar-otp")
     @PreAuthorize("permitAll()")
     public ResponseEntity<String> validateOtp(@RequestBody ValidarOtpRequest request) {

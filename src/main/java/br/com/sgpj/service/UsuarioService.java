@@ -10,6 +10,7 @@ import br.com.sgpj.dto.response.UsuarioTokenResponse;
 import br.com.sgpj.entity.Cargo;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.EmailDuplicadoException;
+import br.com.sgpj.exception.PasswordConflictException;
 import br.com.sgpj.mapper.UsuarioMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -113,6 +114,10 @@ public class UsuarioService {
     }
 
     Usuario usuario = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(email);
+    if (!hasPassword(usuario)) {
+      throw new PasswordConflictException("Essa conta ainda não realizou o primeiro acesso no sistema e não possui uma senha ativa.");
+    }
+
     String otp = otpService.generateOtp(email);
     emailService.sendForgotPasswordOtp(email, usuario.getNome(), otp);
   }
@@ -123,6 +128,10 @@ public class UsuarioService {
     }
 
     Usuario usuario = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(email);
+    if (hasPassword(usuario)) {
+      throw new PasswordConflictException("Esta conta já possui uma senha cadastrada. Utilize a opção de recuperação de senha.");
+    }
+
     String otp = otpService.generateOtp(email);
     emailService.sendSetPasswordOtp(email, usuario.getNome(), otp);
   }
@@ -137,5 +146,9 @@ public class UsuarioService {
     }
 
     return otpService.isOtpValid(request.email(), request.otp());
+  }
+
+  private boolean hasPassword(Usuario usuario) {
+    return usuario.getSenha() != null && !usuario.getSenha().isBlank();
   }
 }

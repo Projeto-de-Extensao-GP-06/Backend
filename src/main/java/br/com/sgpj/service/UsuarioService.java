@@ -52,8 +52,6 @@ public class UsuarioService {
     Cargo cargo = usuarioPersistenciaAdapter.buscarCargoPorId(request.cargoId());
 
     Usuario novoUsuario = UsuarioMapper.toEntity(request, cargo);
-    String senhaCriptografada = passwordEncoder.encode(novoUsuario.getSenha());
-    novoUsuario.setSenha(senhaCriptografada);
     usuarioPersistenciaAdapter.salvar(novoUsuario);
   }
 

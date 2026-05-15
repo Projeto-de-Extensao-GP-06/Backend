@@ -21,7 +21,6 @@ public class UsuarioMapper {
     Usuario usuario = new Usuario();
     usuario.setNome(dto.nome());
     usuario.setEmail(dto.email());
-    usuario.setSenha(dto.senha());
     usuario.setCriadoEm(LocalDateTime.now());
     usuario.setCargo(cargo);
     usuario.setAtivo(true);

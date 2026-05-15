@@ -2,6 +2,7 @@ package br.com.sgpj.service;
 
 import br.com.sgpj.adapter.database.UsuarioPersistenciaAdapter;
 import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
+import br.com.sgpj.dto.request.DefinirNovaSenhaRequest;
 import br.com.sgpj.dto.request.UsuarioAtualizacaoRequest;
 import br.com.sgpj.dto.request.UsuarioCriacaoRequest;
 import br.com.sgpj.dto.request.ValidarOtpRequest;
@@ -13,10 +14,14 @@ import br.com.sgpj.exception.EmailDuplicadoException;
 import br.com.sgpj.exception.PasswordConflictException;
 import br.com.sgpj.mapper.UsuarioMapper;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -146,6 +151,37 @@ public class UsuarioService {
     }
 
     return otpService.isOtpValid(request.email(), request.otp());
+  }
+
+  public void definirNovaSenha(DefinirNovaSenhaRequest request) {
+    if (request.email() == null || request.email().isBlank()) {
+      throw new IllegalArgumentException("Insira um endereço de e-mail válido");
+    }
+
+    Usuario usuario = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(request.email());
+    String novaSenhaCriptografada = passwordEncoder.encode(request.senha());
+    usuario.setSenha(novaSenhaCriptografada);
+    usuarioPersistenciaAdapter.salvar(usuario);
+    otpService.removeOtp(request.email());
+  }
+
+  public UsuarioTokenResponse autenticarOtp(ValidarOtpRequest request) {
+    Usuario usuarioAutenticado = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(request.email());
+
+    UserDetails userDetails = User.withUsername(request.email())
+            .password("")
+            .authorities(Collections.emptyList())
+            .build();
+
+    Authentication authentication = new UsernamePasswordAuthenticationToken(
+            userDetails,
+            null,
+            userDetails.getAuthorities()
+    );
+    usuarioAutenticacaoAdapter.definirContexto(authentication);
+    final String token = usuarioAutenticacaoAdapter.gerarToken(authentication);
+
+    return UsuarioMapper.toTokenDto(usuarioAutenticado, token);
   }
 
   private boolean hasPassword(Usuario usuario) {

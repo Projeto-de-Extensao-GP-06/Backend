@@ -164,12 +164,25 @@ public class UsuarioController {
 
     @PostMapping("/validar-otp")
     @PreAuthorize("permitAll()")
-    public ResponseEntity<String> validateOtp(@RequestBody ValidarOtpRequest request) {
+    public ResponseEntity<String> validateOtp(@RequestBody ValidarOtpRequest request,
+                                              HttpServletResponse response) {
         if (usuarioService.validarOtp(request)) {
+            UsuarioTokenResponse autenticado = usuarioService.autenticarOtp(request);
+            adicionarCookie(response, autenticado.token(), Duration.ofSeconds(jwtValidity));
+
             return ResponseEntity.ok("Código validado com sucesso!");
         } else {
             return ResponseEntity.badRequest().body("Código inválido ou expirado.");
         }
     }
 
+    @PostMapping("/definir-nova-senha")
+    @PreAuthorize("isAuthenticated()")
+    @SecurityRequirement(name = "Bearer")
+    public ResponseEntity<String> definirNovaSenha(@RequestBody DefinirNovaSenhaRequest request,
+                                                   HttpServletResponse response) {
+        usuarioService.definirNovaSenha(request);
+        adicionarCookie(response, "", Duration.ZERO);
+        return ResponseEntity.ok("Nova senha definida com sucesso!");
+    }
 }

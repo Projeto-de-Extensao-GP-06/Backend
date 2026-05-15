@@ -151,16 +151,20 @@ public class UsuarioService {
     return otpService.isOtpValid(request.email(), request.otp());
   }
 
-  public void definirNovaSenha(DefinirNovaSenhaRequest request) {
-    if (request.email() == null || request.email().isBlank()) {
+  public void definirNovaSenha(String email, String senha) {
+    if (email == null || email.isBlank()) {
       throw new IllegalArgumentException("Insira um endereço de e-mail válido");
     }
 
-    Usuario usuario = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(request.email());
-    String novaSenhaCriptografada = passwordEncoder.encode(request.senha());
+    if (senha == null || senha.isBlank()) {
+      throw new IllegalArgumentException("Insira uma senha válida");
+    }
+
+    Usuario usuario = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(email);
+    String novaSenhaCriptografada = passwordEncoder.encode(senha);
     usuario.setSenha(novaSenhaCriptografada);
     usuarioPersistenciaAdapter.salvar(usuario);
-    otpService.removeOtp(request.email());
+    otpService.removeOtp(email);
   }
 
   public UsuarioTokenResponse autenticarOtp(ValidarOtpRequest request) {

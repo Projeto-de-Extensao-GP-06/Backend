@@ -1,5 +1,6 @@
 package br.com.sgpj.controller;
 
+import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
 import br.com.sgpj.dto.request.*;
 import br.com.sgpj.dto.response.UsuarioListarResponse;
 import br.com.sgpj.dto.response.UsuarioSessaoResponse;
@@ -33,9 +34,11 @@ public class UsuarioController {
     private long jwtValidity;
 
     private final UsuarioService usuarioService;
+    private final UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter;
 
-    public UsuarioController(UsuarioService usuarioService) {
+    public UsuarioController(UsuarioService usuarioService, UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter) {
         this.usuarioService = usuarioService;
+        this.usuarioAutenticacaoAdapter = usuarioAutenticacaoAdapter;
     }
 
     @PostMapping
@@ -181,8 +184,10 @@ public class UsuarioController {
     @SecurityRequirement(name = "Bearer")
     public ResponseEntity<String> definirNovaSenha(@RequestBody DefinirNovaSenhaRequest request,
                                                    HttpServletResponse response) {
-        usuarioService.definirNovaSenha(request);
-        adicionarCookie(response, "", Duration.ZERO);
+        String email = usuarioAutenticacaoAdapter.obterEmailUsuarioLogado();
+
+        usuarioService.definirNovaSenha(email, request.senha());
+        adicionarCookie(response, COOKIE_NOME, Duration.ZERO);
         return ResponseEntity.ok("Nova senha definida com sucesso!");
     }
 }

@@ -51,10 +51,13 @@ public class OtpService {
         }
 
         if (data.otp().equals(inputOtp)) {
-            otpCache.remove(email);
             return true;
         }
 
         return false;
+    }
+
+    public void removeOtp(String email) {
+        otpCache.remove(email);
     }
 }

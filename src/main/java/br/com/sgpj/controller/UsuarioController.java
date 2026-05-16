@@ -10,6 +10,7 @@ import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.mapper.UsuarioMapper;
 import br.com.sgpj.service.UsuarioService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
@@ -171,7 +172,7 @@ public class UsuarioController {
                                               HttpServletResponse response) {
         if (usuarioService.validarOtp(request)) {
             UsuarioTokenResponse autenticado = usuarioService.autenticarOtp(request);
-            adicionarCookie(response, autenticado.token(), Duration.ofSeconds(jwtValidity));
+            adicionarCookie(response, autenticado.token(), Duration.ofSeconds(900));
 
             return ResponseEntity.ok("Código validado com sucesso!");
         } else {
@@ -183,11 +184,35 @@ public class UsuarioController {
     @PreAuthorize("isAuthenticated()")
     @SecurityRequirement(name = "Bearer")
     public ResponseEntity<String> definirNovaSenha(@RequestBody DefinirNovaSenhaRequest request,
+                                                   HttpServletRequest httpRequest,
                                                    HttpServletResponse response) {
+        String token = extrairTokenDaRequisicao(httpRequest);
+
+        if (!usuarioAutenticacaoAdapter.isTokenDeRecuperacao(token)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Acesso negado: Este token não é válido para redefinição de senha.");
+        }
+
         String email = usuarioAutenticacaoAdapter.obterEmailUsuarioLogado();
 
         usuarioService.definirNovaSenha(email, request.senha());
         adicionarCookie(response, COOKIE_NOME, Duration.ZERO);
         return ResponseEntity.ok("Nova senha definida com sucesso!");
+    }
+
+    private String extrairTokenDaRequisicao(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+
+        if (request.getCookies() != null) {
+            for (var cookie : request.getCookies()) {
+                if (COOKIE_NOME.equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+        return null;
     }
 }

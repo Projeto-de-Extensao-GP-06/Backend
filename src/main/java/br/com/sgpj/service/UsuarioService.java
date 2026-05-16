@@ -181,7 +181,7 @@ public class UsuarioService {
             userDetails.getAuthorities()
     );
     usuarioAutenticacaoAdapter.definirContexto(authentication);
-    final String token = usuarioAutenticacaoAdapter.gerarToken(authentication);
+    final String token = usuarioAutenticacaoAdapter.gerarTokenOtp(authentication);
 
     return UsuarioMapper.toTokenDto(usuarioAutenticado, token);
   }

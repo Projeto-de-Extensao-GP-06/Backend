@@ -48,21 +48,6 @@ public class UsuarioAutenticacaoAdapter {
     }
 
     public String obterEmailUsuarioLogado() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new SecurityException("Nenhum usuário autenticado encontrado no contexto.");
-        }
-
-        Object principal = authentication.getPrincipal();
-
-        if (principal instanceof UserDetails) {
-            return ((UserDetails) principal).getUsername();
-        }
-        else if (principal instanceof String) {
-            return (String) principal;
-        }
-
-        throw new SecurityException("Não foi possível extrair o e-mail do token.");
+        return gerenciadorTokenJwt.obterEmailUsuarioLogado();
     }
 }

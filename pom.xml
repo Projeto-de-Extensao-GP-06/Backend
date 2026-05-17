@@ -103,6 +103,22 @@
 			<version>0.12.6</version>
 			<scope>runtime</scope>
 		</dependency>
+
+		<!-- API SDK Graph -->
+		<dependency>
+			<groupId>com.microsoft.graph</groupId>
+			<artifactId>microsoft-graph</artifactId>
+			<version>6.29.0</version>
+		</dependency>
+
+		<!-- Azure Identity -->
+		<dependency>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-identity</artifactId>
+			<version>1.13.3</version>
+		</dependency>
+
+
 	</dependencies>
 
 	<build>

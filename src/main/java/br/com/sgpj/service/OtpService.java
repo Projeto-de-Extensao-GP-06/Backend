@@ -39,6 +39,7 @@ public class OtpService {
         Otp otp = otpPersistenciaAdapter.findByEmail(email);
 
         if (otp.isExpired()) {
+            removeOtp(email);
             return false;
         }
 

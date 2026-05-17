@@ -6,6 +6,7 @@ import br.com.sgpj.repository.OtpRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Component
@@ -25,5 +26,9 @@ public class OtpPersistenciaAdapter {
 
     public void deleteByEmail(String email) {
         repository.deleteById(email);
+    }
+
+    public void deleteExpiredBefore(LocalDateTime dateTime) {
+        repository.deleteByExpiraEmBefore(dateTime);
     }
 }

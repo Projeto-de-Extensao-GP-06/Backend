@@ -3,11 +3,11 @@ package br.com.sgpj.service;
 import br.com.sgpj.adapter.database.OtpPersistenciaAdapter;
 import br.com.sgpj.entity.Otp;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -50,5 +50,11 @@ public class OtpService {
 
     public void removeOtp(String email) {
         otpPersistenciaAdapter.deleteByEmail(email);
+    }
+
+    // Método que roda a cada 10min para limpar OTPs expiradas
+    @Scheduled(cron = "0 */10 * * * *")
+    public void executeCleanup() {
+        otpPersistenciaAdapter.deleteExpiredBefore(LocalDateTime.now());
     }
 }

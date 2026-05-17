@@ -1,4 +1,4 @@
-package br.com.sgpj.dto;
+package br.com.sgpj.dto.response;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

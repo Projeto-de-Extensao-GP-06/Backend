@@ -1,4 +1,4 @@
-package br.com.sgpj.dto;
+package br.com.sgpj.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 

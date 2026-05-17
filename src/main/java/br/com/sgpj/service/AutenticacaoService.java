@@ -1,7 +1,7 @@
 package br.com.sgpj.service;
 
 import br.com.sgpj.adapter.database.UsuarioPersistenciaAdapter;
-import br.com.sgpj.dto.UsuarioDetalhesResponse;
+import br.com.sgpj.dto.response.UsuarioDetalhesResponse;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import org.springframework.security.core.userdetails.UserDetails;

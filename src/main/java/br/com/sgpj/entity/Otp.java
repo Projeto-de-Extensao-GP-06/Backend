@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 public class Otp {
 
     @Id
-    @Column(name = "email", nullable = false, length = 100)
+    @Column(name = "email", nullable = false, length = 255)
     private String email;
 
     @Column(name = "otp", nullable = false, length = 6)

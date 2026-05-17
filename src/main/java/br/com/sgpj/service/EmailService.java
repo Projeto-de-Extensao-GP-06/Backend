@@ -45,7 +45,7 @@ public class EmailService {
         return String.format("""
                 Olá, %s!
                 
-                Para continuar o processo de redefinição de senha, por favor, utilize o código de verificação abaixo:
+                Para continuar o processo de redefinição de senha, por favor utilize o código de verificação abaixo:
                 
                 %s
                 Aviso: Este código é válido por 15 minutos, permite até 3 tentativas de validação e só pode ser utilizado uma vez com sucesso.
@@ -66,13 +66,13 @@ public class EmailService {
                 
                 Bem-vindo(a) ao SGPJ! Sua conta foi criada com sucesso.
                 
-                Para realizar o seu primeiro acesso e definir a sua senha definitiva, por favor, utilize o código de verificação abaixo:
+                Para realizar o seu primeiro acesso e definir a sua senha, por favor utilize o código de verificação abaixo:
                 
                 %s
                 Aviso: Este código é válido por 15 minutos, permite até 3 tentativas de validação e só pode ser utilizado uma vez com sucesso.
                 Por questões de segurança, não compartilhe este código com ninguém.
                 
-                Se você desconhece este cadastro ou não estava aguardando este e-mail, por favor, contate o administrador do sistema.
+                Se você desconhece este cadastro ou não estava aguardando este e-mail, por favor contate o administrador do sistema.
                 
                 Atenciosamente,
                 

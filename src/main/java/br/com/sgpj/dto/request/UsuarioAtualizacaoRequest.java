@@ -19,7 +19,7 @@ public record UsuarioAtualizacaoRequest(
         String email,
 
         @NotBlank(message = "Senha é obrigatória")
-        @Size(max = 255)
+        @Size(min = 6, max = 20)
         @Schema(description = "Senha do usuário", example = "123456")
         String senha,
 

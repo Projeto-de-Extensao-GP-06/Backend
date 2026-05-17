@@ -2,6 +2,7 @@ package br.com.sgpj.service;
 
 import br.com.sgpj.adapter.database.OtpPersistenciaAdapter;
 import br.com.sgpj.entity.Otp;
+import br.com.sgpj.exception.LimiteTentativasExcedidoException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 public class OtpService {
 
     private static final int EXPIRE_MINS = 15;
+    private static final int MAX_TENTATIVAS = 3;
 
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -45,6 +47,14 @@ public class OtpService {
             return true;
         }
 
+        otp.registrarTentativaIncorreta();
+
+        if (otp.excedeuLimiteDeTentativas(MAX_TENTATIVAS)) {
+            removeOtp(email);
+            throw new LimiteTentativasExcedidoException("Número máximo de tentativas alcançado. Solicite um novo código.");
+        }
+
+        otpPersistenciaAdapter.save(otp);
         return false;
     }
 

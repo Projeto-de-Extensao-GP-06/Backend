@@ -48,7 +48,7 @@ public class EmailService {
                 Para continuar o processo de redefinição de senha, por favor, utilize o código de verificação abaixo:
                 
                 %s
-                Aviso: Este código é válido por 15 minutos e só pode ser utilizado uma vez.
+                Aviso: Este código é válido por 15 minutos, permite até 3 tentativas de validação e só pode ser utilizado uma vez com sucesso.
                 Por questões de segurança, não compartilhe este código com ninguém.
                 
                 Se você não solicitou a redefinição de senha, não se preocupe.
@@ -69,7 +69,7 @@ public class EmailService {
                 Para realizar o seu primeiro acesso e definir a sua senha definitiva, por favor, utilize o código de verificação abaixo:
                 
                 %s
-                Aviso: Este código é válido por 15 minutos e só pode ser utilizado uma vez.
+                Aviso: Este código é válido por 15 minutos, permite até 3 tentativas de validação e só pode ser utilizado uma vez com sucesso.
                 Por questões de segurança, não compartilhe este código com ninguém.
                 
                 Se você desconhece este cadastro ou não estava aguardando este e-mail, por favor, contate o administrador do sistema.

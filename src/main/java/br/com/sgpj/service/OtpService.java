@@ -1,5 +1,8 @@
 package br.com.sgpj.service;
 
+import br.com.sgpj.adapter.database.OtpPersistenciaAdapter;
+import br.com.sgpj.entity.Otp;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
@@ -7,30 +10,21 @@ import java.time.LocalDateTime;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
+@RequiredArgsConstructor
 public class OtpService {
 
     private static final int EXPIRE_MINS = 15;
 
-    private final ConcurrentHashMap<String, OtpData> otpCache = new ConcurrentHashMap<>();
-
     private final SecureRandom secureRandom = new SecureRandom();
 
-    private record OtpData(String otp, LocalDateTime expiryTime) {
-        boolean isExpired(LocalDateTime expiryTime) {
-            return LocalDateTime.now().isAfter(expiryTime);
-        }
-    }
+    private final OtpPersistenciaAdapter otpPersistenciaAdapter;
 
     public String generateOtp(String email) {
-
-        // Validação para evitar chaves duplicadas no otpCache
-        if (otpCache.containsKey(email)) {
-            otpCache.remove(email);
-        }
-
         String otp = String.format("%06d", secureRandom.nextInt(1000000));
         LocalDateTime expiryTime = LocalDateTime.now().plusMinutes(EXPIRE_MINS);
-        otpCache.put(email, new OtpData(otp, expiryTime));
+
+        Otp usuarioOtp = new Otp(email, otp, expiryTime);
+        otpPersistenciaAdapter.save(usuarioOtp);
 
         return otp;
     }
@@ -39,18 +33,15 @@ public class OtpService {
         if (inputOtp != null) {
             inputOtp = inputOtp.trim();
         }
-        OtpData data = otpCache.get(email);
 
-        if (data == null) {
+        Otp otp = otpPersistenciaAdapter.findByEmail(email);
+
+        if (otp.isExpired()) {
             return false;
         }
 
-        if (data.isExpired(data.expiryTime)) {
-            otpCache.remove(email);
-            return false;
-        }
-
-        if (data.otp().equals(inputOtp)) {
+        if (otp.getOtp().equals(inputOtp)) {
+            otpPersistenciaAdapter.deleteByEmail(email);
             return true;
         }
 
@@ -58,6 +49,6 @@ public class OtpService {
     }
 
     public void removeOtp(String email) {
-        otpCache.remove(email);
+        otpPersistenciaAdapter.deleteByEmail(email);
     }
 }

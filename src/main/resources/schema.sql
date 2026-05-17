@@ -263,6 +263,17 @@ CREATE TABLE contato (
 );
 
 -- ============================================================================
+-- TABELAS EM MEMÓRIA
+-- ============================================================================
+
+CREATE TABLE usuario_otp (
+    email VARCHAR(255) PRIMARY KEY,
+    otp VARCHAR(6) NOT NULL,
+    expira_em DATETIME NOT NULL,
+    tentativas INT NOT NULL DEFAULT 0
+) ENGINE=MEMORY;
+
+-- ============================================================================
 -- ÍNDICES
 -- ============================================================================
 

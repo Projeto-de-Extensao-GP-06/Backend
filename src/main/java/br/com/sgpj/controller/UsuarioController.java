@@ -1,8 +1,7 @@
 package br.com.sgpj.controller;
 
-import br.com.sgpj.dto.request.UsuarioAtualizacaoRequest;
-import br.com.sgpj.dto.request.UsuarioCriacaoRequest;
-import br.com.sgpj.dto.request.UsuarioLoginRequest;
+import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
+import br.com.sgpj.dto.request.*;
 import br.com.sgpj.dto.response.UsuarioListarResponse;
 import br.com.sgpj.dto.response.UsuarioSessaoResponse;
 import br.com.sgpj.dto.response.UsuarioTokenResponse;
@@ -11,6 +10,7 @@ import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.mapper.UsuarioMapper;
 import br.com.sgpj.service.UsuarioService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +18,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
@@ -34,9 +35,11 @@ public class UsuarioController {
     private long jwtValidity;
 
     private final UsuarioService usuarioService;
+    private final UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter;
 
-    public UsuarioController(UsuarioService usuarioService) {
+    public UsuarioController(UsuarioService usuarioService, UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter) {
         this.usuarioService = usuarioService;
+        this.usuarioAutenticacaoAdapter = usuarioAutenticacaoAdapter;
     }
 
     @PostMapping
@@ -149,4 +152,67 @@ public class UsuarioController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/enviar-redefinir-senha-otp")
+    @PreAuthorize("permitAll()")
+    public ResponseEntity<String> enviarRedefinirSenhaOtp(@RequestBody EnviarOtpRequest request) {
+        usuarioService.enviarRedefinirSenhaOtp(request.email());
+        return ResponseEntity.ok("Se o e-mail estiver cadastrado, um código será enviado em instantes.");
+    }
+
+    @PostMapping("/enviar-definir-senha-otp")
+    @PreAuthorize("permitAll()")
+    public ResponseEntity<String> enviarDefinirSenhaOtp(@RequestBody EnviarOtpRequest request) {
+        usuarioService.enviarDefinirSenhaOtp(request.email());
+        return ResponseEntity.ok("Se o e-mail estiver cadastrado, um código será enviado em instantes.");
+    }
+
+    @PostMapping("/validar-otp")
+    @PreAuthorize("permitAll()")
+    public ResponseEntity<String> validateOtp(@RequestBody ValidarOtpRequest request,
+                                              HttpServletResponse response) {
+        if (usuarioService.validarOtp(request)) {
+            UsuarioTokenResponse autenticado = usuarioService.autenticarOtp(request);
+            adicionarCookie(response, autenticado.token(), Duration.ofSeconds(900));
+
+            return ResponseEntity.ok("Código validado com sucesso!");
+        } else {
+            return ResponseEntity.badRequest().body("Código inválido ou expirado.");
+        }
+    }
+
+    @PostMapping("/definir-nova-senha")
+    @PreAuthorize("isAuthenticated()")
+    @SecurityRequirement(name = "Bearer")
+    public ResponseEntity<String> definirNovaSenha(@RequestBody DefinirNovaSenhaRequest request,
+                                                   HttpServletRequest httpRequest,
+                                                   HttpServletResponse response) {
+        String token = extrairTokenDaRequisicao(httpRequest);
+
+        if (!usuarioAutenticacaoAdapter.isTokenDeRecuperacao(token)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Acesso negado: Este token não é válido para redefinição de senha.");
+        }
+
+        String email = usuarioAutenticacaoAdapter.obterEmailUsuarioLogado();
+
+        usuarioService.definirNovaSenha(email, request.senha());
+        adicionarCookie(response, COOKIE_NOME, Duration.ZERO);
+        return ResponseEntity.ok("Nova senha definida com sucesso!");
+    }
+
+    private String extrairTokenDaRequisicao(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+
+        if (request.getCookies() != null) {
+            for (var cookie : request.getCookies()) {
+                if (COOKIE_NOME.equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+        return null;
+    }
 }

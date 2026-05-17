@@ -7,6 +7,7 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import javax.crypto.SecretKey;
@@ -91,6 +92,26 @@ public class GerenciadorTokenJwt {
         return Jwts.builder()
                 .subject(authentication.getName())           // claim "sub": quem é o usuário
                 .claim("authorities", authorities)     // claim customizado: perfis do usuário
+                .claim("scope", "GENERAL_USE")        // claim que define o escopo do jwt
+                .issuedAt(agora)                             // claim "iat"
+                .expiration(expiracao)                       // claim "exp"
+                .signWith(parseSecret())                     // assina com HMAC-SHA256
+                .compact();                                  // serializa para String
+    }
+
+    public String generateTokenOtp(final Authentication authentication) {
+        // Coleta todas as authorities (roles/perfis) do usuário separadas por vírgula
+        final String authorities = authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.joining(","));
+
+        Date agora = new Date();
+        Date expiracao = new Date(agora.getTime() + 900 * 1_000);
+
+        return Jwts.builder()
+                .subject(authentication.getName())           // claim "sub": quem é o usuário
+                .claim("authorities", authorities)        // claim customizado: perfis do usuário
+                .claim("scope", "SET_PASSWORD")        // claim que define o escopo do jwt
                 .issuedAt(agora)                             // claim "iat"
                 .expiration(expiracao)                       // claim "exp"
                 .signWith(parseSecret())                     // assina com HMAC-SHA256
@@ -195,5 +216,24 @@ public class GerenciadorTokenJwt {
      */
     private SecretKey parseSecret() {
         return Keys.hmacShaKeyFor(Decoders.BASE64.decode(this.secret));
+    }
+
+    public String obterEmailUsuarioLogado() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new SecurityException("Nenhum usuário autenticado encontrado no contexto.");
+        }
+
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof UserDetails) {
+            return ((UserDetails) principal).getUsername();
+        }
+        else if (principal instanceof String) {
+            return (String) principal;
+        }
+
+        throw new SecurityException("Não foi possível extrair o e-mail do token.");
     }
 }

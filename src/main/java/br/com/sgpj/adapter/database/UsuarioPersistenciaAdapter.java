@@ -37,7 +37,7 @@ public class UsuarioPersistenciaAdapter {
 
     public Usuario buscarUsuarioPorEmail(String email) {
         return usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new UsuarioNaoEncontradoException(email));
+                .orElseThrow(() -> new UsuarioNaoEncontradoException("Usuário não encontrado para esse endereço de email: " + email));
     }
 
     public List<Usuario> listarTodos() {

@@ -18,11 +18,6 @@ public record UsuarioCriacaoRequest(
         @Schema(description = "Email do usuário", example = "john@doe.com")
         String email,
 
-        @NotBlank(message = "Senha é obrigatória")
-        @Size(min = 6, max = 20)
-        @Schema(description = "Senha do usuário", example = "123456")
-        String senha,
-
         @NotNull(message = "Id do cargo é obrigatório")
         @Schema(description = "Id do cargo", example = "1")
         Long cargoId

@@ -53,7 +53,7 @@ public class OneDriveController {
         return ResponseEntity.ok(resposta);
     }
 
-    @PatchMapping("/arquivo/renomear")
+    @PutMapping("/arquivo/renomear")
     @Operation(summary = "Renomeia um arquivo no OneDrive")
     public ResponseEntity<OneDriveItemResponse> renomearArquivo(
             @RequestParam String nomePasta,

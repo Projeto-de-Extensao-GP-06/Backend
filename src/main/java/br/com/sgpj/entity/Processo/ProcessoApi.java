@@ -15,7 +15,6 @@ public class ProcessoApi {
 
     private String numeroCnj;
     private String tribunalTramitacao;
-    private String observacao;
     private String instancia;
     private LocalDateTime dataAjuizamento;
     private Integer nivelSigilo;
@@ -26,17 +25,16 @@ public class ProcessoApi {
     private String assunto;
 
     @OneToMany(mappedBy = "processoApi", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<MovimentacaoOficial> movimentacoes;
+    private List<MovimentacoesOficiais> movimentacoes;
 
 
     public ProcessoApi() {
     }
 
-    public ProcessoApi(Long id, String numeroCnj, String tribunalTramitacao, String observacao, String instancia, LocalDateTime dataAjuizamento, Integer nivelSigilo, String classeProcessual, String formato, String sistemaTribunal, String orgaoJulgador, String assunto, List<MovimentacaoOficial> movimentacoes) {
+    public ProcessoApi(Long id, String numeroCnj, String tribunalTramitacao, String instancia, LocalDateTime dataAjuizamento, Integer nivelSigilo, String classeProcessual, String formato, String sistemaTribunal, String orgaoJulgador, String assunto, List<MovimentacoesOficiais> movimentacoes) {
         this.id = id;
         this.numeroCnj = numeroCnj;
         this.tribunalTramitacao = tribunalTramitacao;
-        this.observacao = observacao;
         this.instancia = instancia;
         this.dataAjuizamento = dataAjuizamento;
         this.nivelSigilo = nivelSigilo;
@@ -70,14 +68,6 @@ public class ProcessoApi {
 
     public void setTribunalTramitacao(String tribunalTramitacao) {
         this.tribunalTramitacao = tribunalTramitacao;
-    }
-
-    public String getObservacao() {
-        return observacao;
-    }
-
-    public void setObservacao(String observacao) {
-        this.observacao = observacao;
     }
 
     public String getInstancia() {
@@ -144,11 +134,11 @@ public class ProcessoApi {
         this.assunto = assunto;
     }
 
-    public List<MovimentacaoOficial> getMovimentacoes() {
+    public List<MovimentacoesOficiais> getMovimentacoes() {
         return movimentacoes;
     }
 
-    public void setMovimentacoes(List<MovimentacaoOficial> movimentacoes) {
+    public void setMovimentacoes(List<MovimentacoesOficiais> movimentacoes) {
         this.movimentacoes = movimentacoes;
     }
 }

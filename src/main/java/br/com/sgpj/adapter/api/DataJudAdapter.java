@@ -22,7 +22,7 @@ public class DataJudAdapter {
         public String buscarPorNumeroDeProcesso(String cnj, String siglaTribunal) {
 
             String endpoint =
-                    "/api_publica_" + siglaTribunal + "/_search";
+                    "/api_publica_" + siglaTribunal.toLowerCase() + "/_search";
 
             Map<String, Object> body = Map.of(
                     "query", Map.of(

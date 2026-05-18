@@ -13,10 +13,18 @@ public record ProcessoAppCriacaoRequest(
         @Schema(description = "Id do usuario responsavel", example = "1")
         Long usuarioResponsavelId,
 
+        @NotNull(message = "Id do cliente é obrigatório")
+        @Schema(description = "Id do cliente associado aquele processo", example = "1")
+        Long clienteId,
+
         @NotBlank(message = "Descricao do caso e obrigatoria")
         @Size(min = 10, max = 5000)
         @Schema(description = "Descricao sobre o processo", example = "Esse processo e sobre divisao de bens")
         String descricaoCaso,
+
+        @Size(min = 10, max = 5000)
+        @Schema(description = "observacao sobre o processo", example = "Cliente tem algum laudo")
+        String observacao,
 
         @NotNull(message = "Id da prioridade e obrigatorio")
         @Schema(description = "Id do nivel de prioridade do processo", example = "1")

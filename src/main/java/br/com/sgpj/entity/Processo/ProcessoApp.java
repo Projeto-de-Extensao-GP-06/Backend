@@ -1,6 +1,7 @@
 package br.com.sgpj.entity.Processo;
 
 
+import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Usuario;
 import jakarta.persistence.*;
 
@@ -18,7 +19,12 @@ public class ProcessoApp {
     @JoinColumn(nullable = false, name = "usuario_responsavel_id")
     private Usuario usuarioResponsavel;
 
+    @ManyToOne
+    @JoinColumn(nullable = false, name = "cliente_id")
+    private Cliente cliente;
+
     private String descricaoCaso;
+    private String observacao;
 
     @ManyToOne
     @JoinColumn(name = "prioridade_id")
@@ -51,11 +57,13 @@ public class ProcessoApp {
     public ProcessoApp(){}
 
 
-    public ProcessoApp(Prioridade prioridade, Long id, String descricaoCaso, Usuario usuarioResponsavel, FaseProcesso faseProcesso, LocalDateTime ultimaAtualizacao, LocalDateTime dataHoraInicio, Boolean ativo, LocalDateTime dataAudiencia, SiglaTribunal siglaTribunal, Double valorCausa) {
+    public ProcessoApp(Prioridade prioridade, Long id, String descricaoCaso, String observacao, Usuario usuarioResponsavel, Cliente cliente, FaseProcesso faseProcesso, LocalDateTime ultimaAtualizacao, LocalDateTime dataHoraInicio, Boolean ativo, LocalDateTime dataAudiencia, SiglaTribunal siglaTribunal, Double valorCausa) {
         this.id = id;
         this.prioridade = prioridade;
         this.descricaoCaso = descricaoCaso;
+        this.observacao = observacao;
         this.usuarioResponsavel = usuarioResponsavel;
+        this.cliente = cliente;
         this.faseProcesso = faseProcesso;
         this.ultimaAtualizacao = ultimaAtualizacao;
         this.dataHoraInicio = dataHoraInicio;
@@ -65,10 +73,11 @@ public class ProcessoApp {
         this.valorCausa = valorCausa;
     }
 
-    public ProcessoApp(Long id, Usuario usuarioResponsavel, String descricaoCaso, Prioridade prioridade, FaseProcesso faseProcesso, LocalDateTime ultimaAtualizacao, LocalDateTime dataHoraInicio, Boolean ativo, LocalDateTime dataAudiencia, SiglaTribunal siglaTribunal, ProcessoApi processoApi, Double valorCausa) {
+    public ProcessoApp(Long id, Usuario usuarioResponsavel, String descricaoCaso, String observacao, Prioridade prioridade, FaseProcesso faseProcesso, LocalDateTime ultimaAtualizacao, LocalDateTime dataHoraInicio, Boolean ativo, LocalDateTime dataAudiencia, SiglaTribunal siglaTribunal, ProcessoApi processoApi, Double valorCausa) {
         this.id = id;
         this.usuarioResponsavel = usuarioResponsavel;
         this.descricaoCaso = descricaoCaso;
+        this.observacao = observacao;
         this.prioridade = prioridade;
         this.faseProcesso = faseProcesso;
         this.ultimaAtualizacao = ultimaAtualizacao;
@@ -80,10 +89,11 @@ public class ProcessoApp {
         this.valorCausa = valorCausa;
     }
 
-    public ProcessoApp(Long id, Usuario usuarioResponsavel, String descricaoCaso, Prioridade prioridade, FaseProcesso faseProcesso, LocalDateTime ultimaAtualizacao, LocalDateTime dataHoraInicio, Boolean ativo, SiglaTribunal siglaTribunal, ProcessoApi processoApi, Double valorCausa) {
+    public ProcessoApp(Long id, Usuario usuarioResponsavel, String descricaoCaso, String observacao, Prioridade prioridade, FaseProcesso faseProcesso, LocalDateTime ultimaAtualizacao, LocalDateTime dataHoraInicio, Boolean ativo, SiglaTribunal siglaTribunal, ProcessoApi processoApi, Double valorCausa) {
         this.id = id;
         this.usuarioResponsavel = usuarioResponsavel;
         this.descricaoCaso = descricaoCaso;
+        this.observacao = observacao;
         this.prioridade = prioridade;
         this.faseProcesso = faseProcesso;
         this.ultimaAtualizacao = ultimaAtualizacao;
@@ -94,6 +104,8 @@ public class ProcessoApp {
         this.valorCausa = valorCausa;
     }
 
+    public String getObservacao() {return observacao;}
+    public Cliente getCliente() {return cliente;}
     public String getDescricaoCaso() {return descricaoCaso;}
     public Double getValorCausa() {return valorCausa;}
     public Long getId() {return id;}
@@ -109,6 +121,8 @@ public class ProcessoApp {
     public SiglaTribunal getSiglaTribunal() {return siglaTribunal;}
     public ProcessoApi getProcessoApi() {return processoApi;}
 
+    public void setObservacao(String observacao) {this.observacao = observacao;}
+    public void setCliente(Cliente cliente) {this.cliente = cliente;}
     public void setDescricaoCaso(String descricaoCaso) {this.descricaoCaso = descricaoCaso;}
     public void setValorCausa(Double valorCausa) {this.valorCausa = valorCausa;}
     public void setProcessoApi(ProcessoApi processoApi) {this.processoApi = processoApi;}

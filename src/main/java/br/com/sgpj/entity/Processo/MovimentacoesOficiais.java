@@ -5,8 +5,8 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "movimentacao_oficial")
-public class MovimentacaoOficial {
+@Table(name = "movimentacoes_oficiais")
+public class MovimentacoesOficiais {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,10 +19,10 @@ public class MovimentacaoOficial {
     @JoinColumn(name = "processo_dados_api_id")
     private ProcessoApi processoApi;
 
-    public MovimentacaoOficial() {
+    public MovimentacoesOficiais() {
     }
 
-    public MovimentacaoOficial(Long id, Integer codigo, String descricao, LocalDateTime dataHoraMovimentacao, ProcessoApi processoApi) {
+    public MovimentacoesOficiais(Long id, Integer codigo, String descricao, LocalDateTime dataHoraMovimentacao, ProcessoApi processoApi) {
         this.id = id;
         this.codigo = codigo;
         this.descricao = descricao;

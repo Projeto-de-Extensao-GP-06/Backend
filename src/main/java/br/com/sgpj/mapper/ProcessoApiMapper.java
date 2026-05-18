@@ -3,7 +3,7 @@ package br.com.sgpj.mapper;
 
 import br.com.sgpj.dto.response.MovimentacaoOficialResponse;
 import br.com.sgpj.dto.response.ProcessoApiResponse;
-import br.com.sgpj.entity.Processo.MovimentacaoOficial;
+import br.com.sgpj.entity.Processo.MovimentacoesOficiais;
 import br.com.sgpj.entity.Processo.ProcessoApi;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -29,6 +29,7 @@ public class ProcessoApiMapper {
         processoApi.setFormato(main.getJSONObject("formato").getString("nome"));
         processoApi.setTribunalTramitacao(main.getString("tribunal"));
         processoApi.setInstancia(main.getString("grau"));
+        processoApi.setAssunto(main.getJSONArray("assuntos").getJSONObject(0).getString("nome"));
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
         processoApi.setDataAjuizamento(LocalDateTime.parse(main.getString("dataAjuizamento"), formatter));
@@ -38,12 +39,12 @@ public class ProcessoApiMapper {
 
 
         JSONArray movimentos = main.getJSONArray("movimentos");
-        List<MovimentacaoOficial> movimentacoes = new ArrayList<>();
+        List<MovimentacoesOficiais> movimentacoes = new ArrayList<>();
 
         for (int i = 0; i < movimentos.length(); i++) {
             JSONObject movimentoJson = movimentos.getJSONObject(i);
 
-            MovimentacaoOficial movimentacao = new MovimentacaoOficial();
+            MovimentacoesOficiais movimentacao = new MovimentacoesOficiais();
             movimentacao.setCodigo(movimentoJson.getInt("codigo"));
             movimentacao.setDescricao(movimentoJson.getString("nome"));
             movimentacao.setDataHoraMovimentacao(
@@ -68,7 +69,6 @@ public class ProcessoApiMapper {
                 processoApi.getId(),
                 processoApi.getNumeroCnj(),
                 processoApi.getTribunalTramitacao(),
-                processoApi.getObservacao(),
                 processoApi.getInstancia(),
                 processoApi.getDataAjuizamento(),
                 processoApi.getNivelSigilo(),
@@ -81,7 +81,7 @@ public class ProcessoApiMapper {
         );
     }
 
-    private static List<MovimentacaoOficialResponse> toMovimentacoesResponse(List<MovimentacaoOficial> movimentacoes) {
+    private static List<MovimentacaoOficialResponse> toMovimentacoesResponse(List<MovimentacoesOficiais> movimentacoes) {
         if (movimentacoes == null) {
             return List.of();
         }

@@ -12,15 +12,15 @@ public class ProcessoAppMapper {
     }
 
     public static ProcessoApp toCreateEntity(ProcessoAppCriacaoRequest processoAppCriacaoRequest) {
-        LocalDateTime agora = LocalDateTime.now();
 
         ProcessoApp entidade = new ProcessoApp();
         entidade.setDescricaoCaso(processoAppCriacaoRequest.descricaoCaso());
-        entidade.setUltimaAtualizacao(agora);
-        entidade.setDataHoraInicio(agora);
+        entidade.setUltimaAtualizacao(LocalDateTime.now());
+        entidade.setDataHoraInicio(LocalDateTime.now());
         entidade.setAtivo(true);
         entidade.setDataAudiencia(processoAppCriacaoRequest.dataAudiencia());
         entidade.setValorCausa(processoAppCriacaoRequest.valorCausa());
+        entidade.setObservacao(processoAppCriacaoRequest.observacao());
 
 
         return entidade;
@@ -31,15 +31,17 @@ public class ProcessoAppMapper {
             return null;
         }
 
+
         return new ProcessoAppResponse(
                 processoApp.getId(),
                 processoApp.getUsuarioResponsavel() != null ? processoApp.getUsuarioResponsavel().getId() : null,
                 processoApp.getUsuarioResponsavel() != null ? processoApp.getUsuarioResponsavel().getNome() : null,
+                processoApp.getCliente().getId(),
+                processoApp.getCliente().getNomeRazaoSocial(),
                 processoApp.getDescricaoCaso(),
-                processoApp.getPrioridade() != null ? processoApp.getPrioridade().getId() : null,
-                processoApp.getPrioridade() != null ? processoApp.getPrioridade().getNome() : null,
-                processoApp.getFaseProcesso() != null ? processoApp.getFaseProcesso().getId() : null,
-                processoApp.getFaseProcesso() != null ? processoApp.getFaseProcesso().getNome() : null,
+                processoApp.getObservacao(),
+                processoApp.getPrioridade() != null ? processoApp.getPrioridade() : null,
+                processoApp.getFaseProcesso() != null ? processoApp.getFaseProcesso() : null,
                 processoApp.getUltimaAtualizacao(),
                 processoApp.getDataHoraInicio(),
                 processoApp.getAtivo(),
@@ -47,8 +49,7 @@ public class ProcessoAppMapper {
                 processoApp.getDataHoraEncerramento(),
                 processoApp.getEncerradoPorUsuario() != null ? processoApp.getEncerradoPorUsuario().getId() : null,
                 processoApp.getEncerradoPorUsuario() != null ? processoApp.getEncerradoPorUsuario().getNome() : null,
-                processoApp.getSiglaTribunal() != null ? processoApp.getSiglaTribunal().getId() : null,
-                processoApp.getSiglaTribunal() != null ? processoApp.getSiglaTribunal().getNome() : null,
+                processoApp.getSiglaTribunal() != null ? processoApp.getSiglaTribunal() : null,
                 processoApp.getValorCausa(),
                 ProcessoApiMapper.toResponse(processoApp.getProcessoApi())
         );

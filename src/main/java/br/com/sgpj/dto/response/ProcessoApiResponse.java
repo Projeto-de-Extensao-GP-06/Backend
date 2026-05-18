@@ -7,7 +7,6 @@ public record ProcessoApiResponse(
         Long id,
         String numeroCnj,
         String tribunalTramitacao,
-        String observacao,
         String instancia,
         LocalDateTime dataAjuizamento,
         Integer nivelSigilo,

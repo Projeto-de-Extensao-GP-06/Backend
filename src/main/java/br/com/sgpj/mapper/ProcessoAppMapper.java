@@ -22,6 +22,7 @@ public class ProcessoAppMapper {
         entidade.setDataAudiencia(processoAppCriacaoRequest.dataAudiencia());
         entidade.setValorCausa(processoAppCriacaoRequest.valorCausa());
 
+
         return entidade;
     }
 

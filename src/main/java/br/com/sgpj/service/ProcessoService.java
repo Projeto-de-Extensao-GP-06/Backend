@@ -10,6 +10,7 @@ import br.com.sgpj.entity.Processo.ProcessoApi;
 import br.com.sgpj.entity.Processo.ProcessoApp;
 import br.com.sgpj.entity.Processo.SiglaTribunal;
 import br.com.sgpj.entity.Usuario;
+import br.com.sgpj.exception.ObjetoNaoEncontradoException;
 import br.com.sgpj.mapper.ProcessoApiMapper;
 import br.com.sgpj.mapper.ProcessoAppMapper;
 import br.com.sgpj.repository.FaseProcessoRepository;
@@ -47,11 +48,11 @@ public class ProcessoService {
     public ProcessoAppResponse criarProcesso(ProcessoAppCriacaoRequest novoProcesso) {
         Usuario usuarioResponsavel = usuarioPersistenciaAdapter.buscarUsuarioPorId(novoProcesso.usuarioResponsavelId());
         Prioridade prioridade = prioridadeRepository.findById(novoProcesso.prioridadeId())
-                .orElseThrow(() -> new IllegalArgumentException("Prioridade nao encontrada para o ID: " + novoProcesso.prioridadeId()));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Prioridade nao encontrada para o ID: " + novoProcesso.prioridadeId()));
         FaseProcesso faseProcesso = faseProcessoRepository.findById(novoProcesso.faseProcessoId())
-                .orElseThrow(() -> new IllegalArgumentException("Fase do processo nao encontrada para o ID: " + novoProcesso.faseProcessoId()));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Fase do processo nao encontrada para o ID: " + novoProcesso.faseProcessoId()));
         SiglaTribunal siglaTribunal = siglaTribunalRepository.findById(novoProcesso.siglaTribunalId())
-                .orElseThrow(() -> new IllegalArgumentException("Sigla do tribunal nao encontrada para o ID: " + novoProcesso.siglaTribunalId()));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Sigla do tribunal nao encontrada para o ID: " + novoProcesso.siglaTribunalId()));
 
         ProcessoApi processoApi = buscarDadosOficiais(novoProcesso.numeroProcesso(), siglaTribunal);
         ProcessoApp processoApp = ProcessoAppMapper.toCreateEntity(novoProcesso);
@@ -65,7 +66,7 @@ public class ProcessoService {
         return ProcessoAppMapper.toResponse(processoAppRepository.save(processoApp));
     }
 
-    private ProcessoApi buscarDadosOficiais(String numeroProcesso, SiglaTribunal siglaTribunal) {
+    public ProcessoApi buscarDadosOficiais(String numeroProcesso, SiglaTribunal siglaTribunal) {
         if (numeroProcesso == null || numeroProcesso.isBlank()) {
             return null;
         }

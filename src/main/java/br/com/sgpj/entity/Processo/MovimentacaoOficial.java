@@ -11,7 +11,7 @@ public class MovimentacaoOficial {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String codigo;
+    private Integer codigo;
     private String descricao;
     private LocalDateTime dataHoraMovimentacao;
 
@@ -22,7 +22,7 @@ public class MovimentacaoOficial {
     public MovimentacaoOficial() {
     }
 
-    public MovimentacaoOficial(Long id, String codigo, String descricao, LocalDateTime dataHoraMovimentacao, ProcessoApi processoApi) {
+    public MovimentacaoOficial(Long id, Integer codigo, String descricao, LocalDateTime dataHoraMovimentacao, ProcessoApi processoApi) {
         this.id = id;
         this.codigo = codigo;
         this.descricao = descricao;
@@ -38,11 +38,11 @@ public class MovimentacaoOficial {
         this.id = id;
     }
 
-    public String getCodigo() {
+    public Integer getCodigo() {
         return codigo;
     }
 
-    public void setCodigo(String codigo) {
+    public void setCodigo(Integer codigo) {
         this.codigo = codigo;
     }
 

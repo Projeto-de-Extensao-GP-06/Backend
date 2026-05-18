@@ -1,18 +1,19 @@
 package br.com.sgpj.entity.Processo;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "sigla_tribunal")
 public class SiglaTribunal {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "sigla_tribunal", nullable = false, length = 10)
     private String nome;
 
-    protected SiglaTribunal() {
+    public SiglaTribunal() {
     }
 
     public SiglaTribunal(Long id, String nome) {
@@ -24,7 +25,15 @@ public class SiglaTribunal {
         return id;
     }
 
+    public void setId(Long id) {
+        this.id = id;
+    }
+
     public String getNome() {
         return nome;
+    }
+
+    public void setNome(String nome) {
+        this.nome = nome;
     }
 }

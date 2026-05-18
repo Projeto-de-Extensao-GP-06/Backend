@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 public record MovimentacaoOficialResponse(
         Long id,
-        String codigo,
+        Integer codigo,
         String descricao,
         LocalDateTime dataHoraMovimentacao
 ) {

@@ -8,7 +8,9 @@ import br.com.sgpj.entity.Processo.ProcessoApi;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,9 +44,11 @@ public class ProcessoApiMapper {
             JSONObject movimentoJson = movimentos.getJSONObject(i);
 
             MovimentacaoOficial movimentacao = new MovimentacaoOficial();
-            movimentacao.setCodigo(movimentoJson.getString("codigo"));
+            movimentacao.setCodigo(movimentoJson.getInt("codigo"));
             movimentacao.setDescricao(movimentoJson.getString("nome"));
-            movimentacao.setDataHoraMovimentacao(LocalDateTime.parse(movimentoJson.getString("dataHora"), formatter));
+            movimentacao.setDataHoraMovimentacao(
+                    Instant.parse(movimentoJson.getString("dataHora")).atZone(ZoneId.systemDefault()).toLocalDateTime()
+            );
             movimentacao.setProcessoApi(processoApi);
 
             movimentacoes.add(movimentacao);

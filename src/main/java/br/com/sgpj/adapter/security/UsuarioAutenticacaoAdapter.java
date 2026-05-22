@@ -4,6 +4,7 @@ import br.com.sgpj.config.jwt.GerenciadorTokenJwt;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -42,9 +43,10 @@ public class UsuarioAutenticacaoAdapter {
         return gerenciadorTokenJwt.generateTokenOtp(authentication);
     }
 
-    public boolean isTokenDeRecuperacao(String token) {
+    public boolean isCorrectScope(HttpServletRequest httpRequest, String requiredScope) {
+        String token = gerenciadorTokenJwt.extrairTokenDaRequisicao(httpRequest);
         String scope = gerenciadorTokenJwt.getClaimForToken(token, claims -> claims.get("scope", String.class));
-        return "SET_PASSWORD".equals(scope);
+        return requiredScope.equals(scope);
     }
 
     public String obterEmailUsuarioLogado() {

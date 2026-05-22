@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -41,6 +42,8 @@ import java.util.stream.Collectors;
  * <p><b>Biblioteca utilizada:</b> JJWT 0.12.x (io.jsonwebtoken)</p>
  */
 public class GerenciadorTokenJwt {
+
+    public static final String COOKIE_NOME = "authToken";
 
     /**
      * Chave secreta usada para assinar e verificar tokens (algoritmo HMAC-SHA256).
@@ -235,5 +238,21 @@ public class GerenciadorTokenJwt {
         }
 
         throw new SecurityException("Não foi possível extrair o e-mail do token.");
+    }
+
+    public String extrairTokenDaRequisicao(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+
+        if (request.getCookies() != null) {
+            for (var cookie : request.getCookies()) {
+                if (COOKIE_NOME.equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+        return null;
     }
 }

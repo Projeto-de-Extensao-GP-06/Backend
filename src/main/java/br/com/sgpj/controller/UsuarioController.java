@@ -35,11 +35,9 @@ public class UsuarioController {
     private long jwtValidity;
 
     private final UsuarioService usuarioService;
-    private final UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter;
 
-    public UsuarioController(UsuarioService usuarioService, UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter) {
+    public UsuarioController(UsuarioService usuarioService) {
         this.usuarioService = usuarioService;
-        this.usuarioAutenticacaoAdapter = usuarioAutenticacaoAdapter;
     }
 
     @PostMapping
@@ -186,33 +184,13 @@ public class UsuarioController {
     public ResponseEntity<String> definirNovaSenha(@RequestBody DefinirNovaSenhaRequest request,
                                                    HttpServletRequest httpRequest,
                                                    HttpServletResponse response) {
-        String token = extrairTokenDaRequisicao(httpRequest);
-
-        if (!usuarioAutenticacaoAdapter.isTokenDeRecuperacao(token)) {
+        if (!usuarioService.isCorrectScope(httpRequest, "SET_PASSWORD")) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body("Acesso negado: Este token não é válido para redefinição de senha.");
         }
 
-        String email = usuarioAutenticacaoAdapter.obterEmailUsuarioLogado();
-
-        usuarioService.definirNovaSenha(email, request.senha());
+        usuarioService.definirNovaSenha(request.senha());
         adicionarCookie(response, COOKIE_NOME, Duration.ZERO);
         return ResponseEntity.ok("Nova senha definida com sucesso!");
-    }
-
-    private String extrairTokenDaRequisicao(HttpServletRequest request) {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            return authHeader.substring(7);
-        }
-
-        if (request.getCookies() != null) {
-            for (var cookie : request.getCookies()) {
-                if (COOKIE_NOME.equals(cookie.getName())) {
-                    return cookie.getValue();
-                }
-            }
-        }
-        return null;
     }
 }

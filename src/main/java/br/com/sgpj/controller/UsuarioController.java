@@ -85,7 +85,11 @@ public class UsuarioController {
 
     @GetMapping
     @SecurityRequirement(name = "Bearer")
-    public ResponseEntity<List<UsuarioListarResponse>> listarTodos() {
+    public ResponseEntity<List<UsuarioListarResponse>> listarTodos(HttpServletRequest httpRequest) {
+        if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {
+            throw new EscopoJwtException("Acesso negado: Este token não é válido para listagem de usuários.");
+        }
+
         List<UsuarioListarResponse> usuariosEncontrados = usuarioService.listarTodos();
 
         if (usuariosEncontrados.isEmpty()) {

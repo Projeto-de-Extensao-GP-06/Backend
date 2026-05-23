@@ -1,13 +1,17 @@
 package br.com.sgpj.controller;
 
+import br.com.sgpj.dto.request.ClienteCriacaoRequest;
 import br.com.sgpj.dto.response.ClienteDetalhesResponse;
 import br.com.sgpj.dto.response.ClienteListarResponse;
 import br.com.sgpj.service.ClienteService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -19,6 +23,15 @@ public class ClienteController {
 
     public ClienteController(ClienteService clienteService) {
         this.clienteService = clienteService;
+    }
+
+    @PostMapping
+    @SecurityRequirement(name = "Bearer")
+    @Operation(summary = "Cria um novo cliente e sua pasta no OneDrive")
+    public ResponseEntity<ClienteDetalhesResponse> criar(@RequestBody @Valid ClienteCriacaoRequest request) {
+        ClienteDetalhesResponse cliente = clienteService.criar(request);
+        URI location = URI.create("/clientes/" + cliente.id());
+        return ResponseEntity.created(location).body(cliente);
     }
 
     @GetMapping

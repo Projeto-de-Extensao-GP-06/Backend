@@ -1,9 +1,12 @@
 package br.com.sgpj.controller;
 
 import br.com.sgpj.dto.OneDriveItemResponse;
+import br.com.sgpj.exception.EscopoJwtException;
 import br.com.sgpj.service.OneDriveService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,8 +27,16 @@ public class OneDriveController {
     }
 
     @GetMapping("/{nomePasta}")
+    @SecurityRequirement(name = "Bearer")
     @Operation(summary = "Lista arquivos dentro de uma pasta")
-    public ResponseEntity<List<OneDriveItemResponse>> listarArquivosDePasta(@PathVariable String nomePasta) {
+    public ResponseEntity<List<OneDriveItemResponse>> listarArquivosDePasta(
+            @PathVariable String nomePasta,
+            HttpServletRequest httpRequest
+    ) {
+        if (!service.isCorrectScope(httpRequest, "GENERAL_USE")) {
+            throw new EscopoJwtException("Acesso negado: Este token não é válido para listar arquivos.");
+        }
+
         List<OneDriveItemResponse> arquivos = service.listarArquivos(nomePasta);
         if (arquivos.isEmpty()) {
             return ResponseEntity.noContent().build();
@@ -34,10 +45,16 @@ public class OneDriveController {
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @SecurityRequirement(name = "Bearer")
     @Operation(summary = "Faz upload de um arquivo para o OneDrive (suporta arquivos grandes)")
     public ResponseEntity<OneDriveItemResponse> uploadArquivo(
             @RequestParam String nomePasta,
-            @RequestParam("arquivo") MultipartFile arquivo) throws IOException {
+            @RequestParam("arquivo") MultipartFile arquivo,
+            HttpServletRequest httpRequest
+    ) throws IOException {
+        if (!service.isCorrectScope(httpRequest, "GENERAL_USE")) {
+            throw new EscopoJwtException("Acesso negado: Este token não é válido para upload de arquivos.");
+        }
 
         String nomeArquivo = arquivo.getOriginalFilename();
         byte[] conteudo = arquivo.getBytes();
@@ -47,34 +64,64 @@ public class OneDriveController {
     }
 
     @PostMapping("/{nomePasta}")
+    @SecurityRequirement(name = "Bearer")
     @Operation(summary = "Cria uma pasta no OneDrive")
-    public ResponseEntity<OneDriveItemResponse> criarPasta(@PathVariable String nomePasta) {
+    public ResponseEntity<OneDriveItemResponse> criarPasta(
+            @PathVariable String nomePasta,
+            HttpServletRequest httpRequest
+    ) {
+        if (!service.isCorrectScope(httpRequest, "GENERAL_USE")) {
+            throw new EscopoJwtException("Acesso negado: Este token não é válido para criar pastas.");
+        }
+
         OneDriveItemResponse resposta = service.criarPasta(nomePasta);
         return ResponseEntity.ok(resposta);
     }
 
     @PutMapping("/arquivo/renomear")
+    @SecurityRequirement(name = "Bearer")
     @Operation(summary = "Renomeia um arquivo no OneDrive")
     public ResponseEntity<OneDriveItemResponse> renomearArquivo(
             @RequestParam String nomePasta,
             @RequestParam String nomeArquivo,
-            @RequestParam String novoNome) {
+            @RequestParam String novoNome,
+            HttpServletRequest httpRequest
+    ) {
+        if (!service.isCorrectScope(httpRequest, "GENERAL_USE")) {
+            throw new EscopoJwtException("Acesso negado: Este token não é válido para renomear arquivos.");
+        }
+
         OneDriveItemResponse resposta = service.renomearArquivo(nomePasta, nomeArquivo, novoNome);
         return ResponseEntity.ok(resposta);
     }
 
     @DeleteMapping("/arquivo")
+    @SecurityRequirement(name = "Bearer")
     @Operation(summary = "Exclui um arquivo do OneDrive")
     public ResponseEntity<Void> excluirArquivo(
             @RequestParam String nomePasta,
-            @RequestParam String nomeArquivo) {
+            @RequestParam String nomeArquivo,
+            HttpServletRequest httpRequest
+    ) {
+        if (!service.isCorrectScope(httpRequest, "GENERAL_USE")) {
+            throw new EscopoJwtException("Acesso negado: Este token não é válido para excluir arquivos.");
+        }
+
         service.excluirArquivo(nomePasta, nomeArquivo);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{nomePasta}")
+    @SecurityRequirement(name = "Bearer")
     @Operation(summary = "Exclui uma pasta (e todo seu conteúdo) do OneDrive")
-    public ResponseEntity<Void> excluirPasta(@PathVariable String nomePasta) {
+    public ResponseEntity<Void> excluirPasta(
+            @PathVariable String nomePasta,
+            HttpServletRequest httpRequest
+    ) {
+        if (!service.isCorrectScope(httpRequest, "GENERAL_USE")) {
+            throw new EscopoJwtException("Acesso negado: Este token não é válido para excluir pastas.");
+        }
+
         service.excluirPasta(nomePasta);
         return ResponseEntity.noContent().build();
     }

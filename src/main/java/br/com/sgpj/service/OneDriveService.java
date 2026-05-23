@@ -1,6 +1,7 @@
 package br.com.sgpj.service;
 
 import br.com.sgpj.adapter.onedrive.OneDriveTokenAdapter;
+import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
 import br.com.sgpj.dto.OneDriveItemResponse;
 import br.com.sgpj.exception.OneDriveErroException;
 import br.com.sgpj.mapper.OneDriveMapper;
@@ -13,6 +14,7 @@ import com.microsoft.graph.serviceclient.GraphServiceClient;
 import com.microsoft.kiota.authentication.AccessTokenProvider;
 import com.microsoft.kiota.authentication.AllowedHostsValidator;
 import com.microsoft.kiota.authentication.BaseBearerTokenAuthenticationProvider;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
@@ -33,11 +35,16 @@ public class OneDriveService {
     private static final String CAMINHO_PADRAO = "root:/sgpj/usuarios";
 
     private final OneDriveTokenAdapter tokenAdapter;
+    private final UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter;
 
-    public OneDriveService(OneDriveTokenAdapter tokenAdapter) {
+    public OneDriveService(OneDriveTokenAdapter tokenAdapter, UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter) {
         this.tokenAdapter = tokenAdapter;
+        this.usuarioAutenticacaoAdapter = usuarioAutenticacaoAdapter;
     }
 
+    public boolean isCorrectScope(HttpServletRequest httpRequest, String scope) {
+        return usuarioAutenticacaoAdapter.isCorrectScope(httpRequest, scope);
+    }
 
     // Lista os arquivos de uma pasta (com thumbnails incluídos).
     public List<OneDriveItemResponse> listarArquivos(String nomePasta) {
@@ -56,15 +63,15 @@ public class OneDriveService {
 
     // Cria uma pasta dentro do caminho padrão. Se já existir, retorna a existente.
     public OneDriveItemResponse criarPasta(String nomePasta) {
-        String driveId = obterDriveId();
-        String caminhoPai = CAMINHO_PADRAO + ":";
-
-        DriveItem novaPasta = new DriveItem();
-        novaPasta.setName(nomePasta);
-        novaPasta.setFolder(new Folder());
-        novaPasta.setAdditionalData(Map.of("@microsoft.graph.conflictBehavior", "replace"));
-
         try {
+            String driveId = obterDriveId();
+            String caminhoPai = CAMINHO_PADRAO + ":";
+
+            DriveItem novaPasta = new DriveItem();
+            novaPasta.setName(nomePasta);
+            novaPasta.setFolder(new Folder());
+            novaPasta.setAdditionalData(Map.of("@microsoft.graph.conflictBehavior", "replace"));
+
             DriveItem criada = getClient()
                     .drives().byDriveId(driveId)
                     .items().byDriveItemId(caminhoPai)
@@ -72,6 +79,8 @@ public class OneDriveService {
                     .post(novaPasta);
 
             return OneDriveMapper.toDto(criada, null);
+        } catch (OneDriveErroException e) {
+            throw e;
         } catch (Exception e) {
             throw new OneDriveErroException("Erro ao criar a pasta: " + e.getMessage());
         }
@@ -87,14 +96,16 @@ public class OneDriveService {
 
     // Exclui um arquivo do OneDrive.
     public void excluirArquivo(String nomePasta, String nomeArquivo) {
-        String driveId = obterDriveId();
-        String caminho = CAMINHO_PADRAO + "/" + nomePasta + "/" + nomeArquivo + ":";
-
         try {
+            String driveId = obterDriveId();
+            String caminho = CAMINHO_PADRAO + "/" + nomePasta + "/" + nomeArquivo + ":";
+
             getClient()
                     .drives().byDriveId(driveId)
                     .items().byDriveItemId(caminho)
                     .delete();
+        } catch (OneDriveErroException e) {
+            throw e;
         } catch (Exception e) {
             throw new OneDriveErroException("Erro ao excluir o arquivo: " + e.getMessage());
         }
@@ -102,14 +113,16 @@ public class OneDriveService {
 
     // Exclui uma pasta (e todo seu conteúdo) do OneDrive.
     public void excluirPasta(String nomePasta) {
-        String driveId = obterDriveId();
-        String caminho = CAMINHO_PADRAO + "/" + nomePasta + ":";
-
         try {
+            String driveId = obterDriveId();
+            String caminho = CAMINHO_PADRAO + "/" + nomePasta + ":";
+
             getClient()
                     .drives().byDriveId(driveId)
                     .items().byDriveItemId(caminho)
                     .delete();
+        } catch (OneDriveErroException e) {
+            throw e;
         } catch (Exception e) {
             throw new OneDriveErroException("Erro ao excluir a pasta: " + e.getMessage());
         }
@@ -117,10 +130,10 @@ public class OneDriveService {
 
     // Renomeia um arquivo no OneDrive.
     public OneDriveItemResponse renomearArquivo(String nomePasta, String nomeAtual, String novoNome) {
-        String driveId = obterDriveId();
-        String caminho = CAMINHO_PADRAO + "/" + nomePasta + "/" + nomeAtual + ":";
-
         try {
+            String driveId = obterDriveId();
+            String caminho = CAMINHO_PADRAO + "/" + nomePasta + "/" + nomeAtual + ":";
+
             DriveItem patch = new DriveItem();
             patch.setName(novoNome);
 
@@ -130,6 +143,8 @@ public class OneDriveService {
                     .patch(patch);
 
             return OneDriveMapper.toDto(atualizado, gerarPreviewUrl(atualizado.getId()));
+        } catch (OneDriveErroException e) {
+            throw e;
         } catch (Exception e) {
             throw new OneDriveErroException("Erro ao renomear o arquivo: " + e.getMessage());
         }

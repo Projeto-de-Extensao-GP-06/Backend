@@ -5,6 +5,7 @@ import br.com.sgpj.dto.request.*;
 import br.com.sgpj.dto.response.UsuarioListarResponse;
 import br.com.sgpj.dto.response.UsuarioSessaoResponse;
 import br.com.sgpj.dto.response.UsuarioTokenResponse;
+import br.com.sgpj.exception.EscopoJwtException;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.mapper.UsuarioMapper;
@@ -35,16 +36,19 @@ public class UsuarioController {
     private long jwtValidity;
 
     private final UsuarioService usuarioService;
-    private final UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter;
 
-    public UsuarioController(UsuarioService usuarioService, UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter) {
+    public UsuarioController(UsuarioService usuarioService) {
         this.usuarioService = usuarioService;
-        this.usuarioAutenticacaoAdapter = usuarioAutenticacaoAdapter;
     }
 
     @PostMapping
     @SecurityRequirement(name = "Bearer")
-    public ResponseEntity<Void> criar(@RequestBody @Valid UsuarioCriacaoRequest usuarioCriacaoRequest) {
+    public ResponseEntity<Void> criar(@RequestBody @Valid UsuarioCriacaoRequest usuarioCriacaoRequest,
+                                      HttpServletRequest httpRequest) {
+        if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {
+            throw new EscopoJwtException("Acesso negado: Este token não é válido para criação de usuário.");
+        }
+
         this.usuarioService.criar(usuarioCriacaoRequest);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
@@ -81,7 +85,11 @@ public class UsuarioController {
 
     @GetMapping
     @SecurityRequirement(name = "Bearer")
-    public ResponseEntity<List<UsuarioListarResponse>> listarTodos() {
+    public ResponseEntity<List<UsuarioListarResponse>> listarTodos(HttpServletRequest httpRequest) {
+        if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {
+            throw new EscopoJwtException("Acesso negado: Este token não é válido para listagem de usuários.");
+        }
+
         List<UsuarioListarResponse> usuariosEncontrados = usuarioService.listarTodos();
 
         if (usuariosEncontrados.isEmpty()) {
@@ -92,7 +100,12 @@ public class UsuarioController {
 
     @GetMapping("/funcao")
     @SecurityRequirement(name = "Bearer")
-    public ResponseEntity<List<UsuarioListarResponse>> listarPorFuncao(@RequestParam String funcao) {
+    public ResponseEntity<List<UsuarioListarResponse>> listarPorFuncao(@RequestParam String funcao,
+                                                                       HttpServletRequest httpRequest) {
+        if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {
+            throw new EscopoJwtException("Acesso negado: Este token não é válido para listagem de usuários.");
+        }
+
         List<UsuarioListarResponse> usuariosEncontrados = usuarioService.listarPorFuncao(funcao);
 
         if (usuariosEncontrados.isEmpty()) {
@@ -103,7 +116,12 @@ public class UsuarioController {
 
     @GetMapping("/pesquisar")
     @SecurityRequirement(name = "Bearer")
-    public ResponseEntity<List<UsuarioListarResponse>> pesquisarPorNomeOuEmail(@RequestParam String pesquisa) {
+    public ResponseEntity<List<UsuarioListarResponse>> pesquisarPorNomeOuEmail(@RequestParam String pesquisa,
+                                                                               HttpServletRequest httpRequest) {
+        if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {
+            throw new EscopoJwtException("Acesso negado: Este token não é válido para listagem de usuários.");
+        }
+
         List<UsuarioListarResponse> usuariosEncontrados = usuarioService.buscarPorNomeOuEmail(pesquisa);
 
         if (usuariosEncontrados.isEmpty()) {
@@ -115,7 +133,13 @@ public class UsuarioController {
 
     @PutMapping("/{id}")
     @SecurityRequirement(name = "Bearer")
-    public ResponseEntity<UsuarioListarResponse> atualizarUsuario(@Valid @RequestBody UsuarioAtualizacaoRequest atualizacao, @PathVariable Long id){
+    public ResponseEntity<UsuarioListarResponse> atualizarUsuario(@Valid @RequestBody UsuarioAtualizacaoRequest atualizacao,
+                                                                  @PathVariable Long id,
+                                                                  HttpServletRequest httpRequest){
+        if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {
+            throw new EscopoJwtException("Acesso negado: Este token não é válido para atualização de usuário.");
+        }
+
         UsuarioListarResponse usuarioEditado = usuarioService.atualizarUsuario(atualizacao, id);
 
         return ResponseEntity.status(HttpStatus.OK).body(usuarioEditado);
@@ -147,7 +171,11 @@ public class UsuarioController {
 
     @DeleteMapping("/{id}")
     @SecurityRequirement(name = "Bearer")
-    public ResponseEntity<Void> deletar(@PathVariable Long id) {
+    public ResponseEntity<Void> deletar(@PathVariable Long id,
+                                        HttpServletRequest httpRequest) {
+        if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {
+            throw new EscopoJwtException("Acesso negado: Este token não é válido para deleção de usuário.");
+        }
         this.usuarioService.deletar(id);
         return ResponseEntity.noContent().build();
     }
@@ -186,33 +214,12 @@ public class UsuarioController {
     public ResponseEntity<String> definirNovaSenha(@RequestBody DefinirNovaSenhaRequest request,
                                                    HttpServletRequest httpRequest,
                                                    HttpServletResponse response) {
-        String token = extrairTokenDaRequisicao(httpRequest);
-
-        if (!usuarioAutenticacaoAdapter.isTokenDeRecuperacao(token)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body("Acesso negado: Este token não é válido para redefinição de senha.");
+        if (!usuarioService.isCorrectScope(httpRequest, "SET_PASSWORD")) {
+            throw new EscopoJwtException("Acesso negado: Este token não é válido para redefinição de senha.");
         }
 
-        String email = usuarioAutenticacaoAdapter.obterEmailUsuarioLogado();
-
-        usuarioService.definirNovaSenha(email, request.senha());
+        usuarioService.definirNovaSenha(request.senha());
         adicionarCookie(response, COOKIE_NOME, Duration.ZERO);
         return ResponseEntity.ok("Nova senha definida com sucesso!");
-    }
-
-    private String extrairTokenDaRequisicao(HttpServletRequest request) {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            return authHeader.substring(7);
-        }
-
-        if (request.getCookies() != null) {
-            for (var cookie : request.getCookies()) {
-                if (COOKIE_NOME.equals(cookie.getName())) {
-                    return cookie.getValue();
-                }
-            }
-        }
-        return null;
     }
 }

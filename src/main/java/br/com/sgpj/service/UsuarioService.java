@@ -13,6 +13,7 @@ import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.EmailDuplicadoException;
 import br.com.sgpj.exception.PasswordConflictException;
 import br.com.sgpj.mapper.UsuarioMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -151,15 +152,16 @@ public class UsuarioService {
     return otpService.isOtpValid(request.email(), request.otp());
   }
 
-  public void definirNovaSenha(String email, String senha) {
-    if (email == null || email.isBlank()) {
-      throw new IllegalArgumentException("Insira um endereço de e-mail válido");
-    }
+  public boolean isCorrectScope(HttpServletRequest httpRequest, String scope) {
+    return usuarioAutenticacaoAdapter.isCorrectScope(httpRequest, scope);
+  }
 
+  public void definirNovaSenha(String senha) {
     if (senha == null || senha.isBlank()) {
       throw new IllegalArgumentException("Insira uma senha válida");
     }
 
+    String email = usuarioAutenticacaoAdapter.obterEmailUsuarioLogado();
     Usuario usuario = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(email);
     String novaSenhaCriptografada = passwordEncoder.encode(senha);
     usuario.setSenha(novaSenhaCriptografada);

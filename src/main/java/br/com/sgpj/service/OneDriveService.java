@@ -128,6 +128,28 @@ public class OneDriveService {
         }
     }
 
+    // Renomeia uma pasta no OneDrive.
+    public OneDriveItemResponse renomearPasta(String nomeAtual, String novoNome) {
+        try {
+            String driveId = obterDriveId();
+            String caminho = CAMINHO_PADRAO + "/" + nomeAtual + ":";
+
+            DriveItem patch = new DriveItem();
+            patch.setName(novoNome);
+
+            DriveItem atualizado = getClient()
+                    .drives().byDriveId(driveId)
+                    .items().byDriveItemId(caminho)
+                    .patch(patch);
+
+            return OneDriveMapper.toDto(atualizado, null);
+        } catch (OneDriveErroException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new OneDriveErroException("Erro ao renomear a pasta: " + e.getMessage());
+        }
+    }
+
     // Renomeia um arquivo no OneDrive.
     public OneDriveItemResponse renomearArquivo(String nomePasta, String nomeAtual, String novoNome) {
         try {

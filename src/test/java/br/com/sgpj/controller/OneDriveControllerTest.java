@@ -2,6 +2,7 @@ package br.com.sgpj.controller;
 
 import br.com.sgpj.dto.OneDriveItemResponse;
 import br.com.sgpj.service.OneDriveService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,9 @@ class OneDriveControllerTest {
     @Mock
     private OneDriveService service;
 
+    @Mock
+    private HttpServletRequest httpRequest;
+
     @InjectMocks
     private OneDriveController controller;
 
@@ -39,6 +43,8 @@ class OneDriveControllerTest {
                 "application/pdf", "https://download.url", "https://thumb.url",
                 null, null, "/root:/sgpj/usuarios/joao/teste.pdf"
         );
+        // Libera o escopo para todos os testes
+        when(service.isCorrectScope(any(HttpServletRequest.class), eq("GENERAL_USE"))).thenReturn(true);
     }
 
     // ===================== GET /{nomePasta} =====================
@@ -48,7 +54,7 @@ class OneDriveControllerTest {
     void listarDeveRetornar200() {
         when(service.listarArquivos("joao")).thenReturn(java.util.List.of(dtoExemplo));
 
-        ResponseEntity<?> resposta = controller.listarArquivosDePasta("joao");
+        ResponseEntity<?> resposta = controller.listarArquivosDePasta("joao", httpRequest);
 
         assertEquals(HttpStatus.OK, resposta.getStatusCode());
         assertNotNull(resposta.getBody());
@@ -59,7 +65,7 @@ class OneDriveControllerTest {
     void listarDeveRetornar204QuandoVazio() {
         when(service.listarArquivos("vazia")).thenReturn(Collections.emptyList());
 
-        ResponseEntity<?> resposta = controller.listarArquivosDePasta("vazia");
+        ResponseEntity<?> resposta = controller.listarArquivosDePasta("vazia", httpRequest);
 
         assertEquals(HttpStatus.NO_CONTENT, resposta.getStatusCode());
     }
@@ -76,7 +82,7 @@ class OneDriveControllerTest {
                 "arquivo", "doc.pdf", "application/pdf", "conteudo".getBytes()
         );
 
-        ResponseEntity<OneDriveItemResponse> resposta = controller.uploadArquivo("joao", arquivo);
+        ResponseEntity<OneDriveItemResponse> resposta = controller.uploadArquivo("joao", arquivo, httpRequest);
 
         assertEquals(HttpStatus.OK, resposta.getStatusCode());
         assertEquals("id-1", resposta.getBody().id());
@@ -93,14 +99,14 @@ class OneDriveControllerTest {
         );
         when(service.criarPasta("joao")).thenReturn(pasta);
 
-        ResponseEntity<OneDriveItemResponse> resposta = controller.criarPasta("joao");
+        ResponseEntity<OneDriveItemResponse> resposta = controller.criarPasta("joao", httpRequest);
 
         assertEquals(HttpStatus.OK, resposta.getStatusCode());
         assertEquals("joao", resposta.getBody().nome());
         assertEquals("pasta", resposta.getBody().tipo());
     }
 
-    // ===================== PATCH /arquivo/renomear =====================
+    // ===================== PUT /arquivo/renomear =====================
 
     @Test
     @DisplayName("Renomear deve retornar 200 com dados atualizados")
@@ -111,7 +117,7 @@ class OneDriveControllerTest {
         );
         when(service.renomearArquivo("joao", "antigo.pdf", "novo-nome.pdf")).thenReturn(renomeado);
 
-        ResponseEntity<OneDriveItemResponse> resposta = controller.renomearArquivo("joao", "antigo.pdf", "novo-nome.pdf");
+        ResponseEntity<OneDriveItemResponse> resposta = controller.renomearArquivo("joao", "antigo.pdf", "novo-nome.pdf", httpRequest);
 
         assertEquals(HttpStatus.OK, resposta.getStatusCode());
         assertEquals("novo-nome.pdf", resposta.getBody().nome());
@@ -124,7 +130,7 @@ class OneDriveControllerTest {
     void excluirArquivoDeveRetornar204() {
         doNothing().when(service).excluirArquivo("joao", "doc.pdf");
 
-        ResponseEntity<Void> resposta = controller.excluirArquivo("joao", "doc.pdf");
+        ResponseEntity<Void> resposta = controller.excluirArquivo("joao", "doc.pdf", httpRequest);
 
         assertEquals(HttpStatus.NO_CONTENT, resposta.getStatusCode());
         verify(service).excluirArquivo("joao", "doc.pdf");
@@ -137,7 +143,7 @@ class OneDriveControllerTest {
     void excluirPastaDeveRetornar204() {
         doNothing().when(service).excluirPasta("joao");
 
-        ResponseEntity<Void> resposta = controller.excluirPasta("joao");
+        ResponseEntity<Void> resposta = controller.excluirPasta("joao", httpRequest);
 
         assertEquals(HttpStatus.NO_CONTENT, resposta.getStatusCode());
         verify(service).excluirPasta("joao");

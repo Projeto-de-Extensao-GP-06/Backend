@@ -1,5 +1,6 @@
 package br.com.sgpj.controller;
 
+import br.com.sgpj.dto.request.ClienteAtualizacaoRequest;
 import br.com.sgpj.dto.request.ClienteCriacaoRequest;
 import br.com.sgpj.dto.response.ClienteDetalhesResponse;
 import br.com.sgpj.dto.response.ClienteListarResponse;
@@ -32,6 +33,16 @@ public class ClienteController {
         ClienteDetalhesResponse cliente = clienteService.criar(request);
         URI location = URI.create("/clientes/" + cliente.id());
         return ResponseEntity.created(location).body(cliente);
+    }
+
+    @PutMapping("/{id}")
+    @SecurityRequirement(name = "Bearer")
+    @Operation(summary = "Atualiza um cliente existente. Se nome ou CPF/CNPJ mudar, renomeia a pasta no OneDrive")
+    public ResponseEntity<ClienteDetalhesResponse> atualizar(
+            @PathVariable Long id,
+            @RequestBody @Valid ClienteAtualizacaoRequest request) {
+        ClienteDetalhesResponse cliente = clienteService.atualizar(id, request);
+        return ResponseEntity.ok(cliente);
     }
 
     @GetMapping

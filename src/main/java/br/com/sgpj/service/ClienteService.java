@@ -256,6 +256,31 @@ public class ClienteService {
         return ClienteMapper.toDetalhesDto(clientePersistenciaAdapter.buscarPorId(id));
     }
 
+    @Transactional
+    public void deletar(Long id) {
+        Cliente cliente = clientePersistenciaAdapter.buscarPorId(id);
+        String nomePasta = gerarNomePasta(cliente.getNomeRazaoSocial(), cliente.getCpfCnpj());
+
+        // Remove contatos
+        if (cliente.getContatos() != null && !cliente.getContatos().isEmpty()) {
+            contatoRepository.deleteAll(cliente.getContatos());
+        }
+
+        // Remove documento e caminho de armazenamento associados
+        padraoCaminhoArmazenamentoRepository.findByNome(nomePasta)
+                .ifPresent(caminho -> {
+                    documentoRepository.findByPadraoCaminhoArmazenamento(caminho)
+                            .ifPresent(documentoRepository::delete);
+                    padraoCaminhoArmazenamentoRepository.delete(caminho);
+                });
+
+        // Remove o cliente
+        clientePersistenciaAdapter.deletar(id);
+
+        // Exclui a pasta no OneDrive
+        oneDriveService.excluirPasta(nomePasta);
+    }
+
     private String gerarNomePasta(String nome, String cpfCnpj) {
         String nomeFormatado = nome.trim()
                 .toLowerCase()

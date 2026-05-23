@@ -84,5 +84,13 @@ public class ClienteController {
         }
         return ResponseEntity.ok(clientes);
     }
+
+    @DeleteMapping("/{id}")
+    @SecurityRequirement(name = "Bearer")
+    @Operation(summary = "Exclui um cliente e sua pasta no OneDrive")
+    public ResponseEntity<Void> deletar(@PathVariable Long id) {
+        clienteService.deletar(id);
+        return ResponseEntity.noContent().build();
+    }
 }
 

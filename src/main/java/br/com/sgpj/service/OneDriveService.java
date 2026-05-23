@@ -1,6 +1,7 @@
 package br.com.sgpj.service;
 
 import br.com.sgpj.adapter.onedrive.OneDriveTokenAdapter;
+import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
 import br.com.sgpj.dto.OneDriveItemResponse;
 import br.com.sgpj.exception.OneDriveErroException;
 import br.com.sgpj.mapper.OneDriveMapper;
@@ -13,6 +14,7 @@ import com.microsoft.graph.serviceclient.GraphServiceClient;
 import com.microsoft.kiota.authentication.AccessTokenProvider;
 import com.microsoft.kiota.authentication.AllowedHostsValidator;
 import com.microsoft.kiota.authentication.BaseBearerTokenAuthenticationProvider;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
@@ -33,11 +35,16 @@ public class OneDriveService {
     private static final String CAMINHO_PADRAO = "root:/sgpj/usuarios";
 
     private final OneDriveTokenAdapter tokenAdapter;
+    private final UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter;
 
-    public OneDriveService(OneDriveTokenAdapter tokenAdapter) {
+    public OneDriveService(OneDriveTokenAdapter tokenAdapter, UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter) {
         this.tokenAdapter = tokenAdapter;
+        this.usuarioAutenticacaoAdapter = usuarioAutenticacaoAdapter;
     }
 
+    public boolean isCorrectScope(HttpServletRequest httpRequest, String scope) {
+        return usuarioAutenticacaoAdapter.isCorrectScope(httpRequest, scope);
+    }
 
     // Lista os arquivos de uma pasta (com thumbnails incluídos).
     public List<OneDriveItemResponse> listarArquivos(String nomePasta) {

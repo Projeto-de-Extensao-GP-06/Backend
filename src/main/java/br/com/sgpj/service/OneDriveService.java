@@ -1,7 +1,7 @@
 package br.com.sgpj.service;
 
 import br.com.sgpj.adapter.onedrive.OneDriveTokenAdapter;
-import br.com.sgpj.dto.OneDriveItemResponse;
+import br.com.sgpj.dto.response.OneDriveItemResponse;
 import br.com.sgpj.exception.OneDriveErroException;
 import br.com.sgpj.mapper.OneDriveMapper;
 import com.microsoft.graph.core.models.UploadResult;

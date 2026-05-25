@@ -1,7 +1,7 @@
 package br.com.sgpj.service;
 
 import br.com.sgpj.adapter.onedrive.OneDriveTokenAdapter;
-import br.com.sgpj.dto.OneDriveItemResponse;
+import br.com.sgpj.dto.response.OneDriveItemResponse;
 import br.com.sgpj.exception.OneDriveErroException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

@@ -1,12 +1,11 @@
-package br.com.sgpj.dto.response;
+package br.com.sgpj.dto.response.Processos;
 
-import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Processo.FaseProcesso;
 import br.com.sgpj.entity.Processo.Prioridade;
 import br.com.sgpj.entity.Processo.SiglaTribunal;
-import br.com.sgpj.entity.Usuario;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record ProcessoAppResponse(
         Long id,
@@ -27,6 +26,7 @@ public record ProcessoAppResponse(
         String encerradoPorUsuarioNome,
         SiglaTribunal siglaTribunal,
         Double valorCausa,
-        ProcessoApiResponse processoApi
+        ProcessoApiCreateResponse processoApi,
+        List<HistoricoProcessoResponse> historicoProcessoResponses
 ) {
 }

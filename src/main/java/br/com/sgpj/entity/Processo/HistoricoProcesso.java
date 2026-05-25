@@ -19,36 +19,29 @@ public class HistoricoProcesso {
 
     @ManyToOne
     @JoinColumn(name = "usuario_id")
-    private Usuario usuarioUsado;
+    private Usuario usuarioUtilizado;
 
-    private String descricao;
+    private String descricaoAlteracao;
     private LocalDateTime dataHoraAlteracao;
 
     @ManyToOne
     @JoinColumn(name = "tipo_alteracao_id")
     private TipoAlteracao tipoAlteracao;
 
-    @ManyToOne
-    @JoinColumn(name = "fase_anterior_id")
-    private FaseProcesso faseAnterior;
-
-    @ManyToOne
-    @JoinColumn(name = "fase_nova_id")
-    private FaseProcesso faseNova;
 
 
-    public HistoricoProcesso(Long id, ProcessoApp processoApp, Usuario usuarioUsado, String descricao, LocalDateTime dataHoraAlteracao, TipoAlteracao tipoAlteracao, FaseProcesso faseAnterior, FaseProcesso faseNova) {
+
+    public HistoricoProcesso(Long id, ProcessoApp processoApp, Usuario usuarioUtilizado, String descricaoAlteracao, LocalDateTime dataHoraAlteracao, TipoAlteracao tipoAlteracao) {
         this.id = id;
         this.processoApp = processoApp;
-        this.usuarioUsado = usuarioUsado;
-        this.descricao = descricao;
+        this.usuarioUtilizado = usuarioUtilizado;
+        this.descricaoAlteracao = descricaoAlteracao;
         this.dataHoraAlteracao = dataHoraAlteracao;
         this.tipoAlteracao = tipoAlteracao;
-        this.faseAnterior = faseAnterior;
-        this.faseNova = faseNova;
     }
 
-
+    public HistoricoProcesso() {
+    }
 
     public Long getId() {
         return id;
@@ -66,20 +59,20 @@ public class HistoricoProcesso {
         this.processoApp = processoApp;
     }
 
-    public Usuario getUsuarioUsado() {
-        return usuarioUsado;
+    public Usuario getUsuarioUtilizado() {
+        return usuarioUtilizado;
     }
 
-    public void setUsuarioUsado(Usuario usuarioUsado) {
-        this.usuarioUsado = usuarioUsado;
+    public void setUsuarioUtilizado(Usuario usuarioUtilizado) {
+        this.usuarioUtilizado = usuarioUtilizado;
     }
 
-    public String getDescricao() {
-        return descricao;
+    public String getDescricaoAlteracao() {
+        return descricaoAlteracao;
     }
 
-    public void setDescricao(String descricao) {
-        this.descricao = descricao;
+    public void setDescricaoAlteracao(String DescricaoAlteracao) {
+        this.descricaoAlteracao = DescricaoAlteracao;
     }
 
     public LocalDateTime getDataHoraAlteracao() {
@@ -96,21 +89,5 @@ public class HistoricoProcesso {
 
     public void setTipoAlteracao(TipoAlteracao tipoAlteracao) {
         this.tipoAlteracao = tipoAlteracao;
-    }
-
-    public FaseProcesso getFaseAnterior() {
-        return faseAnterior;
-    }
-
-    public void setFaseAnterior(FaseProcesso faseAnterior) {
-        this.faseAnterior = faseAnterior;
-    }
-
-    public FaseProcesso getFaseNova() {
-        return faseNova;
-    }
-
-    public void setFaseNova(FaseProcesso faseNova) {
-        this.faseNova = faseNova;
     }
 }

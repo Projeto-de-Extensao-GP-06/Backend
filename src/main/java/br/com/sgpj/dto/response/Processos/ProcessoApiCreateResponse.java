@@ -1,9 +1,11 @@
-package br.com.sgpj.dto.response;
+package br.com.sgpj.dto.response.Processos;
+
+import br.com.sgpj.dto.response.MovimentacaoOficialResponse;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record ProcessoApiResponse(
+public record ProcessoApiCreateResponse(
         Long id,
         String numeroCnj,
         String tribunalTramitacao,

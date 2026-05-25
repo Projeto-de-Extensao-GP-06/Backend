@@ -1,10 +1,15 @@
 package br.com.sgpj.mapper;
 
 import br.com.sgpj.dto.request.ProcessoAppCriacaoRequest;
-import br.com.sgpj.dto.response.ProcessoAppResponse;
+import br.com.sgpj.dto.response.Processos.HistoricoProcessoResponse;
+import br.com.sgpj.dto.response.Processos.ProcessoAppCreateResponse;
+import br.com.sgpj.dto.response.Processos.ProcessoAppMiniResponse;
+import br.com.sgpj.dto.response.Processos.ProcessoAppResponse;
+import br.com.sgpj.entity.Processo.HistoricoProcesso;
 import br.com.sgpj.entity.Processo.ProcessoApp;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class ProcessoAppMapper {
 
@@ -26,13 +31,13 @@ public class ProcessoAppMapper {
         return entidade;
     }
 
-    public static ProcessoAppResponse toResponse(ProcessoApp processoApp) {
+    public static ProcessoAppCreateResponse toCreateResponse(ProcessoApp processoApp) {
         if (processoApp == null) {
             return null;
         }
 
 
-        return new ProcessoAppResponse(
+        return new ProcessoAppCreateResponse(
                 processoApp.getId(),
                 processoApp.getUsuarioResponsavel() != null ? processoApp.getUsuarioResponsavel().getId() : null,
                 processoApp.getUsuarioResponsavel() != null ? processoApp.getUsuarioResponsavel().getNome() : null,
@@ -46,12 +51,61 @@ public class ProcessoAppMapper {
                 processoApp.getDataHoraInicio(),
                 processoApp.getAtivo(),
                 processoApp.getDataAudiencia(),
-                processoApp.getDataHoraEncerramento(),
+                processoApp.getEncerradoEm(),
                 processoApp.getEncerradoPorUsuario() != null ? processoApp.getEncerradoPorUsuario().getId() : null,
                 processoApp.getEncerradoPorUsuario() != null ? processoApp.getEncerradoPorUsuario().getNome() : null,
                 processoApp.getSiglaTribunal() != null ? processoApp.getSiglaTribunal() : null,
                 processoApp.getValorCausa(),
                 ProcessoApiMapper.toResponse(processoApp.getProcessoApi())
         );
+    }
+
+
+
+    public static ProcessoAppMiniResponse toMiniResponse(ProcessoApp processoApp){
+        if (processoApp == null) {
+            return null;
+        }
+
+
+        return new ProcessoAppMiniResponse(
+                processoApp.getId(),
+                processoApp.getCliente().getId(),
+                processoApp.getCliente().getNomeRazaoSocial(),
+                processoApp.getPrioridade() != null ? processoApp.getPrioridade() : null,
+                processoApp.getFaseProcesso() != null ? processoApp.getFaseProcesso() : null,
+                processoApp.getAtivo(),
+                processoApp.getDataAudiencia(),
+                processoApp.getSiglaTribunal() != null ? processoApp.getSiglaTribunal() : null,
+                processoApp.getProcessoApi().getNumeroCnj()
+        );
+    }
+
+
+    public static ProcessoAppResponse toResponse(ProcessoApp processoApp, List<HistoricoProcessoResponse> historicoProcesso){
+
+              return new ProcessoAppResponse(
+                      processoApp.getId(),
+                      processoApp.getUsuarioResponsavel() != null ? processoApp.getUsuarioResponsavel().getId() : null,
+                      processoApp.getUsuarioResponsavel() != null ? processoApp.getUsuarioResponsavel().getNome() : null,
+                      processoApp.getCliente().getId(),
+                      processoApp.getCliente().getNomeRazaoSocial(),
+                      processoApp.getDescricaoCaso(),
+                      processoApp.getObservacao(),
+                      processoApp.getPrioridade() != null ? processoApp.getPrioridade() : null,
+                      processoApp.getFaseProcesso() != null ? processoApp.getFaseProcesso() : null,
+                      processoApp.getUltimaAtualizacao(),
+                      processoApp.getDataHoraInicio(),
+                      processoApp.getAtivo(),
+                      processoApp.getDataAudiencia(),
+                      processoApp.getEncerradoEm(),
+                      processoApp.getEncerradoPorUsuario() != null ? processoApp.getEncerradoPorUsuario().getId() : null,
+                      processoApp.getEncerradoPorUsuario() != null ? processoApp.getEncerradoPorUsuario().getNome() : null,
+                      processoApp.getSiglaTribunal() != null ? processoApp.getSiglaTribunal() : null,
+                      processoApp.getValorCausa(),
+                      ProcessoApiMapper.toResponse(processoApp.getProcessoApi()),
+                      historicoProcesso
+              );
+
     }
 }

@@ -6,6 +6,7 @@ import br.com.sgpj.entity.Usuario;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "processo_dados_aplicacao")
@@ -39,7 +40,7 @@ public class ProcessoApp {
 
     private LocalDateTime dataAudiencia;
 
-    private LocalDateTime dataHoraEncerramento;
+    private LocalDateTime encerradoEm;
     @ManyToOne
     @JoinColumn(name = "encerrado_por_usuario_id")
     private Usuario encerradoPorUsuario;
@@ -49,9 +50,11 @@ public class ProcessoApp {
     private SiglaTribunal siglaTribunal;
     private Double valorCausa;
 
-    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    @JoinColumn(name = "processos_dados_api_id")
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "processo_dados_api_id")
     private ProcessoApi processoApi;
+
+
 
 
     public ProcessoApp(){}
@@ -116,7 +119,7 @@ public class ProcessoApp {
     public LocalDateTime getUltimaAtualizacao() {return ultimaAtualizacao;}
     public LocalDateTime getDataHoraInicio() {return dataHoraInicio;}
     public Boolean getAtivo() {return ativo;}
-    public LocalDateTime getDataHoraEncerramento() {return dataHoraEncerramento;}
+    public LocalDateTime getEncerradoEm() {return encerradoEm;}
     public Usuario getEncerradoPorUsuario() {return encerradoPorUsuario;}
     public SiglaTribunal getSiglaTribunal() {return siglaTribunal;}
     public ProcessoApi getProcessoApi() {return processoApi;}
@@ -134,7 +137,7 @@ public class ProcessoApp {
     public void setUltimaAtualizacao(LocalDateTime ultimaAtualizacao) {this.ultimaAtualizacao = ultimaAtualizacao;}
     public void setDataHoraInicio(LocalDateTime dataHoraInicio) {this.dataHoraInicio = dataHoraInicio;}
     public void setAtivo(Boolean ativo) {this.ativo = ativo;}
-    public void setDataHoraEncerramento(LocalDateTime dataHoraEncerramento) {this.dataHoraEncerramento = dataHoraEncerramento;}
+    public void setEncerradoEm(LocalDateTime encerradoEm) {this.encerradoEm = encerradoEm;}
     public void setEncerradoPorUsuario(Usuario encerradoPorUsuario) {this.encerradoPorUsuario = encerradoPorUsuario;}
     public void setSiglaTribunal(SiglaTribunal siglaTribunal) {this.siglaTribunal = siglaTribunal;}
 }

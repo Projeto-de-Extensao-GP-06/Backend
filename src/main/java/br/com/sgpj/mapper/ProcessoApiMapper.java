@@ -2,7 +2,7 @@ package br.com.sgpj.mapper;
 
 
 import br.com.sgpj.dto.response.MovimentacaoOficialResponse;
-import br.com.sgpj.dto.response.ProcessoApiResponse;
+import br.com.sgpj.dto.response.Processos.ProcessoApiCreateResponse;
 import br.com.sgpj.entity.Processo.MovimentacoesOficiais;
 import br.com.sgpj.entity.Processo.ProcessoApi;
 import org.json.JSONArray;
@@ -60,12 +60,12 @@ public class ProcessoApiMapper {
         return processoApi;
     }
 
-    public static ProcessoApiResponse toResponse(ProcessoApi processoApi) {
+    public static ProcessoApiCreateResponse toResponse(ProcessoApi processoApi) {
         if (processoApi == null) {
             return null;
         }
 
-        return new ProcessoApiResponse(
+        return new ProcessoApiCreateResponse(
                 processoApi.getId(),
                 processoApi.getNumeroCnj(),
                 processoApi.getTribunalTramitacao(),
@@ -85,6 +85,7 @@ public class ProcessoApiMapper {
         if (movimentacoes == null) {
             return List.of();
         }
+
 
         return movimentacoes.stream()
                 .map(movimentacao -> new MovimentacaoOficialResponse(

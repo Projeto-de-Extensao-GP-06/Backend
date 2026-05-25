@@ -1,4 +1,4 @@
-package br.com.sgpj.dto;
+package br.com.sgpj.dto.response;
 
 import java.time.OffsetDateTime;
 

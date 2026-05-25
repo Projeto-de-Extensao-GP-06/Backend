@@ -24,7 +24,7 @@ public class ProcessoApi {
     private String orgaoJulgador;
     private String assunto;
 
-    @OneToMany(mappedBy = "processoApi", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "processoApi", cascade = CascadeType.ALL)
     private List<MovimentacoesOficiais> movimentacoes;
 
 

@@ -7,43 +7,43 @@ USE sgpj;
 -- ============================================================================
 
 CREATE TABLE microsoft_token_config (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     refresh_token TEXT NOT NULL,
     data_criacao DATETIME
 );
 
 CREATE TABLE status_cliente (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(50) NOT NULL UNIQUE
 );
 
 CREATE TABLE tipo_documento (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(50) NOT NULL UNIQUE
 );
 
 CREATE TABLE prioridade (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE fase_processo (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(50) NOT NULL UNIQUE
 );
 
 CREATE TABLE sigla_tribunal (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     sigla_tribunal VARCHAR(10) NOT NULL UNIQUE
 );
 
 CREATE TABLE tipo_alteracao (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(70) NOT NULL UNIQUE
 );
 
 CREATE TABLE permissao (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(150) NOT NULL UNIQUE
 );
 
@@ -52,7 +52,7 @@ CREATE TABLE permissao (
 -- ============================================================================
 
 CREATE TABLE endereco (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     cep VARCHAR(10),
     logradouro VARCHAR(150) NOT NULL,
     numero VARCHAR(10) NOT NULL,
@@ -63,35 +63,30 @@ CREATE TABLE endereco (
 );
 
 CREATE TABLE ultima_movimentacao_oficial (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     codigo VARCHAR(20) NOT NULL,
     descricao TEXT NOT NULL,
     data_hora_movimentacao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE padrao_caminho_armazenamento (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    nome VARCHAR(50) NOT NULL UNIQUE,
-    caminho_base VARCHAR(255) NOT NULL UNIQUE
-);
 
 -- ============================================================================
 -- USUÁRIO E CARGO
 -- ============================================================================
 
 CREATE TABLE cargo (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(90) NOT NULL UNIQUE,
-    criado_por BIGINT,
+    criado_por INT,
     criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE usuario (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(150) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     senha VARCHAR(255) NULL,
-    cargo_id BIGINT,
+    cargo_id INT,
     criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     ativo TINYINT NOT NULL DEFAULT 1,
 
@@ -107,12 +102,12 @@ FOREIGN KEY (criado_por) REFERENCES usuario(id);
 -- ============================================================================
 
 CREATE TABLE cliente (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     nome_razao_social VARCHAR(150) NOT NULL,
     cpf_cnpj VARCHAR(14) UNIQUE,
     rg VARCHAR(15),
-    status_cliente_id BIGINT NOT NULL,
-    endereco_id BIGINT,
+    status_cliente_id INT NOT NULL,
+    endereco_id INT,
     data_hora_envio_formulario DATETIME,
     data_hora_transformacao_em_cliente DATETIME,
 
@@ -121,11 +116,23 @@ CREATE TABLE cliente (
 );
 
 -- ============================================================================
+-- CAMINHO DE ARMAZENAMENTO (depende de cliente)
+-- ============================================================================
+
+CREATE TABLE padrao_caminho_armazenamento (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cliente_id INT,
+    caminho_base VARCHAR(150) NOT NULL UNIQUE,
+
+    FOREIGN KEY (cliente_id) REFERENCES cliente(id)
+);
+
+-- ============================================================================
 -- PROCESSO API
 -- ============================================================================
 
 CREATE TABLE processo_dados_api (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     numero_cnj VARCHAR(25) UNIQUE,
     tribunal_tramitacao VARCHAR(100),
     parte_adversa VARCHAR(150),
@@ -140,7 +147,7 @@ CREATE TABLE processo_dados_api (
     comarca VARCHAR(100),
     formato VARCHAR(15),
     sistema_tribunal VARCHAR(50),
-    ultima_movimentacao_oficial_id BIGINT,
+    ultima_movimentacao_oficial_id INT,
 
     FOREIGN KEY (ultima_movimentacao_oficial_id)
         REFERENCES ultima_movimentacao_oficial(id)
@@ -151,13 +158,13 @@ CREATE TABLE processo_dados_api (
 -- ============================================================================
 
 CREATE TABLE documento (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    criado_por_usuario_id BIGINT NOT NULL,
-    tipo_documento_id BIGINT NOT NULL,
-    padrao_caminho_armazenamento_id BIGINT,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    criado_por_usuario_id INT NOT NULL,
+    tipo_documento_id INT NOT NULL,
+    padrao_caminho_armazenamento_id INT,
     nome_original VARCHAR(255) NOT NULL,
     mime_type VARCHAR(100) NOT NULL,
-    tamanho_bytes BIGINT NOT NULL,
+    tamanho_bytes INT NOT NULL,
 
     onedrive_item_id VARCHAR(255),
     onedrive_url_download TEXT,
@@ -167,7 +174,7 @@ CREATE TABLE documento (
     ultima_atualizacao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     ativo TINYINT NOT NULL DEFAULT 1,
     inativado_em DATETIME,
-    inativado_por_usuario_id BIGINT,
+    inativado_por_usuario_id INT,
 
     FOREIGN KEY (criado_por_usuario_id) REFERENCES usuario(id),
     FOREIGN KEY (tipo_documento_id) REFERENCES tipo_documento(id),
@@ -180,19 +187,19 @@ CREATE TABLE documento (
 -- ============================================================================
 
 CREATE TABLE processo_dados_aplicacao (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    usuario_responsavel_id BIGINT,
-    cliente_id BIGINT NOT NULL,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_responsavel_id INT,
+    cliente_id INT NOT NULL,
     descricao_caso TEXT,
-    prioridade_id BIGINT,
-    fase_processo_id BIGINT NOT NULL,
+    prioridade_id INT,
+    fase_processo_id INT NOT NULL,
     ultima_atualizacao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     data_hora_inicio DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     ativo TINYINT DEFAULT 1,
     encerrado_em DATETIME,
-    encerrado_por_usuario_id BIGINT,
-    sigla_tribunal_id BIGINT,
-    processo_dados_api_id BIGINT,
+    encerrado_por_usuario_id INT,
+    sigla_tribunal_id INT,
+    processo_dados_api_id INT,
 
     FOREIGN KEY (usuario_responsavel_id) REFERENCES usuario(id),
     FOREIGN KEY (cliente_id) REFERENCES cliente(id),
@@ -208,9 +215,9 @@ CREATE TABLE processo_dados_aplicacao (
 -- ============================================================================
 
 CREATE TABLE processo_documento (
-    documento_id BIGINT,
-    processo_dados_aplicacao_id BIGINT,
-    anexado_por_usuario_id BIGINT,
+    documento_id INT,
+    processo_dados_aplicacao_id INT,
+    anexado_por_usuario_id INT,
     anexado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (documento_id, processo_dados_aplicacao_id),
@@ -221,14 +228,14 @@ CREATE TABLE processo_documento (
 );
 
 CREATE TABLE historico_processo (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    processo_dados_aplicacao_id BIGINT NOT NULL,
-    usuario_id BIGINT NOT NULL,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    processo_dados_aplicacao_id INT NOT NULL,
+    usuario_id INT NOT NULL,
     descricao_alteracao TEXT,
     data_hora_alteracao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    tipo_alteracao_id BIGINT NOT NULL,
-    fase_anterior_id BIGINT,
-    fase_nova_id BIGINT,
+    tipo_alteracao_id INT NOT NULL,
+    fase_anterior_id INT,
+    fase_nova_id INT,
 
     FOREIGN KEY (processo_dados_aplicacao_id) REFERENCES processo_dados_aplicacao(id),
     FOREIGN KEY (usuario_id) REFERENCES usuario(id),
@@ -238,9 +245,9 @@ CREATE TABLE historico_processo (
 );
 
 CREATE TABLE cargo_permissao (
-    cargo_id BIGINT,
-    permissao_id BIGINT,
-    atribuido_por BIGINT,
+    cargo_id INT,
+    permissao_id INT,
+    atribuido_por INT,
     data_hora_atribuicao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (cargo_id, permissao_id),
@@ -251,12 +258,12 @@ CREATE TABLE cargo_permissao (
 );
 
 CREATE TABLE contato (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(150) NOT NULL,
     email VARCHAR(255) NOT NULL,
     telefone VARCHAR(20) NOT NULL,
     profissao VARCHAR(100),
-    cliente_id BIGINT NOT NULL,
+    cliente_id INT NOT NULL,
     principal TINYINT DEFAULT 0,
 
     FOREIGN KEY (cliente_id) REFERENCES cliente(id)
@@ -285,6 +292,9 @@ CREATE INDEX idx_usuario_ativo ON usuario(ativo);
 CREATE INDEX idx_cliente_status ON cliente(status_cliente_id);
 CREATE INDEX idx_cliente_endereco ON cliente(endereco_id);
 CREATE INDEX idx_cliente_cpf_cnpj ON cliente(cpf_cnpj);
+
+-- padrao_caminho_armazenamento
+CREATE INDEX idx_caminho_cliente ON padrao_caminho_armazenamento(cliente_id);
 
 -- processo_dados_api
 CREATE INDEX idx_processo_api_numero_cnj ON processo_dados_api(numero_cnj);
@@ -341,57 +351,75 @@ VALUES (
 );
 
 INSERT INTO permissao (nome) VALUES
-('READ'),
-('WRITE'),
-('DELETE'),
-('UPDATE');
+    ('READ'),
+    ('WRITE'),
+    ('DELETE'),
+    ('UPDATE');
 
 INSERT INTO cargo_permissao (cargo_id, permissao_id, atribuido_por)
 SELECT 1, id, 1 FROM permissao;
 
 INSERT INTO status_cliente (nome) VALUES
-('LEAD'),
-('INATIVO'),
-('ATIVO');
+    ('LEAD'),
+    ('INATIVO'),
+    ('ATIVO');
 
 INSERT INTO fase_processo (nome) VALUES
-('INICIAL'),
-('CITAÇÃO'),
-('SANEAMENTO'),
-('SENTENÇA'),
-('CUMPRIMENTO DE SENTENÇA'),
-('PENHORA');
+    ('INICIAL'),
+    ('CITAÇÃO'),
+    ('SANEAMENTO'),
+    ('SENTENÇA'),
+    ('CUMPRIMENTO DE SENTENÇA'),
+    ('PENHORA');
 
 INSERT INTO sigla_tribunal (sigla_tribunal) VALUES
-('tjsp'),
-('tjrg'),
-('tjpr');
+    ('tjsp'),
+    ('tjrg'),
+    ('tjpr');
 
 INSERT INTO prioridade (nome) VALUES
-('ALTA'),
-('MEDIA'),
-('BAIXA');
+    ('ALTA'),
+    ('MEDIA'),
+    ('BAIXA');
 
 INSERT INTO tipo_documento (nome) VALUES
-('RG'),
-('DOCUMENTO DE DEFESA'),
-('COMPROVANTE DE ENDEREÇO'),
-('CTPS'),
-('PROCURAÇÃO'),
-('OUTROS');
+    ('RG'),
+    ('DOCUMENTO DE DEFESA'),
+    ('COMPROVANTE DE ENDEREÇO'),
+    ('CTPS'),
+    ('PROCURAÇÃO'),
+    ('OUTROS');
 
 INSERT INTO tipo_alteracao (nome) VALUES
-('ABERTURA DE PROCESSO'),
-('FECHAMENTO DE PROCESSO'),
-('MUDANÇA DE STATUS'),
-('ADIÇÃO DE DOCUMENTO'),
-('ADIÇÃO DE ARQUIVO'),
-('OBSERVAÇÃO'),
-('ATUALIZAÇÃO DE DADOS'),
-('ALTERAÇÃO DE RESPONSÁVEL');
+    ('ABERTURA DE PROCESSO'),
+    ('FECHAMENTO DE PROCESSO'),
+    ('MUDANÇA DE STATUS'),
+    ('ADIÇÃO DE DOCUMENTO'),
+    ('ADIÇÃO DE ARQUIVO'),
+    ('OBSERVAÇÃO'),
+    ('ATUALIZAÇÃO DE DADOS'),
+    ('ALTERAÇÃO DE RESPONSÁVEL');
 
 INSERT INTO microsoft_token_config (refresh_token) VALUES
 ('REFRESH_TOKEN_AQUI');
+
+
+INSERT INTO endereco (cep, logradouro, numero, bairro, cidade, estado, complemento)
+VALUES
+('01310-200', 'Avenida Paulista', '1000', 'Bela Vista', 'São Paulo', 'SP', 'Apto 42'),
+('20040-002', 'Avenida Rio Branco', '156', 'Centro', 'Rio de Janeiro', 'RJ', 'Sala 801');
+
+INSERT INTO cliente (nome_razao_social, cpf_cnpj, rg, status_cliente_id, endereco_id, data_hora_envio_formulario, data_hora_transformacao_em_cliente)
+VALUES ('Rafael Silva', '12345678901', '123456789', 1, 1, '2026-05-10 14:30:00', NULL);
+
+INSERT INTO cliente (nome_razao_social, cpf_cnpj, rg, status_cliente_id, endereco_id, data_hora_envio_formulario, data_hora_transformacao_em_cliente)
+VALUES ('Tech Solutions LTDA', '98765432100012', NULL, 2, 2, '2026-04-01 09:00:00', '2026-04-03 11:15:00');
+
+INSERT INTO contato (nome, email, telefone, profissao, cliente_id, principal)
+VALUES
+    ('Rafael Silva', 'rafael@email.com', '(11) 99999-9999', 'Desenvolvedor', 1, 1),
+    ('Carlos Souza', 'carlos@techsolutions.com', '(21) 98888-8888', 'Gerente de TI', 2, 1),
+    ('Ana Costa', 'suporte@techsolutions.com', '(21) 2222-2222', 'Analista de Suporte', 2, 0);
 
 -- ============================================================================
 -- CRIAÇÃO DO USUÁRIO DA APLICAÇÃO

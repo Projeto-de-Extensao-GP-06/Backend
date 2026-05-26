@@ -1,6 +1,9 @@
-DROP DATABASE IF EXISTS sgpj;
-CREATE DATABASE sgpj;
-USE sgpj;
+DROP
+DATABASE IF EXISTS sgpj;
+CREATE
+DATABASE sgpj;
+USE
+sgpj;
 
 -- ============================================================================
 -- TABELAS DE DOMÍNIO
@@ -9,7 +12,7 @@ USE sgpj;
 CREATE TABLE microsoft_token_config (
     id INT AUTO_INCREMENT PRIMARY KEY,
     refresh_token TEXT NOT NULL,
-    data_criacao DATETIME
+    data_criacao  DATETIME
 );
 
 CREATE TABLE status_cliente (
@@ -90,12 +93,12 @@ CREATE TABLE usuario (
     criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     ativo TINYINT NOT NULL DEFAULT 1,
 
-    FOREIGN KEY (cargo_id) REFERENCES cargo(id)
+    FOREIGN KEY (cargo_id) REFERENCES cargo (id)
 );
 
 ALTER TABLE cargo
-ADD CONSTRAINT fk_cargo_usuario
-FOREIGN KEY (criado_por) REFERENCES usuario(id);
+    ADD CONSTRAINT fk_cargo_usuario
+        FOREIGN KEY (criado_por) REFERENCES usuario (id);
 
 -- ============================================================================
 -- CLIENTE
@@ -150,7 +153,7 @@ CREATE TABLE processo_dados_api (
     ultima_movimentacao_oficial_id INT,
 
     FOREIGN KEY (ultima_movimentacao_oficial_id)
-        REFERENCES ultima_movimentacao_oficial(id)
+        REFERENCES ultima_movimentacao_oficial (id)
 );
 
 -- ============================================================================
@@ -166,9 +169,9 @@ CREATE TABLE documento (
     mime_type VARCHAR(100) NOT NULL,
     tamanho_bytes INT NOT NULL,
 
-    onedrive_item_id VARCHAR(255),
-    onedrive_url_download TEXT,
-    onedrive_url_thumbnail TEXT,
+    onedrive_item_id                VARCHAR(255),
+    onedrive_url_download           TEXT,
+    onedrive_url_thumbnail          TEXT,
 
     data_hora_criacao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     ultima_atualizacao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -176,10 +179,10 @@ CREATE TABLE documento (
     inativado_em DATETIME,
     inativado_por_usuario_id INT,
 
-    FOREIGN KEY (criado_por_usuario_id) REFERENCES usuario(id),
-    FOREIGN KEY (tipo_documento_id) REFERENCES tipo_documento(id),
-    FOREIGN KEY (padrao_caminho_armazenamento_id) REFERENCES padrao_caminho_armazenamento(id),
-    FOREIGN KEY (inativado_por_usuario_id) REFERENCES usuario(id)
+    FOREIGN KEY (criado_por_usuario_id) REFERENCES usuario (id),
+    FOREIGN KEY (tipo_documento_id) REFERENCES tipo_documento (id),
+    FOREIGN KEY (padrao_caminho_armazenamento_id) REFERENCES padrao_caminho_armazenamento (id),
+    FOREIGN KEY (inativado_por_usuario_id) REFERENCES usuario (id)
 );
 
 -- ============================================================================
@@ -201,13 +204,13 @@ CREATE TABLE processo_dados_aplicacao (
     sigla_tribunal_id INT,
     processo_dados_api_id INT,
 
-    FOREIGN KEY (usuario_responsavel_id) REFERENCES usuario(id),
-    FOREIGN KEY (cliente_id) REFERENCES cliente(id),
-    FOREIGN KEY (prioridade_id) REFERENCES prioridade(id),
-    FOREIGN KEY (fase_processo_id) REFERENCES fase_processo(id),
-    FOREIGN KEY (encerrado_por_usuario_id) REFERENCES usuario(id),
-    FOREIGN KEY (sigla_tribunal_id) REFERENCES sigla_tribunal(id),
-    FOREIGN KEY (processo_dados_api_id) REFERENCES processo_dados_api(id)
+    FOREIGN KEY (usuario_responsavel_id) REFERENCES usuario (id),
+    FOREIGN KEY (cliente_id) REFERENCES cliente (id),
+    FOREIGN KEY (prioridade_id) REFERENCES prioridade (id),
+    FOREIGN KEY (fase_processo_id) REFERENCES fase_processo (id),
+    FOREIGN KEY (encerrado_por_usuario_id) REFERENCES usuario (id),
+    FOREIGN KEY (sigla_tribunal_id) REFERENCES sigla_tribunal (id),
+    FOREIGN KEY (processo_dados_api_id) REFERENCES processo_dados_api (id)
 );
 
 -- ============================================================================
@@ -222,9 +225,9 @@ CREATE TABLE processo_documento (
 
     PRIMARY KEY (documento_id, processo_dados_aplicacao_id),
 
-    FOREIGN KEY (documento_id) REFERENCES documento(id),
-    FOREIGN KEY (processo_dados_aplicacao_id) REFERENCES processo_dados_aplicacao(id),
-    FOREIGN KEY (anexado_por_usuario_id) REFERENCES usuario(id)
+    FOREIGN KEY (documento_id) REFERENCES documento (id),
+    FOREIGN KEY (processo_dados_aplicacao_id) REFERENCES processo_dados_aplicacao (id),
+    FOREIGN KEY (anexado_por_usuario_id) REFERENCES usuario (id)
 );
 
 CREATE TABLE historico_processo (
@@ -237,11 +240,11 @@ CREATE TABLE historico_processo (
     fase_anterior_id INT,
     fase_nova_id INT,
 
-    FOREIGN KEY (processo_dados_aplicacao_id) REFERENCES processo_dados_aplicacao(id),
-    FOREIGN KEY (usuario_id) REFERENCES usuario(id),
-    FOREIGN KEY (tipo_alteracao_id) REFERENCES tipo_alteracao(id),
-    FOREIGN KEY (fase_anterior_id) REFERENCES fase_processo(id),
-    FOREIGN KEY (fase_nova_id) REFERENCES fase_processo(id)
+    FOREIGN KEY (processo_dados_aplicacao_id) REFERENCES processo_dados_aplicacao (id),
+    FOREIGN KEY (usuario_id) REFERENCES usuario (id),
+    FOREIGN KEY (tipo_alteracao_id) REFERENCES tipo_alteracao (id),
+    FOREIGN KEY (fase_anterior_id) REFERENCES fase_processo (id),
+    FOREIGN KEY (fase_nova_id) REFERENCES fase_processo (id)
 );
 
 CREATE TABLE cargo_permissao (
@@ -252,9 +255,9 @@ CREATE TABLE cargo_permissao (
 
     PRIMARY KEY (cargo_id, permissao_id),
 
-    FOREIGN KEY (cargo_id) REFERENCES cargo(id),
-    FOREIGN KEY (permissao_id) REFERENCES permissao(id),
-    FOREIGN KEY (atribuido_por) REFERENCES usuario(id)
+    FOREIGN KEY (cargo_id) REFERENCES cargo (id),
+    FOREIGN KEY (permissao_id) REFERENCES permissao (id),
+    FOREIGN KEY (atribuido_por) REFERENCES usuario (id)
 );
 
 CREATE TABLE contato (
@@ -266,18 +269,19 @@ CREATE TABLE contato (
     cliente_id INT NOT NULL,
     principal TINYINT DEFAULT 0,
 
-    FOREIGN KEY (cliente_id) REFERENCES cliente(id)
+    FOREIGN KEY (cliente_id) REFERENCES cliente (id)
 );
 
 -- ============================================================================
 -- TABELAS EM MEMÓRIA
 -- ============================================================================
 
-CREATE TABLE usuario_otp (
-    email VARCHAR(255) PRIMARY KEY,
-    otp VARCHAR(6) NOT NULL,
-    expira_em DATETIME NOT NULL,
-    tentativas INT NOT NULL DEFAULT 0
+CREATE TABLE usuario_otp
+(
+    email      VARCHAR(255) PRIMARY KEY,
+    otp        VARCHAR(6) NOT NULL,
+    expira_em  DATETIME   NOT NULL,
+    tentativas INT        NOT NULL DEFAULT 0
 ) ENGINE=MEMORY;
 
 -- ============================================================================
@@ -285,8 +289,8 @@ CREATE TABLE usuario_otp (
 -- ============================================================================
 
 -- usuario
-CREATE INDEX idx_usuario_cargo_id ON usuario(cargo_id);
-CREATE INDEX idx_usuario_ativo ON usuario(ativo);
+CREATE INDEX idx_usuario_cargo_id ON usuario (cargo_id);
+CREATE INDEX idx_usuario_ativo ON usuario (ativo);
 
 -- cliente
 CREATE INDEX idx_cliente_status ON cliente(status_cliente_id);
@@ -297,43 +301,43 @@ CREATE INDEX idx_cliente_cpf_cnpj ON cliente(cpf_cnpj);
 CREATE INDEX idx_caminho_cliente ON padrao_caminho_armazenamento(cliente_id);
 
 -- processo_dados_api
-CREATE INDEX idx_processo_api_numero_cnj ON processo_dados_api(numero_cnj);
-CREATE INDEX idx_processo_api_movimentacao ON processo_dados_api(ultima_movimentacao_oficial_id);
-CREATE INDEX idx_processo_api_data_ajuizamento ON processo_dados_api(data_ajuizamento);
+CREATE INDEX idx_processo_api_numero_cnj ON processo_dados_api (numero_cnj);
+CREATE INDEX idx_processo_api_movimentacao ON processo_dados_api (ultima_movimentacao_oficial_id);
+CREATE INDEX idx_processo_api_data_ajuizamento ON processo_dados_api (data_ajuizamento);
 
 -- documento
-CREATE INDEX idx_documento_usuario ON documento(criado_por_usuario_id);
-CREATE INDEX idx_documento_tipo ON documento(tipo_documento_id);
-CREATE INDEX idx_documento_caminho ON documento(padrao_caminho_armazenamento_id);
-CREATE INDEX idx_documento_ativo ON documento(ativo);
-CREATE INDEX idx_documento_inativado_por ON documento(inativado_por_usuario_id);
+CREATE INDEX idx_documento_usuario ON documento (criado_por_usuario_id);
+CREATE INDEX idx_documento_tipo ON documento (tipo_documento_id);
+CREATE INDEX idx_documento_caminho ON documento (padrao_caminho_armazenamento_id);
+CREATE INDEX idx_documento_ativo ON documento (ativo);
+CREATE INDEX idx_documento_inativado_por ON documento (inativado_por_usuario_id);
 
 -- processo_dados_aplicacao
-CREATE INDEX idx_processo_app_usuario ON processo_dados_aplicacao(usuario_responsavel_id);
-CREATE INDEX idx_processo_app_cliente ON processo_dados_aplicacao(cliente_id);
-CREATE INDEX idx_processo_app_prioridade ON processo_dados_aplicacao(prioridade_id);
-CREATE INDEX idx_processo_app_fase ON processo_dados_aplicacao(fase_processo_id);
-CREATE INDEX idx_processo_app_status_ativo ON processo_dados_aplicacao(ativo);
-CREATE INDEX idx_processo_app_sigla ON processo_dados_aplicacao(sigla_tribunal_id);
-CREATE INDEX idx_processo_app_api ON processo_dados_aplicacao(processo_dados_api_id);
+CREATE INDEX idx_processo_app_usuario ON processo_dados_aplicacao (usuario_responsavel_id);
+CREATE INDEX idx_processo_app_cliente ON processo_dados_aplicacao (cliente_id);
+CREATE INDEX idx_processo_app_prioridade ON processo_dados_aplicacao (prioridade_id);
+CREATE INDEX idx_processo_app_fase ON processo_dados_aplicacao (fase_processo_id);
+CREATE INDEX idx_processo_app_status_ativo ON processo_dados_aplicacao (ativo);
+CREATE INDEX idx_processo_app_sigla ON processo_dados_aplicacao (sigla_tribunal_id);
+CREATE INDEX idx_processo_app_api ON processo_dados_aplicacao (processo_dados_api_id);
 
 -- processo_documento
-CREATE INDEX idx_proc_doc_processo ON processo_documento(processo_dados_aplicacao_id);
-CREATE INDEX idx_proc_doc_usuario ON processo_documento(anexado_por_usuario_id);
+CREATE INDEX idx_proc_doc_processo ON processo_documento (processo_dados_aplicacao_id);
+CREATE INDEX idx_proc_doc_usuario ON processo_documento (anexado_por_usuario_id);
 
 -- historico_processo
-CREATE INDEX idx_hist_processo ON historico_processo(processo_dados_aplicacao_id);
-CREATE INDEX idx_hist_usuario ON historico_processo(usuario_id);
-CREATE INDEX idx_hist_tipo ON historico_processo(tipo_alteracao_id);
-CREATE INDEX idx_hist_data ON historico_processo(data_hora_alteracao);
+CREATE INDEX idx_hist_processo ON historico_processo (processo_dados_aplicacao_id);
+CREATE INDEX idx_hist_usuario ON historico_processo (usuario_id);
+CREATE INDEX idx_hist_tipo ON historico_processo (tipo_alteracao_id);
+CREATE INDEX idx_hist_data ON historico_processo (data_hora_alteracao);
 
 -- cargo_permissao
-CREATE INDEX idx_cargo_perm_permissao ON cargo_permissao(permissao_id);
-CREATE INDEX idx_cargo_perm_usuario ON cargo_permissao(atribuido_por);
+CREATE INDEX idx_cargo_perm_permissao ON cargo_permissao (permissao_id);
+CREATE INDEX idx_cargo_perm_usuario ON cargo_permissao (atribuido_por);
 
 -- contato
-CREATE INDEX idx_contato_cliente ON contato(cliente_id);
-CREATE INDEX idx_contato_principal ON contato(principal);
+CREATE INDEX idx_contato_cliente ON contato (cliente_id);
+CREATE INDEX idx_contato_principal ON contato (principal);
 
 -- ============================================================================
 -- INSERTS INICIAIS
@@ -343,12 +347,10 @@ INSERT INTO cargo (nome)
 VALUES ('ADMIN');
 
 INSERT INTO usuario (nome, email, senha, cargo_id)
-VALUES (
-    'Thauany Bezzerra',
-    'thauany@gmail.com',
-    '$2a$12$Mjj19.b4Gp/JpbHfEHHU6Oh7kSYlT.wofBYNYeWnMWe.A7KelanmO',
-    1
-);
+VALUES ('Thauany Bezzerra',
+        'thauany@gmail.com',
+        '$2a$12$Mjj19.b4Gp/JpbHfEHHU6Oh7kSYlT.wofBYNYeWnMWe.A7KelanmO',
+        1);
 
 INSERT INTO permissao (nome) VALUES
     ('READ'),
@@ -357,7 +359,8 @@ INSERT INTO permissao (nome) VALUES
     ('UPDATE');
 
 INSERT INTO cargo_permissao (cargo_id, permissao_id, atribuido_por)
-SELECT 1, id, 1 FROM permissao;
+SELECT 1, id, 1
+FROM permissao;
 
 INSERT INTO status_cliente (nome) VALUES
     ('LEAD'),
@@ -425,7 +428,15 @@ VALUES
 -- CRIAÇÃO DO USUÁRIO DA APLICAÇÃO
 -- ============================================================================
 
-CREATE USER IF NOT EXISTS 'app_sgpj'@'%' IDENTIFIED BY '1234';
-GRANT SELECT, INSERT, UPDATE, DELETE ON sgpj.* TO 'app_sgpj'@'%';
-FLUSH PRIVILEGES;
+CREATE
+USER IF NOT EXISTS 'app_sgpj'@'%' IDENTIFIED BY '1234';
+GRANT
+SELECT,
+INSERT
+,
+UPDATE,
+DELETE
+ON sgpj.* TO 'app_sgpj'@'%';
+FLUSH
+PRIVILEGES;
 

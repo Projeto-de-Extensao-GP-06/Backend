@@ -5,6 +5,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import br.com.sgpj.entity.PadraoCaminhoArmazenamento;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
 import java.util.Optional;
 
 @Repository
@@ -25,5 +29,7 @@ public interface DocumentoRepository extends JpaRepository<Documento, Long> {
     List<Documento> findByPadraoArmazenamentoIdAndAtivoTrue(Long padraoArmazenamentoId);
 
     List<Documento> findByPadraoArmazenamentoId(Long padraoArmazenamentoId);
+    
+    Optional<Documento> findByPadraoCaminhoArmazenamento(PadraoCaminhoArmazenamento padraoCaminhoArmazenamento);
 }
 

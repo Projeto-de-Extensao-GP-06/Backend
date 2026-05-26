@@ -37,6 +37,9 @@ public class Cliente {
     private LocalDateTime dataHoraTransformacaoEmCliente;
 
     @OneToMany(mappedBy = "cliente", fetch = FetchType.LAZY)
+    private List<CaminhoPadraoDeArmazenamento> caminhos;
+
+    @OneToMany(mappedBy = "cliente", fetch = FetchType.LAZY)
     private List<Contato> contatos;
 
     public Cliente() {}
@@ -111,6 +114,14 @@ public class Cliente {
 
     public void setContatos(List<Contato> contatos) {
         this.contatos = contatos;
+    }
+
+    public List<CaminhoPadraoDeArmazenamento> getCaminhos() {
+        return caminhos;
+    }
+
+    public void setCaminhos(List<CaminhoPadraoDeArmazenamento> caminhos) {
+        this.caminhos = caminhos;
     }
 }
 

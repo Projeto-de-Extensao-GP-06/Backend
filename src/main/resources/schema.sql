@@ -1,9 +1,6 @@
-DROP
-DATABASE IF EXISTS sgpj;
-CREATE
-DATABASE sgpj;
-USE
-sgpj;
+DROP DATABASE IF EXISTS sgpj;
+CREATE DATABASE sgpj;
+USE sgpj;
 
 -- ============================================================================
 -- TABELAS DE DOMÍNIO

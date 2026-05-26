@@ -16,6 +16,8 @@ public interface DocumentoRepository extends JpaRepository<Documento, Long> {
 
     List<Documento> findByAtivoTrue();
 
+    Optional<Documento> findByPadraoCaminhoArmazenamento(PadraoCaminhoArmazenamento padraoCaminhoArmazenamento);
+
     boolean existsByNomeOriginal(String nomeOriginal);
 
     boolean existsByOnedriveItemId(String id);

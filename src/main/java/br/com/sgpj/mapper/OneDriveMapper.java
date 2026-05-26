@@ -1,6 +1,6 @@
 package br.com.sgpj.mapper;
 
-import br.com.sgpj.dto.response.OneDriveItemResponse;
+import br.com.sgpj.dto.OneDriveItemResponse;
 import com.microsoft.graph.models.DriveItem;
 import com.microsoft.graph.models.ThumbnailSet;
 

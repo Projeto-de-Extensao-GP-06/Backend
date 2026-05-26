@@ -1,13 +1,16 @@
 package br.com.sgpj.exception;
 
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -29,11 +32,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ClienteNaoEncontradoException.class)
     public ResponseEntity<Map<String, Object>> handleClienteNaoEncontrado(ClienteNaoEncontradoException ex) {
-        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
-    }
-
-    @ExceptionHandler(ObjetoNaoEncontradoException.class)
-    public ResponseEntity<Map<String, Object>> handleObjetoNaoEncontrado(ObjetoNaoEncontradoException ex) {
         return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
@@ -91,8 +89,42 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(EscopoJwtException.class)
-    public ResponseEntity<Map<String, Object>> handlePasswordConflictException(EscopoJwtException ex) {
+    public ResponseEntity<Map<String, Object>> handleEscopoJwtException(EscopoJwtException ex) {
         return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleConstraintViolation(ConstraintViolationException ex) {
+        Map<String, String> fieldErrors = ex.getConstraintViolations().stream()
+                .collect(Collectors.toMap(
+                        v -> {
+                            String path = v.getPropertyPath().toString();
+                            return path.contains(".") ? path.substring(path.lastIndexOf('.') + 1) : path;
+                        },
+                        v -> v.getMessage() != null ? v.getMessage() : "Valor inválido",
+                        (a, b) -> a
+                ));
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", LocalDateTime.now().toString());
+        body.put("status", HttpStatus.BAD_REQUEST.value());
+        body.put("errors", fieldErrors);
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<Map<String, Object>> handleMissingParam(MissingServletRequestParameterException ex) {
+        String mensagem = String.format("O parâmetro '%s' é obrigatório e não foi informado.", ex.getParameterName());
+        return buildResponse(HttpStatus.BAD_REQUEST, mensagem);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, Object>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        String mensagem = String.format("O parâmetro '%s' possui valor inválido: '%s'. Tipo esperado: %s.",
+                ex.getName(), ex.getValue(),
+                ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "desconhecido");
+        return buildResponse(HttpStatus.BAD_REQUEST, mensagem);
     }
 
     private ResponseEntity<Map<String, Object>> buildResponse(HttpStatus status, String message) {

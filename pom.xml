@@ -115,10 +115,7 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-<<<<<<< HEAD
 			<version>1.18.38</version>
-=======
->>>>>>> 801a44f675f1a46837ff2ac42ce966243a6db5e0
 			<optional>true</optional>
 		</dependency>
 

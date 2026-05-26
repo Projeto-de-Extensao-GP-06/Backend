@@ -32,6 +32,11 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
+    @ExceptionHandler(ObjetoNaoEncontradoException.class)
+    public ResponseEntity<Map<String, Object>> handleObjetoNaoEncontrado(ObjetoNaoEncontradoException ex) {
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
     @ExceptionHandler(EmailDuplicadoException.class)
     public ResponseEntity<Map<String, Object>> handleEmailDuplicado(EmailDuplicadoException ex) {
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage());

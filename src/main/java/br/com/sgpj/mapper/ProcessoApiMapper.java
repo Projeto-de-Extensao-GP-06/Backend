@@ -3,6 +3,7 @@ package br.com.sgpj.mapper;
 
 import br.com.sgpj.dto.response.MovimentacaoOficialResponse;
 import br.com.sgpj.dto.response.Processos.ProcessoApiCreateResponse;
+import br.com.sgpj.dto.response.Processos.ProcessoApiResponse;
 import br.com.sgpj.entity.Processo.MovimentacoesOficiais;
 import br.com.sgpj.entity.Processo.ProcessoApi;
 import org.json.JSONArray;
@@ -60,7 +61,7 @@ public class ProcessoApiMapper {
         return processoApi;
     }
 
-    public static ProcessoApiCreateResponse toResponse(ProcessoApi processoApi) {
+    public static ProcessoApiCreateResponse toCreateResponse(ProcessoApi processoApi) {
         if (processoApi == null) {
             return null;
         }
@@ -78,6 +79,38 @@ public class ProcessoApiMapper {
                 processoApi.getOrgaoJulgador(),
                 processoApi.getAssunto(),
                 toMovimentacoesResponse(processoApi.getMovimentacoes())
+        );
+    }
+
+
+    public static ProcessoApiResponse toResponse(ProcessoApi processoApi) {
+        if (processoApi == null) {
+            return null;
+        }
+
+        return new ProcessoApiResponse(
+                processoApi.getId(),
+                processoApi.getNumeroCnj(),
+                processoApi.getTribunalTramitacao(),
+                processoApi.getInstancia(),
+                processoApi.getDataAjuizamento(),
+                processoApi.getNivelSigilo(),
+                processoApi.getClasseProcessual(),
+                processoApi.getFormato(),
+                processoApi.getSistemaTribunal(),
+                processoApi.getOrgaoJulgador(),
+                processoApi.getAssunto(),
+                toMovimentacaoResponse(processoApi.getMovimentacoes().getLast())
+        );
+    }
+
+    public static MovimentacaoOficialResponse toMovimentacaoResponse(MovimentacoesOficiais movimentacoesOficiais){
+
+        return new MovimentacaoOficialResponse(
+                movimentacoesOficiais.getId(),
+                movimentacoesOficiais.getCodigo(),
+                movimentacoesOficiais.getDescricao(),
+                movimentacoesOficiais.getDataHoraMovimentacao()
         );
     }
 

@@ -3,10 +3,8 @@ package br.com.sgpj.service;
 import br.com.sgpj.adapter.api.DataJudAdapter;
 import br.com.sgpj.adapter.database.UsuarioPersistenciaAdapter;
 import br.com.sgpj.dto.request.ProcessoAppCriacaoRequest;
-import br.com.sgpj.dto.response.Processos.HistoricoProcessoResponse;
-import br.com.sgpj.dto.response.Processos.ProcessoAppCreateResponse;
-import br.com.sgpj.dto.response.Processos.ProcessoAppMiniResponse;
-import br.com.sgpj.dto.response.Processos.ProcessoAppResponse;
+import br.com.sgpj.dto.request.ProcessoAppUpdateRequest;
+import br.com.sgpj.dto.response.Processos.*;
 import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Processo.*;
 import br.com.sgpj.entity.Usuario;
@@ -18,6 +16,7 @@ import br.com.sgpj.repository.*;
 import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,6 +34,7 @@ public class ProcessoService {
     private final HistoricoProcessoRepository historicoProcessoRepository;
 
 
+
     public ProcessoService(
             UsuarioPersistenciaAdapter usuarioPersistenciaAdapter,
             DataJudAdapter dataJudAdapter,
@@ -50,6 +50,19 @@ public class ProcessoService {
         this.siglaTribunalRepository = siglaTribunalRepository;
         this.clienteRepository = clienteRepository;
         this.historicoProcessoRepository = historicoProcessoRepository;
+    }
+
+
+    // ----CRIAÇÃO, ATUALIZAÇÃO E DELEÇÃO----
+    public ProcessoApi buscarDadosOficiais(String numeroProcesso, SiglaTribunal siglaTribunal) {
+        if (numeroProcesso == null || numeroProcesso.isBlank()) {
+            return null;
+        }
+
+        String dataJudResponse = dataJudAdapter.buscarPorNumeroDeProcesso(numeroProcesso, siglaTribunal.getNome());
+        JSONObject jsonDataJud = new JSONObject(dataJudResponse);
+
+        return ProcessoApiMapper.toEntity(jsonDataJud);
     }
 
     public ProcessoAppCreateResponse criarProcesso(ProcessoAppCriacaoRequest novoProcesso) {
@@ -77,18 +90,51 @@ public class ProcessoService {
         return ProcessoAppMapper.toCreateResponse(processoAppRepository.save(processoApp));
     }
 
-    public ProcessoApi buscarDadosOficiais(String numeroProcesso, SiglaTribunal siglaTribunal) {
-        if (numeroProcesso == null || numeroProcesso.isBlank()) {
-            return null;
+
+
+    public ProcessoAppUpdateResponse atualizarProcesso(Long id, ProcessoAppUpdateRequest processoAtualizar){
+        ProcessoApp processoEncontrado = processoAppRepository.findById(id)
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Processo nÃ£o encontrado para o ID: " + id));
+        ProcessoApp processoEditado = ProcessoAppMapper.toUpdateEntity(processoAtualizar);
+
+        Prioridade prioridade = prioridadeRepository.findById(processoAtualizar.prioridadeId())
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Prioridade nao encontrada para o ID: " + processoAtualizar.prioridadeId()));
+        FaseProcesso faseProcesso = faseProcessoRepository.findById(processoAtualizar.faseProcessoId())
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Fase do processo nao encontrada para o ID: " + processoAtualizar.faseProcessoId()));
+
+        processoEditado.setId(processoEncontrado.getId());
+        processoEditado.setUsuarioResponsavel(processoEncontrado.getUsuarioResponsavel());
+        processoEditado.setCliente(processoEncontrado.getCliente());
+        processoEditado.setSiglaTribunal(processoEncontrado.getSiglaTribunal());
+        processoEditado.setDataHoraInicio(processoEncontrado.getDataHoraInicio());
+        processoEditado.setPrioridade(prioridade);
+        processoEditado.setFaseProcesso(faseProcesso);
+
+        if(processoEditado.getAtivo().equals(false)){
+            processoEditado.setEncerradoEm(LocalDateTime.now());
+            processoEditado.setEncerradoPorUsuario(processoEncontrado.getUsuarioResponsavel());
         }
+        processoEditado.setProcessoApi(processoEncontrado.getProcessoApi());
 
-        String dataJudResponse = dataJudAdapter.buscarPorNumeroDeProcesso(numeroProcesso, siglaTribunal.getNome());
-        JSONObject jsonDataJud = new JSONObject(dataJudResponse);
-
-        return ProcessoApiMapper.toEntity(jsonDataJud);
+        return ProcessoAppMapper.toUpdateResponse(processoAppRepository.save(processoEditado));
     }
 
 
+    public void deletarProcesso(Long id){
+
+        if(!processoAppRepository.existsById(id)){
+            throw new ObjetoNaoEncontradoException("Processo não encontrado para o ID: " + id);
+        }
+
+        processoAppRepository.deleteById(id);
+    }
+
+
+
+
+    //--------
+
+    // ----QUERY----
     public List<ProcessoAppMiniResponse> listarProcessos(){
 
         List<ProcessoApp> processosEncontrados = processoAppRepository.findAll();
@@ -100,9 +146,9 @@ public class ProcessoService {
         return processos;
     }
 
-
     public ProcessoAppResponse buscarPorId(Long id) {
-        ProcessoApp processoAppEncontrado = processoAppRepository.getReferenceById(id);
+        ProcessoApp processoAppEncontrado = processoAppRepository.findById(id)
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Processo nÃ£o encontrado para o ID: " + id));
         List<HistoricoProcesso> historicoProcessoList = historicoProcessoRepository.findByProcessoApp(processoAppEncontrado);
 
         List<HistoricoProcessoResponse> historicoEncontrado = new ArrayList<>();
@@ -112,6 +158,29 @@ public class ProcessoService {
         }
 
         return ProcessoAppMapper.toResponse(processoAppEncontrado, historicoEncontrado);
+    }
+
+    public List<ProcessoAppMiniResponse> buscarPorClienteId(Long clienteId){
+        Cliente cliente = clienteRepository.findById(clienteId)
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Cliente nÃ£o encontrado para o ID: " + clienteId));
+
+        List<ProcessoApp> processosEncontrados = processoAppRepository.findByCliente(cliente);
+        List<ProcessoAppMiniResponse> processos = new ArrayList<>();
+
+        for (ProcessoApp processo : processosEncontrados){
+            processos.add(ProcessoAppMapper.toMiniResponse(processo));
+        }
+        return processos;
+    }
+
+    public List<ProcessoAppMiniResponse> buscarPorNomeOuCnj(String query){
+        List<ProcessoApp> processosEncontrados = processoAppRepository.findByClienteNomeRazaoSocialContainingIgnoreCaseOrProcessoApiNumeroCnjContainingIgnoreCase(query, query);
+        List<ProcessoAppMiniResponse> processos = new ArrayList<>();
+
+        for (ProcessoApp processo : processosEncontrados){
+            processos.add(ProcessoAppMapper.toMiniResponse(processo));
+        }
+        return processos;
     }
 
 }

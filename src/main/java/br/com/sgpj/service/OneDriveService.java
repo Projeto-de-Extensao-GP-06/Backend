@@ -2,7 +2,6 @@ package br.com.sgpj.service;
 
 import br.com.sgpj.adapter.onedrive.OneDriveTokenAdapter;
 import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
-import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
 import br.com.sgpj.dto.OneDriveItemResponse;
 import br.com.sgpj.entity.CaminhoPadraoDeArmazenamento;
 import br.com.sgpj.entity.Cliente;
@@ -26,7 +25,6 @@ import com.microsoft.graph.serviceclient.GraphServiceClient;
 import com.microsoft.kiota.authentication.AccessTokenProvider;
 import com.microsoft.kiota.authentication.AllowedHostsValidator;
 import com.microsoft.kiota.authentication.BaseBearerTokenAuthenticationProvider;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 

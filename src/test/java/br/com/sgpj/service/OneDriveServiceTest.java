@@ -1,8 +1,7 @@
 package br.com.sgpj.service;
 
 import br.com.sgpj.adapter.onedrive.OneDriveTokenAdapter;
-import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
-import br.com.sgpj.dto.OneDriveItemResponse;
+import br.com.sgpj.dto.response.OneDriveItemResponse;
 import br.com.sgpj.exception.OneDriveErroException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,14 +23,11 @@ class OneDriveServiceTest {
     @Mock
     private OneDriveTokenAdapter tokenAdapter;
 
-    @Mock
-    private UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter;
-
     private OneDriveService service;
 
     @BeforeEach
     void setup() {
-        service = spy(new OneDriveService(tokenAdapter, usuarioAutenticacaoAdapter));
+        service = spy(new OneDriveService(tokenAdapter));
     }
 
     @Nested

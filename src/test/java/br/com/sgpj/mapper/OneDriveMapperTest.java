@@ -1,6 +1,6 @@
 package br.com.sgpj.mapper;
 
-import br.com.sgpj.dto.OneDriveItemResponse;
+import br.com.sgpj.dto.response.OneDriveItemResponse;
 import com.microsoft.graph.models.DriveItem;
 import com.microsoft.graph.models.Folder;
 import com.microsoft.graph.models.ItemReference;

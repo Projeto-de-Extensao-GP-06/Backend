@@ -75,9 +75,11 @@ public class ProcessosController {
         return ResponseEntity.ok(processos);
     }
 
-    @GetMapping("/processos/busca")
-    public ResponseEntity<List<ProcessoAppMiniResponse>> buscarPorNomeOuCnj(@RequestParam String query){
-        List<ProcessoAppMiniResponse> processos = processoService.buscarPorNomeOuCnj(query);
+    @GetMapping("/processos/buscaFiltro")
+    public ResponseEntity<List<ProcessoAppMiniResponse>> buscaFiltro(@RequestParam(required = false) String query,
+                                                                     @RequestParam(required = false) Long faseId,
+                                                                     @RequestParam(required = false) Long tribunalId){
+        List<ProcessoAppMiniResponse> processos = processoService.buscaFiltro(query, faseId, tribunalId);
 
         return ResponseEntity.ok(processos);
     }

@@ -173,8 +173,17 @@ public class ProcessoService {
         return processos;
     }
 
-    public List<ProcessoAppMiniResponse> buscarPorNomeOuCnj(String query){
+    public List<ProcessoAppMiniResponse> buscaFiltro(String query, Long faseId, Long tribunalId){
+
+        if(faseId != null || tribunalId != null) {
+            FaseProcesso faseProcesso = faseProcessoRepository.getReferenceById(faseId);
+            SiglaTribunal siglaTribunal = siglaTribunalRepository.getReferenceById(tribunalId);
+            List<ProcessoApp> processosEncontrados = processoAppRepository.findByClienteNomeRazaoSocialContainingIgnoreCaseOrProcessoApiNumeroCnjContainingIgnoreCaseAndFaseProcessoOrSiglaTribunal(query, query, faseProcesso, siglaTribunal);
+        }
+
         List<ProcessoApp> processosEncontrados = processoAppRepository.findByClienteNomeRazaoSocialContainingIgnoreCaseOrProcessoApiNumeroCnjContainingIgnoreCase(query, query);
+
+
         List<ProcessoAppMiniResponse> processos = new ArrayList<>();
 
         for (ProcessoApp processo : processosEncontrados){

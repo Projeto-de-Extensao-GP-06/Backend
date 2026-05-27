@@ -122,6 +122,10 @@ public class UsuarioService {
     }
 
     Usuario usuario = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(email);
+    if (!usuario.isAtivo()) {
+      throw new UsuarioInativoException("Este usuário está inativo. Contate um administrador.");
+    }
+
     if (!hasPassword(usuario)) {
       throw new PasswordConflictException("Essa conta ainda não realizou o primeiro acesso no sistema e não possui uma senha ativa.");
     }
@@ -136,6 +140,10 @@ public class UsuarioService {
     }
 
     Usuario usuario = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(email);
+    if (!usuario.isAtivo()) {
+      throw new UsuarioInativoException("Este usuário está inativo. Contate um administrador.");
+    }
+
     if (hasPassword(usuario)) {
       throw new PasswordConflictException("Esta conta já possui uma senha cadastrada. Utilize a opção de recuperação de senha.");
     }
@@ -175,6 +183,10 @@ public class UsuarioService {
 
   public UsuarioTokenResponse autenticarOtp(ValidarOtpRequest request) {
     Usuario usuarioAutenticado = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(request.email());
+
+    if (!usuarioAutenticado.isAtivo()) {
+      throw new UsuarioInativoException("Este usuário está inativo. Contate um administrador.");
+    }
 
     UserDetails userDetails = User.withUsername(request.email())
             .password("")

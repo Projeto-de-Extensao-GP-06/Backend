@@ -98,6 +98,11 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
     }
 
+    @ExceptionHandler(UsuarioInativoException.class)
+    public ResponseEntity<Map<String, Object>> handleEscopoJwtException(UsuarioInativoException ex) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage());
+    }
+
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<Map<String, Object>> handleConstraintViolation(ConstraintViolationException ex) {
         Map<String, String> fieldErrors = ex.getConstraintViolations().stream()

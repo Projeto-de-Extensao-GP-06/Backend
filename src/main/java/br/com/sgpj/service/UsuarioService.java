@@ -11,6 +11,7 @@ import br.com.sgpj.entity.Cargo;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.EmailDuplicadoException;
 import br.com.sgpj.exception.PasswordConflictException;
+import br.com.sgpj.exception.UsuarioInativoException;
 import br.com.sgpj.exception.UsuarioJaAtivoException;
 import br.com.sgpj.mapper.UsuarioMapper;
 import jakarta.servlet.http.HttpServletRequest;
@@ -70,6 +71,10 @@ public class UsuarioService {
   }
 
   public UsuarioTokenResponse autenticar(Usuario usuario) {
+    if (!usuario.isAtivo()) {
+      throw new UsuarioInativoException("Este usuário está inativo. Contate um administrador.");
+    }
+
     final Authentication authentication = usuarioAutenticacaoAdapter.autenticar(
             usuario.getEmail(), usuario.getSenha());
 

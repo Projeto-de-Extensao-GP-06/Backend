@@ -2,7 +2,6 @@ package br.com.sgpj.service;
 
 import br.com.sgpj.adapter.database.UsuarioPersistenciaAdapter;
 import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
-import br.com.sgpj.dto.request.DefinirNovaSenhaRequest;
 import br.com.sgpj.dto.request.UsuarioAtualizacaoRequest;
 import br.com.sgpj.dto.request.UsuarioCriacaoRequest;
 import br.com.sgpj.dto.request.ValidarOtpRequest;
@@ -12,9 +11,9 @@ import br.com.sgpj.entity.Cargo;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.EmailDuplicadoException;
 import br.com.sgpj.exception.PasswordConflictException;
+import br.com.sgpj.exception.UsuarioJaAtivoException;
 import br.com.sgpj.mapper.UsuarioMapper;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.User;
@@ -186,6 +185,18 @@ public class UsuarioService {
     final String token = usuarioAutenticacaoAdapter.gerarTokenOtp(authentication);
 
     return UsuarioMapper.toTokenDto(usuarioAutenticado, token);
+  }
+
+  public UsuarioListarResponse reativarUsuario(String email) {
+    Usuario usuario = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(email);
+
+    if (usuario.isAtivo()) {
+      throw new UsuarioJaAtivoException("Usuário já está ativo.");
+    }
+
+    usuario.setAtivo(true);
+    usuarioPersistenciaAdapter.salvar(usuario);
+    return UsuarioMapper.toListarDto(usuario);
   }
 
   private boolean hasPassword(Usuario usuario) {

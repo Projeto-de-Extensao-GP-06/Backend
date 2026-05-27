@@ -1,6 +1,5 @@
 package br.com.sgpj.controller;
 
-import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
 import br.com.sgpj.dto.request.*;
 import br.com.sgpj.dto.response.UsuarioListarResponse;
 import br.com.sgpj.dto.response.UsuarioSessaoResponse;
@@ -221,5 +220,17 @@ public class UsuarioController {
         usuarioService.definirNovaSenha(request.senha());
         adicionarCookie(response, COOKIE_NOME, Duration.ZERO);
         return ResponseEntity.ok("Nova senha definida com sucesso!");
+    }
+
+    @PostMapping("/reactivate")
+    @PreAuthorize("isAuthenticated()")
+    @SecurityRequirement(name = "Bearer")
+    public ResponseEntity<UsuarioListarResponse> reativarUsuario(@RequestBody ReactivateUserRequest request,
+                                                HttpServletRequest httpRequest) {
+        if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {
+            throw new EscopoJwtException("Acesso negado: Este token não é válido para redefinição de senha.");
+        }
+
+        return ResponseEntity.ok().body(usuarioService.reativarUsuario(request.email()));
     }
 }

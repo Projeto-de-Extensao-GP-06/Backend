@@ -56,6 +56,7 @@ public class OneDriveController {
             @RequestParam("arquivo") MultipartFile arquivo,
             @RequestParam @NotNull(message = "O ID do tipo de documento é obrigatório") @Positive(message = "O ID do tipo de documento deve ser um número positivo") Long tipoDocumentoId,
             @RequestParam @NotNull(message = "O ID do caminho de armazenamento é obrigatório") @Positive(message = "O ID do caminho de armazenamento deve ser um número positivo") Long caminhoDeArmazenamentoId,
+            @RequestParam @Positive(message = "O ID do processo deve ser um número positivo") Long processoAppId,
             HttpServletRequest httpRequest
     ) throws IOException {
         if (!service.isCorrectScope(httpRequest, "GENERAL_USE")) {
@@ -71,7 +72,7 @@ public class OneDriveController {
         }
         byte[] conteudo = arquivo.getBytes();
 
-        OneDriveItemResponse resposta = service.uploadDocumento(nomeArquivo, conteudo, tipoDocumentoId, caminhoDeArmazenamentoId);
+        OneDriveItemResponse resposta = service.uploadDocumento(nomeArquivo, conteudo, tipoDocumentoId, caminhoDeArmazenamentoId, processoAppId);
         return ResponseEntity.ok(resposta);
     }
 

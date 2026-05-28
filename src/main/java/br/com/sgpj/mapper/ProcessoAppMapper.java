@@ -41,6 +41,7 @@ public class ProcessoAppMapper {
         entidade.setValorCausa(processoAppUpdateRequest.valorCausa());
 
 
+
         return entidade;
     }
 
@@ -97,6 +98,7 @@ public class ProcessoAppMapper {
                 processoApp.getEncerradoPorUsuario() != null ? processoApp.getEncerradoPorUsuario().getId() : null,
                 processoApp.getEncerradoPorUsuario() != null ? processoApp.getEncerradoPorUsuario().getNome() : null,
                 processoApp.getSiglaTribunal() != null ? processoApp.getSiglaTribunal() : null,
+                processoApp.getProcessoApi() != null ? processoApp.getProcessoApi() : null,
                 processoApp.getValorCausa()
         );
     }
@@ -118,7 +120,7 @@ public class ProcessoAppMapper {
                 processoApp.getAtivo(),
                 processoApp.getDataAudiencia(),
                 processoApp.getSiglaTribunal() != null ? processoApp.getSiglaTribunal() : null,
-                processoApp.getProcessoApi().getNumeroCnj()
+                processoApp.getProcessoApi() != null ? processoApp.getProcessoApi().getNumeroCnj() : null
         );
     }
 
@@ -144,7 +146,7 @@ public class ProcessoAppMapper {
                       processoApp.getEncerradoPorUsuario() != null ? processoApp.getEncerradoPorUsuario().getNome() : null,
                       processoApp.getSiglaTribunal() != null ? processoApp.getSiglaTribunal() : null,
                       processoApp.getValorCausa(),
-                      ProcessoApiMapper.toResponse(processoApp.getProcessoApi()),
+                      processoApp.getProcessoApi() != null ? ProcessoApiMapper.toResponse(processoApp.getProcessoApi()) : null,
                       historicoProcesso
               );
 

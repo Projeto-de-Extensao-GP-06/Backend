@@ -76,15 +76,18 @@ public class ProcessoService {
         Cliente cliente = clienteRepository.findById(novoProcesso.clienteId())
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Cliente nao encontrada para o ID: " + novoProcesso.clienteId()));
 
-        ProcessoApi processoApi = buscarDadosOficiais(novoProcesso.numeroProcesso(), siglaTribunal);
         ProcessoApp processoApp = ProcessoAppMapper.toCreateEntity(novoProcesso);
+
+        if(novoProcesso.numeroProcesso() != null){
+            ProcessoApi processoApi = buscarDadosOficiais(novoProcesso.numeroProcesso(), siglaTribunal);
+            processoApp.setProcessoApi(processoApi);
+        }
 
         processoApp.setUsuarioResponsavel(usuarioResponsavel);
         processoApp.setCliente(cliente);
         processoApp.setPrioridade(prioridade);
         processoApp.setFaseProcesso(faseProcesso);
         processoApp.setSiglaTribunal(siglaTribunal);
-        processoApp.setProcessoApi(processoApi);
 
 
         return ProcessoAppMapper.toCreateResponse(processoAppRepository.save(processoApp));
@@ -94,13 +97,15 @@ public class ProcessoService {
 
     public ProcessoAppUpdateResponse atualizarProcesso(Long id, ProcessoAppUpdateRequest processoAtualizar){
         ProcessoApp processoEncontrado = processoAppRepository.findById(id)
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Processo nÃ£o encontrado para o ID: " + id));
-        ProcessoApp processoEditado = ProcessoAppMapper.toUpdateEntity(processoAtualizar);
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Processo não encontrado para o ID: " + id));
 
         Prioridade prioridade = prioridadeRepository.findById(processoAtualizar.prioridadeId())
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Prioridade nao encontrada para o ID: " + processoAtualizar.prioridadeId()));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Prioridade não encontrada para o ID: " + processoAtualizar.prioridadeId()));
         FaseProcesso faseProcesso = faseProcessoRepository.findById(processoAtualizar.faseProcessoId())
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Fase do processo nao encontrada para o ID: " + processoAtualizar.faseProcessoId()));
+
+
+        ProcessoApp processoEditado = ProcessoAppMapper.toUpdateEntity(processoAtualizar);
 
         processoEditado.setId(processoEncontrado.getId());
         processoEditado.setUsuarioResponsavel(processoEncontrado.getUsuarioResponsavel());
@@ -114,7 +119,18 @@ public class ProcessoService {
             processoEditado.setEncerradoEm(LocalDateTime.now());
             processoEditado.setEncerradoPorUsuario(processoEncontrado.getUsuarioResponsavel());
         }
-        processoEditado.setProcessoApi(processoEncontrado.getProcessoApi());
+
+        if(processoEncontrado.getProcessoApi() == null){
+            if(processoAtualizar.numeroCnj() != null){
+                ProcessoApi processoApi = buscarDadosOficiais(processoAtualizar.numeroCnj(), processoEncontrado.getSiglaTribunal());
+                processoEditado.setProcessoApi(processoApi);
+            }
+
+        } else {
+            processoEditado.setProcessoApi(processoEncontrado.getProcessoApi());
+
+        }
+
 
         return ProcessoAppMapper.toUpdateResponse(processoAppRepository.save(processoEditado));
     }
@@ -173,8 +189,11 @@ public class ProcessoService {
         return processos;
     }
 
-    public List<ProcessoAppMiniResponse> buscarPorNomeOuCnj(String query){
-        List<ProcessoApp> processosEncontrados = processoAppRepository.findByClienteNomeRazaoSocialContainingIgnoreCaseOrProcessoApiNumeroCnjContainingIgnoreCase(query, query);
+    public List<ProcessoAppMiniResponse> buscaFiltro(String query, Long faseId, Long tribunalId){
+        String queryNormalizada = (query == null || query.isBlank()) ? null : query.trim();
+        List<ProcessoApp> processosEncontrados = processoAppRepository.buscaFiltro(queryNormalizada, faseId, tribunalId);
+
+
         List<ProcessoAppMiniResponse> processos = new ArrayList<>();
 
         for (ProcessoApp processo : processosEncontrados){

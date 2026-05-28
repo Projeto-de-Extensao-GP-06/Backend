@@ -1,9 +1,9 @@
 package br.com.sgpj.entity;
 
 
+import br.com.sgpj.entity.documentos.Documento;
 import jakarta.persistence.*;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 

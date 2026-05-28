@@ -1,8 +1,11 @@
 package br.com.sgpj.controller;
 
 import br.com.sgpj.dto.response.PrioridadeResponse;
+import br.com.sgpj.exception.EscopoJwtException;
 import br.com.sgpj.service.PrioridadeService;
+import br.com.sgpj.service.UsuarioService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,14 +18,22 @@ import java.util.List;
 @Tag(name = "Prioridades")
 public class PrioridadeController {
 
+    private final UsuarioService usuarioService;
     private final PrioridadeService prioridadeService;
 
-    public PrioridadeController(PrioridadeService prioridadeService) {
+    public PrioridadeController(UsuarioService usuarioService, PrioridadeService prioridadeService) {
+        this.usuarioService = usuarioService;
         this.prioridadeService = prioridadeService;
     }
 
     @GetMapping
-    public ResponseEntity<List<PrioridadeResponse>> listarPrioridades() {
+    public ResponseEntity<List<PrioridadeResponse>> listarPrioridades(HttpServletRequest httpRequest) {
+
+        if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {
+            throw new EscopoJwtException("Acesso negado: Este token não é válido para visualização de prioridades.");
+        }
+
+
         return ResponseEntity.ok(prioridadeService.listarPrioridades());
     }
 }

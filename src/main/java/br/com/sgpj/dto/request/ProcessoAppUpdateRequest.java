@@ -9,6 +9,9 @@ import java.time.LocalDateTime;
 
 public record ProcessoAppUpdateRequest(
 
+        @Schema(description = "Número de CNJ do processo", example = "10108901220228260292")
+        String numeroCnj,
+
         @NotBlank(message = "Descricao do caso e obrigatoria")
         @Size(min = 10, max = 5000)
         @Schema(description = "Descricao sobre o processo", example = "Esse processo e sobre divisao de bens")

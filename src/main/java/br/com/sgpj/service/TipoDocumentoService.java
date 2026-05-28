@@ -1,7 +1,6 @@
 package br.com.sgpj.service;
 
 import br.com.sgpj.dto.response.TipoDocumentoResponse;
-import br.com.sgpj.entity.TipoDocumento;
 import br.com.sgpj.repository.TipoDocumentoRepository;
 import org.springframework.stereotype.Service;
 

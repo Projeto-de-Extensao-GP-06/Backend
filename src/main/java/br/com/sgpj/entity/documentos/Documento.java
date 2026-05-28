@@ -1,5 +1,6 @@
-package br.com.sgpj.entity;
+package br.com.sgpj.entity.documentos;
 
+import br.com.sgpj.entity.Usuario;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 

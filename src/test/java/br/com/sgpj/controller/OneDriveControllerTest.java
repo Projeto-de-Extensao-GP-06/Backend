@@ -62,10 +62,10 @@ class OneDriveControllerTest {
     @Test
     @DisplayName("POST — Upload deve retornar 200")
     void uploadDeveRetornar200() throws IOException {
-        when(service.uploadDocumento(eq("doc.pdf"), any(byte[].class), eq(1L), eq(1L)))
+        when(service.uploadDocumento(eq("doc.pdf"), any(byte[].class), eq(1L), eq(1L), isNull()))
                 .thenReturn(dtoExemplo);
         MockMultipartFile arquivo = new MockMultipartFile("arquivo", "doc.pdf", "application/pdf", "conteudo".getBytes());
-        ResponseEntity<OneDriveItemResponse> resposta = controller.uploadArquivo(arquivo, 1L, 1L, httpRequest);
+        ResponseEntity<OneDriveItemResponse> resposta = controller.uploadArquivo(arquivo, 1L, 1L, null, httpRequest);
         assertEquals(HttpStatus.OK, resposta.getStatusCode());
         assertEquals("id-1", resposta.getBody().id());
     }

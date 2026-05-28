@@ -1,6 +1,6 @@
 package br.com.sgpj.repository;
 
-import br.com.sgpj.entity.TipoDocumento;
+import br.com.sgpj.entity.documentos.TipoDocumento;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

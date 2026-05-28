@@ -3,19 +3,20 @@ package br.com.sgpj.service;
 import br.com.sgpj.adapter.onedrive.OneDriveTokenAdapter;
 import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
 import br.com.sgpj.dto.OneDriveItemResponse;
-import br.com.sgpj.entity.CaminhoPadraoDeArmazenamento;
+import br.com.sgpj.entity.Processo.ProcessoApp;
+import br.com.sgpj.entity.Processo.ProcessoDocumento;
+import br.com.sgpj.entity.Processo.ProcessoDocumentoId;
+import br.com.sgpj.entity.documentos.CaminhoPadraoDeArmazenamento;
 import br.com.sgpj.entity.Cliente;
-import br.com.sgpj.entity.Documento;
-import br.com.sgpj.entity.TipoDocumento;
+import br.com.sgpj.entity.documentos.Documento;
+import br.com.sgpj.entity.documentos.TipoDocumento;
 import br.com.sgpj.entity.Usuario;
+import br.com.sgpj.exception.CaminhoJaExisteException;
 import br.com.sgpj.exception.ClienteNaoEncontradoException;
+import br.com.sgpj.exception.ObjetoNaoEncontradoException;
 import br.com.sgpj.exception.OneDriveErroException;
 import br.com.sgpj.mapper.OneDriveMapper;
-import br.com.sgpj.repository.ClienteRepository;
-import br.com.sgpj.repository.DocumentoRepository;
-import br.com.sgpj.repository.TipoDocumentoRepository;
-import br.com.sgpj.repository.UsuarioRepository;
-import br.com.sgpj.repository.CaminhoPadraoDeArmazenamentoRepository;
+import br.com.sgpj.repository.*;
 import com.microsoft.graph.core.models.UploadResult;
 import com.microsoft.graph.core.tasks.LargeFileUploadTask;
 import com.microsoft.graph.drives.item.items.item.createuploadsession.CreateUploadSessionPostRequestBody;
@@ -51,8 +52,10 @@ public class OneDriveService {
     private final UsuarioRepository usuarioRepository;
     private final TipoDocumentoRepository tipoDocumentoRepository;
     private final CaminhoPadraoDeArmazenamentoRepository caminhoPadraoDeArmazenamentoRepository;
+    private final ProcessoAppRepository processoAppRepository;
+    private final ProcessoDocumentoRepository processoDocumentoRepository;
 
-    public OneDriveService(OneDriveTokenAdapter tokenAdapter, UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter, ClienteRepository clienteRepository, DocumentoRepository documentoRepository, UsuarioRepository usuarioRepository, TipoDocumentoRepository tipoDocumentoRepository, CaminhoPadraoDeArmazenamentoRepository caminhoPadraoDeArmazenamentoRepository) {
+    public OneDriveService(OneDriveTokenAdapter tokenAdapter, UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter, ClienteRepository clienteRepository, DocumentoRepository documentoRepository, UsuarioRepository usuarioRepository, TipoDocumentoRepository tipoDocumentoRepository, CaminhoPadraoDeArmazenamentoRepository caminhoPadraoDeArmazenamentoRepository, ProcessoAppRepository processoAppRepository, ProcessoDocumentoRepository processoDocumentoRepository) {
         this.tokenAdapter = tokenAdapter;
         this.usuarioAutenticacaoAdapter = usuarioAutenticacaoAdapter;
         this.clienteRepository = clienteRepository;
@@ -60,6 +63,8 @@ public class OneDriveService {
         this.usuarioRepository = usuarioRepository;
         this.tipoDocumentoRepository = tipoDocumentoRepository;
         this.caminhoPadraoDeArmazenamentoRepository = caminhoPadraoDeArmazenamentoRepository;
+        this.processoAppRepository = processoAppRepository;
+        this.processoDocumentoRepository = processoDocumentoRepository;
     }
 
     public boolean isCorrectScope(HttpServletRequest httpRequest, String scope) {
@@ -77,7 +82,7 @@ public class OneDriveService {
                 .orElseThrow(() -> new OneDriveErroException("Caminho de armazenamento não encontrado com ID: " + caminhoDeArmazenamentoId));
     }
 
-    private Documento registrarDocumento(OneDriveItemResponse item, Long tipoDocumentoId, CaminhoPadraoDeArmazenamento caminhoDeArmazenamento) {
+    private Documento registrarDocumento(OneDriveItemResponse item, Long tipoDocumentoId, CaminhoPadraoDeArmazenamento caminhoDeArmazenamento, Long processoAppId) {
         Usuario usuario = obterUsuarioLogado();
 
         TipoDocumento tipo = tipoDocumentoRepository.findById(tipoDocumentoId)
@@ -104,7 +109,23 @@ public class OneDriveService {
             documento.setDataHoraCriacao(LocalDateTime.now());
         }
 
-        return documentoRepository.save(documento);
+        Documento documentoSalvo = documentoRepository.save(documento);
+
+        if (processoAppId != null) {
+            ProcessoApp processo = processoAppRepository.findById(processoAppId)
+                    .orElseThrow(() -> new ObjetoNaoEncontradoException("Processo não encontrado: " + processoAppId));
+
+            ProcessoDocumentoId pdId = new ProcessoDocumentoId(documentoSalvo.getId(), processoAppId);
+            ProcessoDocumento pd = new ProcessoDocumento();
+            pd.setId(pdId);
+            pd.setDocumento(documentoSalvo);
+            pd.setProcessoApp(processo);
+            pd.setAnexadoPorUsuario(usuario);
+            pd.setAnexadoEm(LocalDateTime.now());
+            processoDocumentoRepository.save(pd);
+        }
+
+        return documentoSalvo;
     }
 
 
@@ -124,24 +145,24 @@ public class OneDriveService {
     }
 
     public OneDriveItemResponse criarPasta(Long clienteId, String numeroCnj) {
+        Cliente cliente = clienteRepository.findById(clienteId)
+                .orElseThrow(() -> new ClienteNaoEncontradoException(clienteId));
+
+        String nomeBase = gerarNomePasta(cliente);
+        String caminhoCompleto = nomeBase + "/" + numeroCnj;
+
+        // Verifica se já existe esse caminho no banco → 409 Conflict, não 500
+        if (caminhoPadraoDeArmazenamentoRepository.existsByCaminho(caminhoCompleto)) {
+            throw new CaminhoJaExisteException(caminhoCompleto);
+        }
+
         try {
-            Cliente cliente = clienteRepository.findById(clienteId)
-                    .orElseThrow(() -> new ClienteNaoEncontradoException(clienteId));
-
-            String nomeBase = gerarNomePasta(cliente);
-            String caminhoCompleto = nomeBase + "/" + numeroCnj;
-
-            // Verifica se já existe esse caminho no banco
-            if (caminhoPadraoDeArmazenamentoRepository.existsByCaminho(caminhoCompleto)) {
-                throw new OneDriveErroException("Já existe um caminho de armazenamento cadastrado: " + caminhoCompleto);
-            }
-
             String driveId = obterDriveId();
 
-            // 1. Cria (ou reutiliza) a pasta do cliente: root:/sgpj/usuarios/rafael-silva-12345678901
-            criarPastaNoOneDrive(driveId, CAMINHO_PADRAO + ":", nomeBase);
+            // 1. Garante que a pasta do cliente existe (cria ou reutiliza sem deletar filhos)
+            garantirPastaNoOneDrive(driveId, CAMINHO_PADRAO + ":", nomeBase);
 
-            // 2. Cria a pasta do processo dentro dela: root:/sgpj/usuarios/rafael-silva-12345678901/numeroCnj
+            // 2. Cria a pasta do processo dentro da pasta do cliente
             String caminhoPaiProcesso = CAMINHO_PADRAO + "/" + nomeBase + ":";
             DriveItem pastaCriada = criarPastaNoOneDrive(driveId, caminhoPaiProcesso, numeroCnj);
 
@@ -151,11 +172,25 @@ public class OneDriveService {
             novoCaminho.setCaminho(caminhoCompleto);
             caminhoPadraoDeArmazenamentoRepository.save(novoCaminho);
 
-            return OneDriveMapper.toDto(pastaCriada, null);
-        } catch (OneDriveErroException | ClienteNaoEncontradoException e) {
+            return OneDriveMapper.toDto(pastaCriada, null, caminhoCompleto);
+        } catch (CaminhoJaExisteException e) {
             throw e;
         } catch (Exception e) {
             throw new OneDriveErroException("Erro ao criar a pasta: " + e.getMessage());
+        }
+    }
+
+    /** Verifica se a pasta já existe no OneDrive; se não, cria. Não usa "replace" para evitar deletar conteúdo existente. */
+    private void garantirPastaNoOneDrive(String driveId, String caminhoPai, String nomePasta) {
+        try {
+            // Tenta buscar a pasta; se existir, retorna sem fazer nada
+            getClient()
+                    .drives().byDriveId(driveId)
+                    .items().byDriveItemId(caminhoPai + "/" + nomePasta + ":")
+                    .get();
+        } catch (Exception e) {
+            // Pasta não existe → cria
+            criarPastaNoOneDrive(driveId, caminhoPai, nomePasta);
         }
     }
 
@@ -183,13 +218,13 @@ public class OneDriveService {
     }
 
     // Escolhe automaticamente entre upload simples (≤ 4 MB) e upload em chunks (> 4 MB).
-    public OneDriveItemResponse uploadDocumento(String nome, byte[] conteudo, Long tipoDocumentoId, Long caminhoDeArmazenamentoId) {
+    public OneDriveItemResponse uploadDocumento(String nome, byte[] conteudo, Long tipoDocumentoId, Long caminhoDeArmazenamentoId, Long processoAppId) {
         CaminhoPadraoDeArmazenamento caminho = obterCaminho(caminhoDeArmazenamentoId);
 
         if (conteudo.length <= LIMITE_UPLOAD_SIMPLES) {
-            return uploadSimples(nome, conteudo, tipoDocumentoId, caminho);
+            return uploadSimples(nome, conteudo, tipoDocumentoId, caminho, processoAppId);
         }
-        return uploadGrande(nome, conteudo, tipoDocumentoId, caminho);
+        return uploadGrande(nome, conteudo, tipoDocumentoId, caminho, processoAppId);
     }
 
     public void excluirArquivo(Long caminhoDeArmazenamentoId, String nomeArquivo) {
@@ -224,14 +259,18 @@ public class OneDriveService {
         try {
             CaminhoPadraoDeArmazenamento caminhoArmazenamento = obterCaminho(caminhoDeArmazenamentoId);
             String driveId = obterDriveId();
-            String caminhoCompleto = caminhoArmazenamento.getCaminho(); // ex: rafael-silva-12345678901/1234567-89.2024
+            String caminhoCompleto = caminhoArmazenamento.getCaminho();
 
-            // 1. Exclui a pasta do processo no OneDrive
+            // 1. Tenta excluir a pasta no OneDrive; se não existir, ignora e continua limpando o banco
             String caminho = CAMINHO_PADRAO + "/" + caminhoCompleto + ":";
-            getClient()
-                    .drives().byDriveId(driveId)
-                    .items().byDriveItemId(caminho)
-                    .delete();
+            try {
+                getClient()
+                        .drives().byDriveId(driveId)
+                        .items().byDriveItemId(caminho)
+                        .delete();
+            } catch (Exception e) {
+                // Pasta pode não existir no OneDrive (resquício) — prossegue para limpar o banco de qualquer forma
+            }
 
             // 2. Inativa todos os documentos dessa pasta e remove o vínculo com o caminho
             Usuario usuario = obterUsuarioLogado();
@@ -249,7 +288,7 @@ public class OneDriveService {
                 documentoRepository.saveAll(documentos);
             }
 
-            // 3. Também remove vínculo de documentos já inativos que referenciam esse caminho
+            // 3. Remove vínculo de documentos já inativos que referenciam esse caminho
             List<Documento> todosDocumentos = documentoRepository.findByPadraoArmazenamentoId(
                     caminhoArmazenamento.getId()
             );
@@ -263,7 +302,7 @@ public class OneDriveService {
             // 4. Remove o registro do caminho de armazenamento do banco
             caminhoPadraoDeArmazenamentoRepository.delete(caminhoArmazenamento);
 
-            // 5. Se a pasta pai do cliente ficou vazia, exclui ela também
+            // 5. Se a pasta pai do cliente ficou vazia no OneDrive, exclui ela também
             String pastaPai = caminhoCompleto.contains("/")
                     ? caminhoCompleto.substring(0, caminhoCompleto.indexOf('/'))
                     : null;
@@ -348,7 +387,7 @@ public class OneDriveService {
     }
 
     /** Upload simples  — para arquivos de até 4 MB. */
-    private OneDriveItemResponse uploadSimples(String nome, byte[] conteudo, Long tipoDocumentoId, CaminhoPadraoDeArmazenamento caminhoDeArmazenamento) {
+    private OneDriveItemResponse uploadSimples(String nome, byte[] conteudo, Long tipoDocumentoId, CaminhoPadraoDeArmazenamento caminhoDeArmazenamento, Long processoAppId) {
         String driveId = obterDriveId();
         String caminho = CAMINHO_PADRAO + "/" + caminhoDeArmazenamento.getCaminho() + "/" + nome + ":";
 
@@ -359,12 +398,12 @@ public class OneDriveService {
                 .put(new ByteArrayInputStream(conteudo));
 
         OneDriveItemResponse res = OneDriveMapper.toDto(item, gerarPreviewUrl(item.getId()));
-        registrarDocumento(res, tipoDocumentoId, caminhoDeArmazenamento);
+        registrarDocumento(res, tipoDocumentoId, caminhoDeArmazenamento, processoAppId);
         return res;
     }
 
     /** Upload em chunks via Upload Session — para arquivos maiores que 4 MB. */
-    private OneDriveItemResponse uploadGrande(String nome, byte[] conteudo, Long tipoDocumentoId, CaminhoPadraoDeArmazenamento caminhoDeArmazenamento) {
+    private OneDriveItemResponse uploadGrande(String nome, byte[] conteudo, Long tipoDocumentoId, CaminhoPadraoDeArmazenamento caminhoDeArmazenamento, Long processoAppId) {
         try {
             String driveId = obterDriveId();
             String caminho = CAMINHO_PADRAO + "/" + caminhoDeArmazenamento.getCaminho() + "/" + nome + ":";
@@ -398,7 +437,7 @@ public class OneDriveService {
 
             DriveItem item = resultado.itemResponse;
             OneDriveItemResponse res = OneDriveMapper.toDto(item, gerarPreviewUrl(item.getId()));
-            registrarDocumento(res, tipoDocumentoId, caminhoDeArmazenamento);
+            registrarDocumento(res, tipoDocumentoId, caminhoDeArmazenamento, processoAppId);
             return res;
 
         } catch (OneDriveErroException e) {

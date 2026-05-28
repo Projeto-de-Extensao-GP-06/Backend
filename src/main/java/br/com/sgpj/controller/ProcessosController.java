@@ -2,10 +2,7 @@ package br.com.sgpj.controller;
 
 import br.com.sgpj.dto.request.ProcessoAppCriacaoRequest;
 import br.com.sgpj.dto.request.ProcessoAppUpdateRequest;
-import br.com.sgpj.dto.response.Processos.ProcessoAppCreateResponse;
-import br.com.sgpj.dto.response.Processos.ProcessoAppMiniResponse;
-import br.com.sgpj.dto.response.Processos.ProcessoAppResponse;
-import br.com.sgpj.dto.response.Processos.ProcessoAppUpdateResponse;
+import br.com.sgpj.dto.response.Processos.*;
 import br.com.sgpj.exception.EscopoJwtException;
 import br.com.sgpj.service.ProcessoService;
 import br.com.sgpj.service.UsuarioService;
@@ -132,4 +129,29 @@ public class ProcessosController {
 
         return ResponseEntity.ok(processos);
     }
+
+    @PostMapping("/processos/{processoId}/documentos")
+    @SecurityRequirement(name = "Bearer")
+    public ResponseEntity<ProcessoDocumentoResponse> anexarDocumento(
+            @PathVariable Long processoId,
+            @RequestParam Long documentoId,
+            @RequestParam Long usuarioId
+    ) {
+        ProcessoDocumentoResponse response = processoService.anexarDocumento(processoId, documentoId, usuarioId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/processos/{processoId}/documentos")
+    @SecurityRequirement(name = "Bearer")
+    public ResponseEntity<List<ProcessoDocumentoResponse>> listarDocumentosDoProcesso(
+            @PathVariable Long processoId
+    ) {
+        List<ProcessoDocumentoResponse> docs = processoService.listarDocumentosDoProcesso(processoId);
+        if (docs.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(docs);
+    }
+
+
 }

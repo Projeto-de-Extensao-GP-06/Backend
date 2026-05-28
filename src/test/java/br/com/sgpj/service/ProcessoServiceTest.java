@@ -20,10 +20,12 @@ import br.com.sgpj.entity.Processo.TipoAlteracao;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
 import br.com.sgpj.repository.ClienteRepository;
+import br.com.sgpj.repository.DocumentoRepository;
 import br.com.sgpj.repository.FaseProcessoRepository;
 import br.com.sgpj.repository.HistoricoProcessoRepository;
 import br.com.sgpj.repository.PrioridadeRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
+import br.com.sgpj.repository.ProcessoDocumentoRepository;
 import br.com.sgpj.repository.SiglaTribunalRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -65,6 +67,8 @@ class ProcessoServiceTest {
     @Mock private SiglaTribunalRepository siglaTribunalRepository;
     @Mock private ClienteRepository clienteRepository;
     @Mock private HistoricoProcessoRepository historicoProcessoRepository;
+    @Mock private DocumentoRepository documentoRepository;
+    @Mock private ProcessoDocumentoRepository processoDocumentoRepository;
 
     private ProcessoService service;
 
@@ -78,7 +82,9 @@ class ProcessoServiceTest {
                 faseProcessoRepository,
                 siglaTribunalRepository,
                 clienteRepository,
-                historicoProcessoRepository
+                historicoProcessoRepository,
+                documentoRepository,
+                processoDocumentoRepository
         );
     }
 

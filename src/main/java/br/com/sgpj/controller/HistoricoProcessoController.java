@@ -5,6 +5,7 @@ import br.com.sgpj.dto.response.Processos.HistoricoProcessoResponse;
 import br.com.sgpj.exception.EscopoJwtException;
 import br.com.sgpj.service.HistoricoProcessoService;
 import br.com.sgpj.service.UsuarioService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -26,6 +27,7 @@ public class HistoricoProcessoController {
         this.historicoProcessoService = historicoProcessoService;
     }
 
+    @SecurityRequirement(name = "Bearer")
     @PostMapping("/historico")
     public ResponseEntity<HistoricoProcessoResponse> interacaoProcesso(@Valid @RequestBody HistoricoProcessoRequest novaInteracao, HttpServletRequest httpRequest){
 
@@ -39,6 +41,7 @@ public class HistoricoProcessoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(interacaoRegistrada);
     }
 
+    @SecurityRequirement(name = "Bearer")
     @GetMapping("/processo/{id}/historico")
     public ResponseEntity<List<HistoricoProcessoResponse>> buscarPorIdProcesso(@PathVariable Long id, HttpServletRequest httpRequest){
 
@@ -51,6 +54,7 @@ public class HistoricoProcessoController {
         return ResponseEntity.ok(historicoProcesso);
     }
 
+    @SecurityRequirement(name = "Bearer")
     @DeleteMapping("/historico")
     public ResponseEntity<Void> deletarPorIdProcesso(Long id, HttpServletRequest httpRequest){
 

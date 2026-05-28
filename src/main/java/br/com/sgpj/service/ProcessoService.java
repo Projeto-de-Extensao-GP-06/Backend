@@ -8,6 +8,7 @@ import br.com.sgpj.dto.response.Processos.*;
 import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Processo.*;
 import br.com.sgpj.entity.Usuario;
+import br.com.sgpj.entity.documentos.Documento;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
 import br.com.sgpj.mapper.HistoricoProcessoMapper;
 import br.com.sgpj.mapper.ProcessoApiMapper;
@@ -15,6 +16,8 @@ import br.com.sgpj.mapper.ProcessoAppMapper;
 import br.com.sgpj.repository.*;
 import org.json.JSONObject;
 import org.springframework.stereotype.Service;
+import br.com.sgpj.entity.Processo.ProcessoDocumento;
+import br.com.sgpj.entity.Processo.ProcessoDocumentoId;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -32,16 +35,11 @@ public class ProcessoService {
     private final SiglaTribunalRepository siglaTribunalRepository;
     private final ClienteRepository clienteRepository;
     private final HistoricoProcessoRepository historicoProcessoRepository;
+    private final DocumentoRepository documentoRepository;
+    private final ProcessoDocumentoRepository processoDocumentoRepository;
 
 
-
-    public ProcessoService(
-            UsuarioPersistenciaAdapter usuarioPersistenciaAdapter,
-            DataJudAdapter dataJudAdapter,
-            ProcessoAppRepository processoAppRepository,
-            PrioridadeRepository prioridadeRepository,
-            FaseProcessoRepository faseProcessoRepository,
-            SiglaTribunalRepository siglaTribunalRepository, ClienteRepository clienteRepository, HistoricoProcessoRepository historicoProcessoRepository) {
+    public ProcessoService(UsuarioPersistenciaAdapter usuarioPersistenciaAdapter, DataJudAdapter dataJudAdapter, ProcessoAppRepository processoAppRepository, PrioridadeRepository prioridadeRepository, FaseProcessoRepository faseProcessoRepository, SiglaTribunalRepository siglaTribunalRepository, ClienteRepository clienteRepository, HistoricoProcessoRepository historicoProcessoRepository, DocumentoRepository documentoRepository, ProcessoDocumentoRepository processoDocumentoRepository) {
         this.usuarioPersistenciaAdapter = usuarioPersistenciaAdapter;
         this.dataJudAdapter = dataJudAdapter;
         this.processoAppRepository = processoAppRepository;
@@ -50,8 +48,9 @@ public class ProcessoService {
         this.siglaTribunalRepository = siglaTribunalRepository;
         this.clienteRepository = clienteRepository;
         this.historicoProcessoRepository = historicoProcessoRepository;
+        this.documentoRepository = documentoRepository;
+        this.processoDocumentoRepository = processoDocumentoRepository;
     }
-
 
     // ----CRIAÇÃO, ATUALIZAÇÃO E DELEÇÃO----
     public ProcessoApi buscarDadosOficiais(String numeroProcesso, SiglaTribunal siglaTribunal) {
@@ -183,4 +182,62 @@ public class ProcessoService {
         return processos;
     }
 
+
+    // ------Metodos-------
+    public ProcessoDocumentoResponse anexarDocumento(Long processoId, Long documentoId, Long usuarioId) {
+        ProcessoApp processo = processoAppRepository.findById(processoId)
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Processo não encontrado: " + processoId));
+
+        Documento documento = documentoRepository.findById(documentoId)
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Documento não encontrado: " + documentoId));
+
+        Usuario usuario = usuarioPersistenciaAdapter.buscarUsuarioPorId(usuarioId);
+
+        ProcessoDocumentoId pdId = new ProcessoDocumentoId(documento.getId(), processo.getId());
+
+        // Verifica se o vínculo já existe para evitar duplicata
+        if (processoDocumentoRepository.existsById(pdId)) {
+            throw new ObjetoNaoEncontradoException("Este documento já está vinculado a este processo.");
+        }
+
+        ProcessoDocumento processoDocumento = new ProcessoDocumento();
+        processoDocumento.setId(pdId);
+        processoDocumento.setDocumento(documento);
+        processoDocumento.setProcessoApp(processo);
+        processoDocumento.setAnexadoPorUsuario(usuario);
+        processoDocumento.setAnexadoEm(LocalDateTime.now());
+
+        processoDocumentoRepository.save(processoDocumento);
+
+        return new ProcessoDocumentoResponse(
+                documento.getId(),
+                documento.getNomeOriginal(),
+                documento.getMimeType(),
+                documento.getOnedriveUrlDownload(),
+                usuario.getId(),
+                usuario.getNome(),
+                processoDocumento.getAnexadoEm(),
+                documento.getTipoDocumento() != null ? documento.getTipoDocumento().getNome() : null,
+                documento.getPadraoArmazenamento() != null ? documento.getPadraoArmazenamento().getId() : null,
+                documento.getPadraoArmazenamento() != null ? documento.getPadraoArmazenamento().getCaminho() : null
+        );
+    }
+
+    public List<ProcessoDocumentoResponse> listarDocumentosDoProcesso(Long processoAppId) {
+        return processoDocumentoRepository.findByProcessoAppId(processoAppId)
+                .stream()
+                .map(pd -> new ProcessoDocumentoResponse(
+                        pd.getDocumento().getId(),
+                        pd.getDocumento().getNomeOriginal(),
+                        pd.getDocumento().getMimeType(),
+                        pd.getDocumento().getOnedriveUrlDownload(),
+                        pd.getAnexadoPorUsuario() != null ? pd.getAnexadoPorUsuario().getId() : null,
+                        pd.getAnexadoPorUsuario() != null ? pd.getAnexadoPorUsuario().getNome() : null,
+                        pd.getAnexadoEm(),
+                        pd.getDocumento().getTipoDocumento() != null ? pd.getDocumento().getTipoDocumento().getNome() : null,
+                        pd.getDocumento().getPadraoArmazenamento() != null ? pd.getDocumento().getPadraoArmazenamento().getId() : null,
+                        pd.getDocumento().getPadraoArmazenamento() != null ? pd.getDocumento().getPadraoArmazenamento().getCaminho() : null
+                ))
+                .toList();
+    }
 }

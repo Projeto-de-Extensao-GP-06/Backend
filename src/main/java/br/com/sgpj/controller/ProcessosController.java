@@ -9,6 +9,7 @@ import br.com.sgpj.dto.response.Processos.ProcessoAppUpdateResponse;
 import br.com.sgpj.exception.EscopoJwtException;
 import br.com.sgpj.service.ProcessoService;
 import br.com.sgpj.service.UsuarioService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -33,6 +34,7 @@ public class ProcessosController {
 
 
     @PostMapping("/processos")
+    @SecurityRequirement(name = "Bearer")
     public ResponseEntity<ProcessoAppCreateResponse> novoProcesso(@Valid @RequestBody ProcessoAppCriacaoRequest novoProcesso, HttpServletRequest httpRequest){
 
 
@@ -46,6 +48,7 @@ public class ProcessosController {
     }
 
     @PutMapping("/processos/{id}")
+    @SecurityRequirement(name = "Bearer")
     public ResponseEntity<ProcessoAppUpdateResponse> atualizarProcesso(
             @Valid @RequestBody ProcessoAppUpdateRequest processoAtualizar,
             @PathVariable Long id,
@@ -62,6 +65,7 @@ public class ProcessosController {
     }
 
     @DeleteMapping("/processos/{id}")
+    @SecurityRequirement(name = "Bearer")
     public ResponseEntity<Void> deletarProcesso(@PathVariable Long id, HttpServletRequest httpRequest){
 
         if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {
@@ -74,6 +78,7 @@ public class ProcessosController {
     }
 
     @GetMapping("/processos")
+    @SecurityRequirement(name = "Bearer")
     public ResponseEntity<List<ProcessoAppMiniResponse>> listarProcessos(HttpServletRequest httpRequest){
 
         if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {
@@ -86,6 +91,7 @@ public class ProcessosController {
     }
 
     @GetMapping("/processos/{id}")
+    @SecurityRequirement(name = "Bearer")
     public ResponseEntity<ProcessoAppResponse> buscarProcessoPorId(@PathVariable Long id, HttpServletRequest httpRequest){
 
         if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {
@@ -98,6 +104,7 @@ public class ProcessosController {
     }
 
     @GetMapping("/clientes/{clienteId}/processos")
+    @SecurityRequirement(name = "Bearer")
     public ResponseEntity<List<ProcessoAppMiniResponse>> buscarPorClienteId(@PathVariable Long clienteId, HttpServletRequest httpRequest){
 
         if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {
@@ -110,6 +117,7 @@ public class ProcessosController {
     }
 
     @GetMapping("/processos/buscaFiltro")
+    @SecurityRequirement(name = "Bearer")
     public ResponseEntity<List<ProcessoAppMiniResponse>> buscaFiltro(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) Long faseId,

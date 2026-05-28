@@ -4,6 +4,7 @@ import br.com.sgpj.dto.response.FaseProcessoResponse;
 import br.com.sgpj.exception.EscopoJwtException;
 import br.com.sgpj.service.FaseProcessoService;
 import br.com.sgpj.service.UsuarioService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +29,7 @@ public class FaseProcessoController {
     }
 
     @GetMapping
+    @SecurityRequirement(name = "Bearer")
     public ResponseEntity<List<FaseProcessoResponse>> listarFases(HttpServletRequest httpRequest){
 
         if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {

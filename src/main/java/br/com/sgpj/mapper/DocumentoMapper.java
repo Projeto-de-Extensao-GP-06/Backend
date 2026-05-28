@@ -3,9 +3,9 @@ package br.com.sgpj.mapper;
 import br.com.sgpj.dto.response.CaminhoArmazenamentoResponse;
 import br.com.sgpj.dto.response.DocumentoResponse;
 import br.com.sgpj.dto.response.TipoDocumentoResponse;
-import br.com.sgpj.entity.CaminhoPadraoDeArmazenamento;
-import br.com.sgpj.entity.Documento;
-import br.com.sgpj.entity.TipoDocumento;
+import br.com.sgpj.entity.documentos.CaminhoPadraoDeArmazenamento;
+import br.com.sgpj.entity.documentos.Documento;
+import br.com.sgpj.entity.documentos.TipoDocumento;
 
 import java.util.List;
 

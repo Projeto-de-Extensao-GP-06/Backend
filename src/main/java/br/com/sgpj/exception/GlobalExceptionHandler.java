@@ -50,6 +50,16 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
+    @ExceptionHandler(ObjetoNaoEncontradoException.class)
+    public ResponseEntity<Map<String, Object>> handleObjetoNaoEncontrado(ObjetoNaoEncontradoException ex) {
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(CaminhoJaExisteException.class)
+    public ResponseEntity<Map<String, Object>> handleCaminhoJaExiste(CaminhoJaExisteException ex) {
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
     @ExceptionHandler(OneDriveErroException.class)
     public ResponseEntity<Map<String, Object>> handleOneDriveError(OneDriveErroException ex) {
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());

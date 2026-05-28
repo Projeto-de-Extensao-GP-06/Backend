@@ -1,6 +1,6 @@
 package br.com.sgpj.repository;
 
-import br.com.sgpj.entity.CaminhoPadraoDeArmazenamento;
+import br.com.sgpj.entity.documentos.CaminhoPadraoDeArmazenamento;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

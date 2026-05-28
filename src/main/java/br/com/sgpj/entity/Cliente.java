@@ -1,5 +1,6 @@
 package br.com.sgpj.entity;
 
+import br.com.sgpj.entity.documentos.CaminhoPadraoDeArmazenamento;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;

@@ -1,4 +1,4 @@
-package br.com.sgpj.entity;
+package br.com.sgpj.entity.documentos;
 
 import jakarta.persistence.*;
 

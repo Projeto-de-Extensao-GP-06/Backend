@@ -17,5 +17,7 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long> {
 
     @Query("SELECT c FROM Cliente c LEFT JOIN FETCH c.contatos LEFT JOIN FETCH c.endereco LEFT JOIN FETCH c.statusCliente WHERE c.id = :id")
     Optional<Cliente> findByIdComDetalhes(Long id);
+
+    boolean existsByCpfCnpj(String cpfCnpj);
 }
 

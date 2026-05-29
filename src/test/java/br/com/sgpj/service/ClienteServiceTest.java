@@ -1,13 +1,12 @@
 package br.com.sgpj.service;
 
 import br.com.sgpj.adapter.database.ClientePersistenciaAdapter;
-import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
-import br.com.sgpj.dto.OneDriveItemResponse;
 import br.com.sgpj.dto.request.ClienteAtualizacaoRequest;
 import br.com.sgpj.dto.request.ClienteCriacaoRequest;
 import br.com.sgpj.dto.response.ClienteDetalhesResponse;
 import br.com.sgpj.dto.response.ClienteListarResponse;
 import br.com.sgpj.entity.*;
+import br.com.sgpj.entity.documentos.CaminhoPadraoDeArmazenamento;
 import br.com.sgpj.exception.ClienteJaExistenteException;
 import br.com.sgpj.exception.ClienteNaoEncontradoException;
 import br.com.sgpj.repository.*;
@@ -26,8 +25,8 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,16 +43,6 @@ class ClienteServiceTest {
     private EnderecoRepository enderecoRepository;
     @Mock
     private ContatoRepository contatoRepository;
-    @Mock
-    private PadraoCaminhoArmazenamentoRepository padraoCaminhoArmazenamentoRepository;
-    @Mock
-    private DocumentoRepository documentoRepository;
-    @Mock
-    private TipoDocumentoRepository tipoDocumentoRepository;
-    @Mock
-    private UsuarioRepository usuarioRepository;
-    @Mock
-    private UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter;
     @Mock
     private OneDriveService oneDriveService;
 
@@ -83,20 +72,6 @@ class ClienteServiceTest {
         return cliente;
     }
 
-    private OneDriveItemResponse criarOneDriveItemResponse(String nomePasta) {
-        return new OneDriveItemResponse(
-                "drive-item-id-123",
-                nomePasta,
-                "pasta",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                "sgpj/usuarios/" + nomePasta
-        );
-    }
 
     @Nested
     @DisplayName("listarTodos()")
@@ -359,7 +334,7 @@ class ClienteServiceTest {
     class Criar {
 
         @Test
-        @DisplayName("Deve criar cliente com sucesso e criar pasta no OneDrive")
+        @DisplayName("Deve criar cliente com sucesso")
         void deveCriarClienteComSucesso() {
             ClienteCriacaoRequest request = new ClienteCriacaoRequest(
                     "João da Silva", "12345678901", "123456789", 1L, null, null
@@ -367,29 +342,16 @@ class ClienteServiceTest {
 
             StatusCliente statusCliente = new StatusCliente(1L, "Ativo");
             Cliente clienteSalvo = criarClienteComStatus(1L, "João da Silva", "12345678901", "Ativo");
-            Usuario usuario = new Usuario();
-            usuario.setId(1L);
-            usuario.setEmail("admin@email.com");
-            TipoDocumento tipoDocumento = new TipoDocumento(1L, "OUTROS");
             when(clienteRepository.existsByCpfCnpj("12345678901")).thenReturn(false);
             when(statusClienteRepository.findById(1L)).thenReturn(Optional.of(statusCliente));
             when(clientePersistenciaAdapter.salvar(any(Cliente.class))).thenReturn(clienteSalvo);
-            when(oneDriveService.criarPasta(anyString())).thenReturn(criarOneDriveItemResponse("joao-da-silva-12345678901"));
-            when(padraoCaminhoArmazenamentoRepository.save(any(PadraoCaminhoArmazenamento.class)))
-                    .thenAnswer(inv -> inv.getArgument(0));
-            when(usuarioAutenticacaoAdapter.obterEmailUsuarioLogado()).thenReturn("admin@email.com");
-            when(usuarioRepository.findByEmail("admin@email.com")).thenReturn(Optional.of(usuario));
-            when(tipoDocumentoRepository.findByNomeIgnoreCase("OUTROS")).thenReturn(Optional.of(tipoDocumento));
-            when(documentoRepository.save(any(Documento.class))).thenAnswer(inv -> inv.getArgument(0));
             when(clientePersistenciaAdapter.buscarPorId(1L)).thenReturn(clienteSalvo);
 
             ClienteDetalhesResponse resultado = clienteService.criar(request);
 
             assertNotNull(resultado);
             assertEquals("João da Silva", resultado.nomeRazaoSocial());
-            verify(oneDriveService).criarPasta(anyString());
-            verify(padraoCaminhoArmazenamentoRepository).save(any(PadraoCaminhoArmazenamento.class));
-            verify(documentoRepository).save(any(Documento.class));
+            verifyNoInteractions(oneDriveService);
         }
 
         @Test
@@ -403,7 +365,7 @@ class ClienteServiceTest {
 
             assertThrows(ClienteJaExistenteException.class, () -> clienteService.criar(request));
 
-            verify(oneDriveService, never()).criarPasta(anyString());
+            verifyNoInteractions(oneDriveService);
             verify(clientePersistenciaAdapter, never()).salvar(any(Cliente.class));
         }
 
@@ -419,20 +381,11 @@ class ClienteServiceTest {
 
             StatusCliente statusCliente = new StatusCliente(1L, "Ativo");
             Cliente clienteSalvo = criarClienteComStatus(1L, "Maria Santos", "98765432100", "Ativo");
-            Usuario usuario = new Usuario();
-            usuario.setEmail("admin@email.com");
-            TipoDocumento tipoDocumento = new TipoDocumento(1L, "OUTROS");
 
             when(clienteRepository.existsByCpfCnpj("98765432100")).thenReturn(false);
             when(statusClienteRepository.findById(1L)).thenReturn(Optional.of(statusCliente));
             when(enderecoRepository.save(any(Endereco.class))).thenAnswer(inv -> inv.getArgument(0));
             when(clientePersistenciaAdapter.salvar(any(Cliente.class))).thenReturn(clienteSalvo);
-            when(oneDriveService.criarPasta(anyString())).thenReturn(criarOneDriveItemResponse("maria-santos-98765432100"));
-            when(padraoCaminhoArmazenamentoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(usuarioAutenticacaoAdapter.obterEmailUsuarioLogado()).thenReturn("admin@email.com");
-            when(usuarioRepository.findByEmail("admin@email.com")).thenReturn(Optional.of(usuario));
-            when(tipoDocumentoRepository.findByNomeIgnoreCase("OUTROS")).thenReturn(Optional.of(tipoDocumento));
-            when(documentoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
             when(clientePersistenciaAdapter.buscarPorId(1L)).thenReturn(clienteSalvo);
 
             ClienteDetalhesResponse resultado = clienteService.criar(request);
@@ -453,20 +406,11 @@ class ClienteServiceTest {
 
             StatusCliente statusCliente = new StatusCliente(1L, "Ativo");
             Cliente clienteSalvo = criarClienteComStatus(1L, "Empresa XYZ", "12345678000199", "Ativo");
-            Usuario usuario = new Usuario();
-            usuario.setEmail("admin@email.com");
-            TipoDocumento tipoDocumento = new TipoDocumento(1L, "OUTROS");
 
             when(clienteRepository.existsByCpfCnpj("12345678000199")).thenReturn(false);
             when(statusClienteRepository.findById(1L)).thenReturn(Optional.of(statusCliente));
             when(clientePersistenciaAdapter.salvar(any(Cliente.class))).thenReturn(clienteSalvo);
             when(contatoRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
-            when(oneDriveService.criarPasta(anyString())).thenReturn(criarOneDriveItemResponse("empresa-xyz-12345678000199"));
-            when(padraoCaminhoArmazenamentoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(usuarioAutenticacaoAdapter.obterEmailUsuarioLogado()).thenReturn("admin@email.com");
-            when(usuarioRepository.findByEmail("admin@email.com")).thenReturn(Optional.of(usuario));
-            when(tipoDocumentoRepository.findByNomeIgnoreCase("OUTROS")).thenReturn(Optional.of(tipoDocumento));
-            when(documentoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
             when(clientePersistenciaAdapter.buscarPorId(1L)).thenReturn(clienteSalvo);
 
             ClienteDetalhesResponse resultado = clienteService.criar(request);
@@ -487,7 +431,7 @@ class ClienteServiceTest {
 
             assertThrows(IllegalArgumentException.class, () -> clienteService.criar(request));
 
-            verify(oneDriveService, never()).criarPasta(anyString());
+            verifyNoInteractions(oneDriveService);
         }
     }
 
@@ -512,17 +456,14 @@ class ClienteServiceTest {
             ClienteDetalhesResponse resultado = clienteService.atualizar(1L, request);
 
             assertNotNull(resultado);
-            verify(oneDriveService, never()).renomearPasta(anyString(), anyString());
+            verifyNoInteractions(oneDriveService);
         }
 
         @Test
-        @DisplayName("Deve renomear pasta no OneDrive quando nome mudar")
-        void deveRenomearPastaQuandoNomeMudar() {
+        @DisplayName("Deve atualizar cliente quando nome mudar")
+        void deveAtualizarQuandoNomeMudar() {
             Cliente clienteExistente = criarClienteComStatus(1L, "João da Silva", "12345678901", "Ativo");
             StatusCliente statusCliente = new StatusCliente(1L, "Ativo");
-            PadraoCaminhoArmazenamento caminho = new PadraoCaminhoArmazenamento("joao-da-silva-12345678901", "sgpj/usuarios/joao-da-silva-12345678901");
-            Documento documento = new Documento();
-            documento.setNomeOriginal("joao-da-silva-12345678901");
 
             ClienteAtualizacaoRequest request = new ClienteAtualizacaoRequest(
                     "João Silva Santos", "12345678901", "123456789", 1L, null, null
@@ -531,29 +472,18 @@ class ClienteServiceTest {
             when(clientePersistenciaAdapter.buscarPorId(1L)).thenReturn(clienteExistente);
             when(statusClienteRepository.findById(1L)).thenReturn(Optional.of(statusCliente));
             when(clientePersistenciaAdapter.salvar(any(Cliente.class))).thenReturn(clienteExistente);
-            when(oneDriveService.renomearPasta(anyString(), anyString()))
-                    .thenReturn(criarOneDriveItemResponse("joao-silva-santos-12345678901"));
-            when(padraoCaminhoArmazenamentoRepository.findByNome(anyString()))
-                    .thenReturn(Optional.of(caminho));
-            when(padraoCaminhoArmazenamentoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(documentoRepository.findByPadraoCaminhoArmazenamento(caminho))
-                    .thenReturn(Optional.of(documento));
-            when(documentoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             ClienteDetalhesResponse resultado = clienteService.atualizar(1L, request);
 
             assertNotNull(resultado);
-            verify(oneDriveService).renomearPasta(anyString(), anyString());
-            verify(padraoCaminhoArmazenamentoRepository).save(any());
-            verify(documentoRepository).save(any());
+            verifyNoInteractions(oneDriveService);
         }
 
         @Test
-        @DisplayName("Deve renomear pasta no OneDrive quando CPF/CNPJ mudar")
-        void deveRenomearPastaQuandoCpfMudar() {
+        @DisplayName("Deve atualizar cliente quando CPF/CNPJ mudar")
+        void deveAtualizarQuandoCpfMudar() {
             Cliente clienteExistente = criarClienteComStatus(1L, "João da Silva", "12345678901", "Ativo");
             StatusCliente statusCliente = new StatusCliente(1L, "Ativo");
-            PadraoCaminhoArmazenamento caminho = new PadraoCaminhoArmazenamento("joao-da-silva-12345678901", "sgpj/usuarios/joao-da-silva-12345678901");
 
             ClienteAtualizacaoRequest request = new ClienteAtualizacaoRequest(
                     "João da Silva", "99988877766", "123456789", 1L, null, null
@@ -563,17 +493,10 @@ class ClienteServiceTest {
             when(clienteRepository.existsByCpfCnpj("99988877766")).thenReturn(false);
             when(statusClienteRepository.findById(1L)).thenReturn(Optional.of(statusCliente));
             when(clientePersistenciaAdapter.salvar(any(Cliente.class))).thenReturn(clienteExistente);
-            when(oneDriveService.renomearPasta(anyString(), anyString()))
-                    .thenReturn(criarOneDriveItemResponse("joao-da-silva-99988877766"));
-            when(padraoCaminhoArmazenamentoRepository.findByNome(anyString()))
-                    .thenReturn(Optional.of(caminho));
-            when(padraoCaminhoArmazenamentoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(documentoRepository.findByPadraoCaminhoArmazenamento(caminho))
-                    .thenReturn(Optional.empty());
 
             clienteService.atualizar(1L, request);
 
-            verify(oneDriveService).renomearPasta(anyString(), anyString());
+            verifyNoInteractions(oneDriveService);
         }
 
         @Test
@@ -590,7 +513,7 @@ class ClienteServiceTest {
 
             assertThrows(ClienteJaExistenteException.class, () -> clienteService.atualizar(1L, request));
 
-            verify(oneDriveService, never()).renomearPasta(anyString(), anyString());
+            verifyNoInteractions(oneDriveService);
             verify(clientePersistenciaAdapter, never()).salvar(any());
         }
 
@@ -648,23 +571,21 @@ class ClienteServiceTest {
     class Deletar {
 
         @Test
-        @DisplayName("Deve deletar cliente, documentos e pasta no OneDrive")
+        @DisplayName("Deve deletar cliente, contatos e caminhos no OneDrive")
         void deveDeletarClienteComSucesso() {
             Cliente cliente = criarClienteComStatus(1L, "João da Silva", "12345678901", "Ativo");
-            PadraoCaminhoArmazenamento caminho = new PadraoCaminhoArmazenamento("pasta", "sgpj/usuarios/pasta");
-            Documento documento = new Documento();
+            CaminhoPadraoDeArmazenamento caminho = new CaminhoPadraoDeArmazenamento();
+            caminho.setId(10L);
+            caminho.setCaminho("joao-da-silva-12345678901/processo");
+            cliente.setCaminhos(List.of(caminho));
 
             when(clientePersistenciaAdapter.buscarPorId(1L)).thenReturn(cliente);
-            when(padraoCaminhoArmazenamentoRepository.findByNome(anyString())).thenReturn(Optional.of(caminho));
-            when(documentoRepository.findByPadraoCaminhoArmazenamento(caminho)).thenReturn(Optional.of(documento));
 
             clienteService.deletar(1L);
 
             verify(contatoRepository).deleteAll(anyList());
-            verify(documentoRepository).delete(documento);
-            verify(padraoCaminhoArmazenamentoRepository).delete(caminho);
             verify(clientePersistenciaAdapter).deletar(1L);
-            verify(oneDriveService).excluirPasta(anyString());
+            verify(oneDriveService).excluirPasta(10L);
         }
 
         @Test
@@ -675,35 +596,31 @@ class ClienteServiceTest {
             cliente.setNomeRazaoSocial("Maria");
             cliente.setCpfCnpj("98765432100");
             cliente.setContatos(null);
-            String nomePasta = "maria-98765432100";
 
             when(clientePersistenciaAdapter.buscarPorId(1L)).thenReturn(cliente);
-            when(padraoCaminhoArmazenamentoRepository.findByNome(nomePasta)).thenReturn(Optional.empty());
 
             clienteService.deletar(1L);
 
             verify(contatoRepository, never()).deleteAll(anyList());
             verify(clientePersistenciaAdapter).deletar(1L);
-            verify(oneDriveService).excluirPasta(nomePasta);
+            verifyNoInteractions(oneDriveService);
         }
 
         @Test
-        @DisplayName("Deve deletar cliente quando não existir documento associado")
-        void deveDeletarSemDocumentoAssociado() {
+        @DisplayName("Deve deletar cliente com caminho associado")
+        void deveDeletarComCaminhoAssociado() {
             Cliente cliente = criarClienteComStatus(1L, "Pedro", "11122233344", "Ativo");
-            String nomePasta = "pedro-11122233344";
-            PadraoCaminhoArmazenamento caminho = new PadraoCaminhoArmazenamento(nomePasta, "sgpj/usuarios/" + nomePasta);
+            CaminhoPadraoDeArmazenamento caminho = new CaminhoPadraoDeArmazenamento();
+            caminho.setId(20L);
+            caminho.setCaminho("pedro-11122233344/processo");
+            cliente.setCaminhos(List.of(caminho));
 
             when(clientePersistenciaAdapter.buscarPorId(1L)).thenReturn(cliente);
-            when(padraoCaminhoArmazenamentoRepository.findByNome(nomePasta)).thenReturn(Optional.of(caminho));
-            when(documentoRepository.findByPadraoCaminhoArmazenamento(caminho)).thenReturn(Optional.empty());
 
             clienteService.deletar(1L);
 
-            verify(documentoRepository, never()).delete(any(Documento.class));
-            verify(padraoCaminhoArmazenamentoRepository).delete(caminho);
             verify(clientePersistenciaAdapter).deletar(1L);
-            verify(oneDriveService).excluirPasta(nomePasta);
+            verify(oneDriveService).excluirPasta(20L);
         }
 
         @Test
@@ -714,7 +631,7 @@ class ClienteServiceTest {
 
             assertThrows(ClienteNaoEncontradoException.class, () -> clienteService.deletar(999L));
 
-            verify(oneDriveService, never()).excluirPasta(anyString());
+            verify(oneDriveService, never()).excluirPasta(anyLong());
         }
     }
 }

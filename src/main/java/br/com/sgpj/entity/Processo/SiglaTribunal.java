@@ -1,21 +1,22 @@
-package br.com.sgpj.entity;
+package br.com.sgpj.entity.Processo;
 
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "tipo_documento")
-public class TipoDocumento {
+@Table(name = "sigla_tribunal")
+public class SiglaTribunal {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 50, unique = true)
+    @Column(name = "sigla_tribunal", nullable = false, length = 10)
     private String nome;
 
-    public TipoDocumento() {}
+    public SiglaTribunal() {
+    }
 
-    public TipoDocumento(Long id, String nome) {
+    public SiglaTribunal(Long id, String nome) {
         this.id = id;
         this.nome = nome;
     }
@@ -36,4 +37,3 @@ public class TipoDocumento {
         this.nome = nome;
     }
 }
-

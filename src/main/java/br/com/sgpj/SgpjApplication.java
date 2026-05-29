@@ -8,7 +8,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableAsync
 @EnableScheduling
 @SpringBootApplication
-public class SgpjApplication {
+public class  SgpjApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(SgpjApplication.class, args);

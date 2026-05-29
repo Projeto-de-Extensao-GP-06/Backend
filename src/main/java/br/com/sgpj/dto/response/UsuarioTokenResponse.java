@@ -1,4 +1,4 @@
-package br.com.sgpj.dto.response;
+ package br.com.sgpj.dto.response;
 
 public record UsuarioTokenResponse(
         Long id,

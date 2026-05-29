@@ -12,6 +12,10 @@ public class OneDriveMapper {
     private OneDriveMapper() {}
 
     public static OneDriveItemResponse toDto(DriveItem item, String thumbnailUrl) {
+        return toDto(item, thumbnailUrl, null);
+    }
+
+    public static OneDriveItemResponse toDto(DriveItem item, String thumbnailUrl, String caminhoOverride) {
         if (item == null) return null;
 
         String tipo = item.getFolder() != null ? "pasta" : "arquivo";
@@ -21,9 +25,17 @@ public class OneDriveMapper {
             mimeType = item.getFile().getMimeType();
         }
 
-        String caminho = null;
-        if (item.getParentReference() != null && item.getParentReference().getPath() != null) {
-            caminho = item.getParentReference().getPath() + "/" + item.getName();
+        String caminho;
+        if (caminhoOverride != null) {
+            caminho = caminhoOverride;
+        } else {
+            caminho = null;
+            if (item.getParentReference() != null && item.getParentReference().getPath() != null) {
+                String rawPath = item.getParentReference().getPath() + "/" + item.getName();
+                String marker = "root:/sgpj/usuarios/";
+                int idx = rawPath.indexOf(marker);
+                caminho = idx >= 0 ? rawPath.substring(idx + marker.length()) : rawPath;
+            }
         }
 
         String urlDownload = null;
@@ -34,7 +46,6 @@ public class OneDriveMapper {
             }
         }
 
-        // Extrai a URL da miniatura (large > medium > small)
 
         return new OneDriveItemResponse(
                 item.getId(),

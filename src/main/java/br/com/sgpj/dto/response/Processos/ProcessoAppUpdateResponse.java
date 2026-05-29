@@ -2,6 +2,7 @@ package br.com.sgpj.dto.response.Processos;
 
 import br.com.sgpj.entity.Processo.FaseProcesso;
 import br.com.sgpj.entity.Processo.Prioridade;
+import br.com.sgpj.entity.Processo.ProcessoApi;
 import br.com.sgpj.entity.Processo.SiglaTribunal;
 
 import java.time.LocalDateTime;
@@ -24,6 +25,7 @@ public record ProcessoAppUpdateResponse(
         Long encerradoPorUsuarioId,
         String encerradoPorUsuarioNome,
         SiglaTribunal siglaTribunal,
+        ProcessoApi processoApi,
         Double valorCausa
 
 ) {

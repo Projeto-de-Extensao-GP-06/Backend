@@ -1,7 +1,7 @@
-package br.com.sgpj.entity;
+package br.com.sgpj.entity.documentos;
 
+import br.com.sgpj.entity.Cliente;
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.util.List;

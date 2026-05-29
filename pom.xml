@@ -142,6 +142,125 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+			<!--
+            PLUGIN: jacoco-maven-plugin
+            Instrumenta o bytecode em tempo de execução e coleta dados de cobertura de testes.
+            Alternativas comuns: cobertura-maven-plugin (abandonado), pit-maven-plugin (mutation testing).
+        -->
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.8.14</version>
+
+				<executions>
+
+					<!--
+                        [1] prepare-agent | fase padrão: initialize
+                        Injeta o agente JaCoCo na JVM via argumento -javaagent antes dos testes rodarem.
+                        Sem essa execution, nenhum dado de cobertura é coletado.
+                    -->
+					<execution>
+						<id>prepare-agent</id>
+						<goals><goal>prepare-agent</goal></goals>
+					</execution>
+
+					<!--
+                        [2] report | fase: verify
+                        Lê os dados coletados pelo agente e gera relatório em target/site/jacoco/index.html.
+
+                        Fases possíveis (em ordem do ciclo de vida Maven):
+                          test    → roda logo após os testes; relatório gerado cedo, antes de empacotar (Pode não funcionar bem)
+                          package → após gerar o .jar/.war
+                          verify  → (escolhido) padrão mais comum; após integrações e antes do install
+                          install → após copiar para o repositório local; raramente necessário aqui
+                    -->
+					<execution>
+						<id>report</id>
+						<phase>verify</phase>
+						<goals><goal>report</goal></goals>
+					</execution>
+
+					<!--
+                        [3] check | fase: verify
+                        Falha o build se a cobertura não atingir os limites definidos nas <rules>.
+                    -->
+					<execution>
+						<id>check</id>
+						<phase>verify</phase>
+						<goals><goal>check</goal></goals>
+						<configuration>
+
+							<!--
+                                <includes>: classes incluídas na análise (padrão Ant, separador /).
+                                <excludes>: classes excluídas; tem precedência sobre <includes>.
+                                Omitir ambos = analisa tudo no classpath do projeto.
+
+                                Exemplos:
+                                  school/sptech/*     → apenas classes diretas do pacote (sem subpacotes)
+                                  school/sptech/**/*  → pacote e todos os subpacotes
+                                  **/*DTO             → qualquer classe cujo nome termina em DTO
+                            -->
+							<includes>
+								<include>school/sptech/*</include>
+							</includes>
+
+							<rules>
+								<rule>
+									<!--
+                                        element: escopo ao qual a regra se aplica.
+
+                                        BUNDLE      → (escolhido) projeto inteiro como um bloco único;
+                                                      cobertura agregada — uma classe 100% pode compensar outra 0%
+                                        PACKAGE     → por pacote; falha se algum pacote não atingir o mínimo
+                                        CLASS       → por classe; mais granular, pega classes individuais problemáticas
+                                        SOURCEFILE  → por arquivo .java; similar a CLASS mas considera arquivos com múltiplas classes
+                                        METHOD      → por método; o mais rígido, garante que nenhum método fique descoberto
+                                    -->
+									<element>BUNDLE</element>
+
+									<limits>
+										<limit>
+											<!--
+                                                counter: o que é medido dentro do element.
+
+                                                INSTRUCTION  → bytecodes individuais executados; métrica mais fina e precisa
+                                                BRANCH       → (escolhido) caminhos de decisão: if/else, switch, operador ternário;
+                                                               ideal para garantir que a lógica condicional foi exercitada
+                                                LINE         → linhas de código-fonte; intuitivo mas menos preciso que INSTRUCTION
+                                                COMPLEXITY   → caminhos ciclomáticos (McCabe); cresce com ifs aninhados e loops
+                                                METHOD       → métodos chamados ao menos uma vez; não diz nada sobre o interior do método
+                                                CLASS        → classes instanciadas ao menos uma vez; métrica mais grossa de todas
+                                            -->
+											<counter>BRANCH</counter>
+
+											<!--
+                                                value: como o counter é avaliado.
+
+                                                COVEREDRATIO  → (escolhido) proporção coberta: cobertos / total (0.0 a 1.0)
+                                                MISSEDRATIO   → proporção não coberta: inverso do COVEREDRATIO
+                                                COVEREDCOUNT  → número absoluto de itens cobertos; útil quando o total é fixo e conhecido
+                                                MISSEDCOUNT   → número absoluto de itens não cobertos; ex: tolerar no máximo N branches descobertos
+                                                TOTALCOUNT    → total de itens; usado raramente para validar tamanho do projeto
+                                            -->
+											<value>COVEREDRATIO</value>
+
+											<!--
+                                                minimum: threshold mínimo aceitável para o value escolhido.
+                                                Para COVEREDRATIO: valor entre 0.0 e 1.0 (aqui 0.7 = 70%).
+                                                Para *COUNT: número inteiro de itens.
+                                                Abaixo do minimum → build falha com erro explícito no log do Maven.
+                                            -->
+											<minimum>0.7</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+
+						</configuration>
+					</execution>
+
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 

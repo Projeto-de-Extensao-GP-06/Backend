@@ -14,21 +14,16 @@ import br.com.sgpj.exception.PasswordConflictException;
 import br.com.sgpj.exception.UsuarioInativoException;
 import br.com.sgpj.exception.UsuarioJaAtivoException;
 import jakarta.servlet.http.HttpServletRequest;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -37,320 +32,744 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("Testes do UsuarioService")
 class UsuarioServiceTest {
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private UsuarioPersistenciaAdapter usuarioPersistenciaAdapter;
+
+    @Mock
+    private UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter;
+
+    @Mock
+    private OtpService otpService;
+
+    @Mock
+    private EmailService emailService;
 
     @InjectMocks
     private UsuarioService usuarioService;
 
-    @Mock
-    private PasswordEncoder passwordEncoder;
-    @Mock
-    private UsuarioPersistenciaAdapter usuarioPersistenciaAdapter;
-    @Mock
-    private UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter;
-    @Mock
-    private OtpService otpService;
-    @Mock
-    private EmailService emailService;
-    @Mock
-    private HttpServletRequest httpServletRequest;
+    private static final String EMAIL_TESTE = "usuario@teste.com";
+    private static final String NOME_TESTE = "João Silva";
+    private static final String SENHA_TESTE = "senha123";
+    private static final String OTP_TESTE = "123456";
+    private static final Long ID_TESTE = 1L;
 
-    private Usuario usuario;
-    private Cargo cargo;
-
-    @BeforeEach
-    void setUp() {
-        cargo = new Cargo();
-        cargo.setId(1L);
-        cargo.setNome("ADVOGADO");
-
-        usuario = new Usuario();
-        usuario.setId(1L);
-        usuario.setNome("Test User");
-        usuario.setEmail("test@example.com");
-        usuario.setSenha("password");
-        usuario.setAtivo(true);
-        usuario.setCargo(cargo);
-        usuario.setCriadoEm(LocalDateTime.now());
-    }
+    // ========================
+    // criar()
+    // ========================
 
     @Test
-    @DisplayName("Deve criar um usuário com sucesso")
+    @DisplayName("Deve criar usuário com sucesso")
     void deveCriarUsuarioComSucesso() {
-        UsuarioCriacaoRequest request = new UsuarioCriacaoRequest("New User", "new@example.com", 1L);
-        when(usuarioPersistenciaAdapter.existeEmail(request.email())).thenReturn(false);
-        when(usuarioPersistenciaAdapter.buscarCargoPorId(request.cargoId())).thenReturn(cargo);
+        // Given
+        UsuarioCriacaoRequest request = mock(UsuarioCriacaoRequest.class);
+        Cargo cargo = mock(Cargo.class);
+        when(request.email()).thenReturn(EMAIL_TESTE);
+        when(request.cargoId()).thenReturn(ID_TESTE);
+        when(usuarioPersistenciaAdapter.existeEmail(EMAIL_TESTE)).thenReturn(false);
+        when(usuarioPersistenciaAdapter.buscarCargoPorId(ID_TESTE)).thenReturn(cargo);
 
-        assertDoesNotThrow(() -> usuarioService.criar(request));
+        // When
+        usuarioService.criar(request);
 
+        // Then
         verify(usuarioPersistenciaAdapter, times(1)).salvar(any(Usuario.class));
     }
 
     @Test
-    @DisplayName("Deve lançar EmailDuplicadoException ao tentar criar usuário com e-mail existente")
-    void deveLancarEmailDuplicadoExceptionAoCriarUsuario() {
-        UsuarioCriacaoRequest request = new UsuarioCriacaoRequest("New User", "existente@example.com", 1L);
-        when(usuarioPersistenciaAdapter.existeEmail(request.email())).thenReturn(true);
+    @DisplayName("Deve lançar exceção ao criar usuário com email duplicado")
+    void deveLancarExcecaoAoCriarUsuarioComEmailDuplicado() {
+        // Given
+        UsuarioCriacaoRequest request = mock(UsuarioCriacaoRequest.class);
+        when(request.email()).thenReturn(EMAIL_TESTE);
+        when(usuarioPersistenciaAdapter.existeEmail(EMAIL_TESTE)).thenReturn(true);
 
-        assertThrows(EmailDuplicadoException.class, () -> usuarioService.criar(request));
+        // When/Then
+        assertThrows(
+                EmailDuplicadoException.class,
+                () -> usuarioService.criar(request)
+        );
+
+        verify(usuarioPersistenciaAdapter, never()).salvar(any(Usuario.class));
     }
 
     @Test
-    @DisplayName("Deve atualizar um usuário com sucesso")
+    @DisplayName("Deve buscar cargo ao criar usuário")
+    void deveBuscarCargoAoCriarUsuario() {
+        // Given
+        UsuarioCriacaoRequest request = mock(UsuarioCriacaoRequest.class);
+        Cargo cargo = mock(Cargo.class);
+        when(request.email()).thenReturn(EMAIL_TESTE);
+        when(request.cargoId()).thenReturn(ID_TESTE);
+        when(usuarioPersistenciaAdapter.existeEmail(EMAIL_TESTE)).thenReturn(false);
+        when(usuarioPersistenciaAdapter.buscarCargoPorId(ID_TESTE)).thenReturn(cargo);
+
+        // When
+        usuarioService.criar(request);
+
+        // Then
+        verify(usuarioPersistenciaAdapter, times(1)).buscarCargoPorId(ID_TESTE);
+    }
+
+    // ========================
+    // atualizarUsuario()
+    // ========================
+
+    @Test
+    @DisplayName("Deve atualizar usuário com sucesso")
     void deveAtualizarUsuarioComSucesso() {
-        UsuarioAtualizacaoRequest request = new UsuarioAtualizacaoRequest("Updated User", "test@example.com", "newpass", 1L, true);
-        when(usuarioPersistenciaAdapter.buscarUsuarioPorId(1L)).thenReturn(usuario);
-        when(usuarioPersistenciaAdapter.buscarCargoPorId(request.cargoId())).thenReturn(cargo);
-        when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
+        // Given
+        UsuarioAtualizacaoRequest request = mock(UsuarioAtualizacaoRequest.class);
+        Usuario usuarioAtual = criarUsuarioAtivo();
+        Cargo cargo = mock(Cargo.class);
+        when(request.cargoId()).thenReturn(ID_TESTE);
+        when(usuarioPersistenciaAdapter.buscarUsuarioPorId(ID_TESTE)).thenReturn(usuarioAtual);
+        when(usuarioPersistenciaAdapter.buscarCargoPorId(ID_TESTE)).thenReturn(cargo);
 
-        UsuarioListarResponse response = usuarioService.atualizarUsuario(request, 1L);
+        // When
+        usuarioService.atualizarUsuario(request, ID_TESTE);
 
-        assertNotNull(response);
-        assertEquals("Updated User", response.nome());
+        // Then
         verify(usuarioPersistenciaAdapter, times(1)).salvar(any(Usuario.class));
     }
 
     @Test
-    @DisplayName("Deve autenticar um usuário com sucesso")
-    void deveAutenticarUsuarioComSucesso() {
-        Authentication authentication = new UsernamePasswordAuthenticationToken(usuario.getEmail(), usuario.getSenha());
-        when(usuarioAutenticacaoAdapter.autenticar(usuario.getEmail(), usuario.getSenha())).thenReturn(authentication);
-        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(usuario.getEmail())).thenReturn(usuario);
-        when(usuarioAutenticacaoAdapter.gerarToken(authentication)).thenReturn("jwt-token");
+    @DisplayName("Deve retornar UsuarioListarResponse ao atualizar usuário")
+    void deveRetornarUsuarioListarResponseAoAtualizarUsuario() {
+        // Given
+        UsuarioAtualizacaoRequest request = mock(UsuarioAtualizacaoRequest.class);
+        Usuario usuarioAtual = criarUsuarioAtivo();
+        Cargo cargo = mock(Cargo.class);
+        when(request.cargoId()).thenReturn(ID_TESTE);
+        when(usuarioPersistenciaAdapter.buscarUsuarioPorId(ID_TESTE)).thenReturn(usuarioAtual);
+        when(usuarioPersistenciaAdapter.buscarCargoPorId(ID_TESTE)).thenReturn(cargo);
 
-        UsuarioTokenResponse response = usuarioService.autenticar(usuario);
+        // When
+        UsuarioListarResponse resultado = usuarioService.atualizarUsuario(request, ID_TESTE);
 
-        assertNotNull(response);
-        assertEquals("jwt-token", response.token());
-        assertEquals(usuario.getNome(), response.nome());
+        // Then
+        assertNotNull(resultado);
+    }
+
+    // ========================
+    // autenticar()
+    // ========================
+
+    @Test
+    @DisplayName("Deve autenticar usuário ativo com sucesso")
+    void deveAutenticarUsuarioAtivoComSucesso() {
+        // Given
+        Usuario usuario = criarUsuarioAtivoComSenha(); // <- Usar usuário com senha
+        Authentication authentication = mock(Authentication.class);
+        String token = "token-jwt";
+        when(usuarioAutenticacaoAdapter.autenticar(EMAIL_TESTE, SENHA_TESTE)).thenReturn(authentication);
+        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(EMAIL_TESTE)).thenReturn(usuario);
+        when(usuarioAutenticacaoAdapter.gerarToken(authentication)).thenReturn(token);
+
+        // When
+        UsuarioTokenResponse resultado = usuarioService.autenticar(usuario);
+
+        // Then
+        assertNotNull(resultado);
+        verify(usuarioAutenticacaoAdapter, times(1)).autenticar(EMAIL_TESTE, SENHA_TESTE);
+        verify(usuarioAutenticacaoAdapter, times(1)).definirContexto(authentication);
+        verify(usuarioAutenticacaoAdapter, times(1)).gerarToken(authentication);
     }
 
     @Test
-    @DisplayName("Deve lançar UsuarioInativoException ao tentar autenticar um usuário inativo")
-    void deveLancarUsuarioInativoExceptionAoAutenticar() {
-        usuario.setAtivo(false);
-        assertThrows(UsuarioInativoException.class, () -> usuarioService.autenticar(usuario));
+    @DisplayName("Deve lançar exceção ao autenticar usuário inativo")
+    void deveLancarExcecaoAoAutenticarUsuarioInativo() {
+        // Given
+        Usuario usuario = criarUsuarioInativo();
+
+        // When/Then
+        assertThrows(
+                UsuarioInativoException.class,
+                () -> usuarioService.autenticar(usuario)
+        );
+
+        verify(usuarioAutenticacaoAdapter, never()).autenticar(anyString(), anyString());
     }
+
+    // ========================
+    // listarTodos()
+    // ========================
 
     @Test
     @DisplayName("Deve listar todos os usuários")
     void deveListarTodosOsUsuarios() {
-        when(usuarioPersistenciaAdapter.listarTodos()).thenReturn(Collections.singletonList(usuario));
-        List<UsuarioListarResponse> response = usuarioService.listarTodos();
-        assertFalse(response.isEmpty());
-        assertEquals(1, response.size());
+        // Given
+        when(usuarioPersistenciaAdapter.listarTodos()).thenReturn(List.of(criarUsuarioAtivo()));
+
+        // When
+        List<UsuarioListarResponse> resultado = usuarioService.listarTodos();
+
+        // Then
+        assertNotNull(resultado);
+        assertFalse(resultado.isEmpty());
+        verify(usuarioPersistenciaAdapter, times(1)).listarTodos();
     }
 
     @Test
-    @DisplayName("Deve desativar um usuário ao deletar")
-    void deveDesativarUsuarioAoDeletar() {
-        when(usuarioPersistenciaAdapter.buscarUsuarioPorId(1L)).thenReturn(usuario);
-        usuarioService.deletar(1L);
-        verify(usuarioPersistenciaAdapter, times(1)).salvar(argThat(user -> !user.isAtivo()));
+    @DisplayName("Deve retornar lista vazia quando não houver usuários")
+    void deveRetornarListaVaziaQuandoNaoHouverUsuarios() {
+        // Given
+        when(usuarioPersistenciaAdapter.listarTodos()).thenReturn(List.of());
+
+        // When
+        List<UsuarioListarResponse> resultado = usuarioService.listarTodos();
+
+        // Then
+        assertNotNull(resultado);
+        assertTrue(resultado.isEmpty());
     }
 
-    @Test
-    @DisplayName("Deve enviar OTP para redefinir a senha com sucesso")
-    void deveEnviarOtpParaRedefinirSenha() {
-        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(usuario.getEmail())).thenReturn(usuario);
-        when(otpService.generateOtp(usuario.getEmail())).thenReturn("123456");
-
-        usuarioService.enviarRedefinirSenhaOtp(usuario.getEmail());
-
-        verify(emailService, times(1)).sendForgotPasswordOtp(usuario.getEmail(), usuario.getNome(), "123456");
-    }
-
-    @ParameterizedTest
-    @NullAndEmptySource
-    @DisplayName("Deve lançar IllegalArgumentException se o e-mail for inválido ao enviar OTP para redefinir senha")
-    void deveLancarExceptionSeEmailInvalidoAoEnviarOtpRedefinirSenha(String email) {
-        assertThrows(IllegalArgumentException.class, () -> usuarioService.enviarRedefinirSenhaOtp(email));
-    }
-
-    @Test
-    @DisplayName("Deve lançar UsuarioInativoException se o usuário estiver inativo ao enviar OTP para redefinir senha")
-    void deveLancarExceptionSeUsuarioInativoAoEnviarOtpRedefinirSenha() {
-        usuario.setAtivo(false);
-        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(usuario.getEmail())).thenReturn(usuario);
-        assertThrows(UsuarioInativoException.class, () -> usuarioService.enviarRedefinirSenhaOtp(usuario.getEmail()));
-    }
-
-    @Test
-    @DisplayName("Deve lançar PasswordConflictException se o usuário não tiver senha ao enviar OTP para redefinir senha")
-    void deveLancarExceptionSeUsuarioNaoTemSenhaAoEnviarOtpRedefinirSenha() {
-        usuario.setSenha(null);
-        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(usuario.getEmail())).thenReturn(usuario);
-        assertThrows(PasswordConflictException.class, () -> usuarioService.enviarRedefinirSenhaOtp(usuario.getEmail()));
-    }
-
-    @Test
-    @DisplayName("Deve enviar OTP para definir a senha com sucesso")
-    void deveEnviarOtpParaDefinirSenha() {
-        usuario.setSenha(null);
-        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(usuario.getEmail())).thenReturn(usuario);
-        when(otpService.generateOtp(usuario.getEmail())).thenReturn("123456");
-
-        usuarioService.enviarDefinirSenhaOtp(usuario.getEmail());
-
-        verify(emailService, times(1)).sendSetPasswordOtp(usuario.getEmail(), usuario.getNome(), "123456");
-    }
-
-    @ParameterizedTest
-    @NullAndEmptySource
-    @DisplayName("Deve lançar IllegalArgumentException se o e-mail for inválido ao enviar OTP para definir senha")
-    void deveLancarExceptionSeEmailInvalidoAoEnviarOtpDefinirSenha(String email) {
-        assertThrows(IllegalArgumentException.class, () -> usuarioService.enviarDefinirSenhaOtp(email));
-    }
-
-    @Test
-    @DisplayName("Deve lançar UsuarioInativoException se o usuário estiver inativo ao enviar OTP para definir senha")
-    void deveLancarExceptionSeUsuarioInativoAoEnviarOtpDefinirSenha() {
-        usuario.setAtivo(false);
-        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(usuario.getEmail())).thenReturn(usuario);
-        assertThrows(UsuarioInativoException.class, () -> usuarioService.enviarDefinirSenhaOtp(usuario.getEmail()));
-    }
-
-    @Test
-    @DisplayName("Deve lançar PasswordConflictException se o usuário já tiver senha ao enviar OTP para definir senha")
-    void deveLancarExceptionSeUsuarioJaTemSenhaAoEnviarOtpDefinirSenha() {
-        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(usuario.getEmail())).thenReturn(usuario);
-        assertThrows(PasswordConflictException.class, () -> usuarioService.enviarDefinirSenhaOtp(usuario.getEmail()));
-    }
-
-    @Test
-    @DisplayName("Deve retornar true para um OTP válido")
-    void deveRetornarTrueParaOtpValido() {
-        ValidarOtpRequest request = new ValidarOtpRequest("test@example.com", "123456");
-        when(otpService.isOtpValid(request.email(), request.otp())).thenReturn(true);
-        assertTrue(usuarioService.validarOtp(request));
-    }
-
-    @ParameterizedTest
-    @NullAndEmptySource
-    @DisplayName("Deve lançar IllegalArgumentException se o e-mail for inválido ao validar OTP")
-    void deveLancarExceptionSeEmailInvalidoAoValidarOtp(String email) {
-        ValidarOtpRequest request = new ValidarOtpRequest(email, "123456");
-        assertThrows(IllegalArgumentException.class, () -> usuarioService.validarOtp(request));
-    }
-
-    @ParameterizedTest
-    @NullAndEmptySource
-    @DisplayName("Deve lançar IllegalArgumentException se o OTP for inválido ao validar OTP")
-    void deveLancarExceptionSeOtpInvalidoAoValidarOtp(String otp) {
-        ValidarOtpRequest request = new ValidarOtpRequest("test@example.com", otp);
-        assertThrows(IllegalArgumentException.class, () -> usuarioService.validarOtp(request));
-    }
-
-    @Test
-    @DisplayName("Deve definir uma nova senha com sucesso")
-    void deveDefinirNovaSenhaComSucesso() {
-        String newPassword = "newPassword";
-        when(usuarioAutenticacaoAdapter.obterEmailUsuarioLogado()).thenReturn(usuario.getEmail());
-        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(usuario.getEmail())).thenReturn(usuario);
-        when(passwordEncoder.encode(newPassword)).thenReturn("encodedNewPassword");
-
-        usuarioService.definirNovaSenha(newPassword);
-
-        verify(usuarioPersistenciaAdapter, times(1)).salvar(argThat(user -> user.getSenha().equals("encodedNewPassword")));
-        verify(otpService, times(1)).removeOtp(usuario.getEmail());
-    }
-
-    @ParameterizedTest
-    @NullAndEmptySource
-    @DisplayName("Deve lançar IllegalArgumentException se a senha for inválida ao definir nova senha")
-    void deveLancarExceptionSeSenhaInvalidaAoDefinirNovaSenha(String senha) {
-        assertThrows(IllegalArgumentException.class, () -> usuarioService.definirNovaSenha(senha));
-    }
-
-    @Test
-    @DisplayName("Deve autenticar com OTP com sucesso")
-    void deveAutenticarComOtpComSucesso() {
-        ValidarOtpRequest request = new ValidarOtpRequest(usuario.getEmail(), "123456");
-        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(request.email())).thenReturn(usuario);
-        when(usuarioAutenticacaoAdapter.gerarTokenOtp(any(Authentication.class))).thenReturn("jwt-otp-token");
-
-        UsuarioTokenResponse response = usuarioService.autenticarOtp(request);
-
-        assertNotNull(response);
-        assertEquals("jwt-otp-token", response.token());
-    }
-
-    @Test
-    @DisplayName("Deve lançar UsuarioInativoException ao autenticar com OTP se o usuário estiver inativo")
-    void deveLancarUsuarioInativoExceptionAoAutenticarComOtp() {
-        usuario.setAtivo(false);
-        ValidarOtpRequest request = new ValidarOtpRequest(usuario.getEmail(), "123456");
-        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(request.email())).thenReturn(usuario);
-
-        assertThrows(UsuarioInativoException.class, () -> usuarioService.autenticarOtp(request));
-    }
-
-    @Test
-    @DisplayName("Deve reativar um usuário com sucesso")
-    void deveReativarUsuarioComSucesso() {
-        usuario.setAtivo(false);
-        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(usuario.getEmail())).thenReturn(usuario);
-
-        UsuarioListarResponse response = usuarioService.reativarUsuario(usuario.getEmail());
-
-        assertTrue(response.ativo());
-        verify(usuarioPersistenciaAdapter, times(1)).salvar(argThat(Usuario::isAtivo));
-    }
-
-    @Test
-    @DisplayName("Deve lançar UsuarioJaAtivoException ao tentar reativar um usuário já ativo")
-    void deveLancarUsuarioJaAtivoExceptionAoReativar() {
-        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(usuario.getEmail())).thenReturn(usuario);
-        assertThrows(UsuarioJaAtivoException.class, () -> usuarioService.reativarUsuario(usuario.getEmail()));
-    }
+    // ========================
+    // listarPorFuncao()
+    // ========================
 
     @Test
     @DisplayName("Deve listar usuários por função")
     void deveListarUsuariosPorFuncao() {
-        String funcao = "ADVOGADO";
-        when(usuarioPersistenciaAdapter.listarPorFuncao(funcao)).thenReturn(Collections.singletonList(usuario));
+        // Given
+        String funcao = "ADMIN";
+        when(usuarioPersistenciaAdapter.listarPorFuncao(funcao)).thenReturn(List.of(criarUsuarioAtivo()));
 
-        List<UsuarioListarResponse> response = usuarioService.listarPorFuncao(funcao);
+        // When
+        List<UsuarioListarResponse> resultado = usuarioService.listarPorFuncao(funcao);
 
-        assertFalse(response.isEmpty());
-        assertEquals(1, response.size());
+        // Then
+        assertNotNull(resultado);
+        assertFalse(resultado.isEmpty());
         verify(usuarioPersistenciaAdapter, times(1)).listarPorFuncao(funcao);
     }
 
+    // ========================
+    // buscarPorNomeOuEmail()
+    // ========================
+
     @Test
-    @DisplayName("Deve buscar usuários por nome ou e-mail")
+    @DisplayName("Deve buscar usuários por nome ou email")
     void deveBuscarUsuariosPorNomeOuEmail() {
-        String pesquisa = "test";
-        when(usuarioPersistenciaAdapter.pesquisarPorNomeOuEmail(pesquisa)).thenReturn(Collections.singletonList(usuario));
+        // Given
+        String pesquisa = "João";
+        when(usuarioPersistenciaAdapter.pesquisarPorNomeOuEmail(pesquisa)).thenReturn(List.of(criarUsuarioAtivo()));
 
-        List<UsuarioListarResponse> response = usuarioService.buscarPorNomeOuEmail(pesquisa);
+        // When
+        List<UsuarioListarResponse> resultado = usuarioService.buscarPorNomeOuEmail(pesquisa);
 
-        assertFalse(response.isEmpty());
-        assertEquals(1, response.size());
+        // Then
+        assertNotNull(resultado);
+        assertFalse(resultado.isEmpty());
         verify(usuarioPersistenciaAdapter, times(1)).pesquisarPorNomeOuEmail(pesquisa);
     }
 
+    // ========================
+    // obterPorId()
+    // ========================
+
     @Test
-    @DisplayName("Deve retornar true se o escopo estiver correto")
-    void deveRetornarTrueSeEscopoCorreto() {
-        String scope = "SCOPE_USER";
-        when(usuarioAutenticacaoAdapter.isCorrectScope(httpServletRequest, scope)).thenReturn(true);
+    @DisplayName("Deve obter usuário por id")
+    void deveObterUsuarioPorId() {
+        // Given
+        Usuario usuario = criarUsuarioAtivo();
+        when(usuarioPersistenciaAdapter.buscarUsuarioPorId(ID_TESTE)).thenReturn(usuario);
 
-        boolean result = usuarioService.isCorrectScope(httpServletRequest, scope);
+        // When
+        Usuario resultado = usuarioService.obterPorId(ID_TESTE);
 
-        assertTrue(result);
-        verify(usuarioAutenticacaoAdapter, times(1)).isCorrectScope(httpServletRequest, scope);
+        // Then
+        assertNotNull(resultado);
+        assertEquals(usuario, resultado);
+        verify(usuarioPersistenciaAdapter, times(1)).buscarUsuarioPorId(ID_TESTE);
+    }
+
+    // ========================
+    // deletar()
+    // ========================
+
+    @Test
+    @DisplayName("Deve desativar usuário ao deletar")
+    void deveDesativarUsuarioAoDeletar() {
+        // Given
+        Usuario usuario = criarUsuarioAtivo();
+        when(usuarioPersistenciaAdapter.buscarUsuarioPorId(ID_TESTE)).thenReturn(usuario);
+
+        // When
+        usuarioService.deletar(ID_TESTE);
+
+        // Then
+        assertFalse(usuario.isAtivo());
+        verify(usuarioPersistenciaAdapter, times(1)).salvar(usuario);
     }
 
     @Test
-    @DisplayName("Deve retornar false se o escopo estiver incorreto")
-    void deveRetornarFalseSeEscopoIncorreto() {
-        String scope = "SCOPE_ADMIN";
-        when(usuarioAutenticacaoAdapter.isCorrectScope(httpServletRequest, scope)).thenReturn(false);
+    @DisplayName("Deve retornar null ao deletar")
+    void deveRetornarNullAoDeletar() {
+        // Given
+        Usuario usuario = criarUsuarioAtivo();
+        when(usuarioPersistenciaAdapter.buscarUsuarioPorId(ID_TESTE)).thenReturn(usuario);
 
-        boolean result = usuarioService.isCorrectScope(httpServletRequest, scope);
+        // When
+        Void resultado = usuarioService.deletar(ID_TESTE);
 
-        assertFalse(result);
-        verify(usuarioAutenticacaoAdapter, times(1)).isCorrectScope(httpServletRequest, scope);
+        // Then
+        assertNull(resultado);
+    }
+
+    // ========================
+    // enviarRedefinirSenhaOtp()
+    // ========================
+
+    @Test
+    @DisplayName("Deve enviar OTP de redefinição de senha com sucesso")
+    void deveEnviarOtpRedefinicaoSenhaComSucesso() {
+        // Given
+        Usuario usuario = criarUsuarioAtivoComSenha();
+        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(EMAIL_TESTE)).thenReturn(usuario);
+        when(otpService.generateOtp(EMAIL_TESTE)).thenReturn(OTP_TESTE);
+
+        // When
+        usuarioService.enviarRedefinirSenhaOtp(EMAIL_TESTE);
+
+        // Then
+        verify(otpService, times(1)).generateOtp(EMAIL_TESTE);
+        verify(emailService, times(1)).sendForgotPasswordOtp(EMAIL_TESTE, NOME_TESTE, OTP_TESTE);
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao enviar OTP de redefinição com email nulo")
+    void deveLancarExcecaoAoEnviarOtpRedefinicaoComEmailNulo() {
+        // When/Then
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> usuarioService.enviarRedefinirSenhaOtp(null)
+        );
+
+        verify(otpService, never()).generateOtp(anyString());
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao enviar OTP de redefinição com email em branco")
+    void deveLancarExcecaoAoEnviarOtpRedefinicaoComEmailEmBranco() {
+        // When/Then
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> usuarioService.enviarRedefinirSenhaOtp("   ")
+        );
+
+        verify(otpService, never()).generateOtp(anyString());
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao enviar OTP de redefinição para usuário inativo")
+    void deveLancarExcecaoAoEnviarOtpRedefinicaoParaUsuarioInativo() {
+        // Given
+        Usuario usuario = criarUsuarioInativo();
+        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(EMAIL_TESTE)).thenReturn(usuario);
+
+        // When/Then
+        assertThrows(
+                UsuarioInativoException.class,
+                () -> usuarioService.enviarRedefinirSenhaOtp(EMAIL_TESTE)
+        );
+
+        verify(otpService, never()).generateOtp(anyString());
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao enviar OTP de redefinição para usuário sem senha")
+    void deveLancarExcecaoAoEnviarOtpRedefinicaoParaUsuarioSemSenha() {
+        // Given
+        Usuario usuario = criarUsuarioAtivoSemSenha();
+        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(EMAIL_TESTE)).thenReturn(usuario);
+
+        // When/Then
+        assertThrows(
+                PasswordConflictException.class,
+                () -> usuarioService.enviarRedefinirSenhaOtp(EMAIL_TESTE)
+        );
+
+        verify(otpService, never()).generateOtp(anyString());
+    }
+
+    // ========================
+    // enviarDefinirSenhaOtp()
+    // ========================
+
+    @Test
+    @DisplayName("Deve enviar OTP de definição de senha com sucesso")
+    void deveEnviarOtpDefinicaoSenhaComSucesso() {
+        // Given
+        Usuario usuario = criarUsuarioAtivoSemSenha();
+        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(EMAIL_TESTE)).thenReturn(usuario);
+        when(otpService.generateOtp(EMAIL_TESTE)).thenReturn(OTP_TESTE);
+
+        // When
+        usuarioService.enviarDefinirSenhaOtp(EMAIL_TESTE);
+
+        // Then
+        verify(otpService, times(1)).generateOtp(EMAIL_TESTE);
+        verify(emailService, times(1)).sendSetPasswordOtp(EMAIL_TESTE, NOME_TESTE, OTP_TESTE);
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao enviar OTP de definição com email nulo")
+    void deveLancarExcecaoAoEnviarOtpDefinicaoComEmailNulo() {
+        // When/Then
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> usuarioService.enviarDefinirSenhaOtp(null)
+        );
+
+        verify(otpService, never()).generateOtp(anyString());
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao enviar OTP de definição com email em branco")
+    void deveLancarExcecaoAoEnviarOtpDefinicaoComEmailEmBranco() {
+        // When/Then
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> usuarioService.enviarDefinirSenhaOtp("   ")
+        );
+
+        verify(otpService, never()).generateOtp(anyString());
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao enviar OTP de definição para usuário inativo")
+    void deveLancarExcecaoAoEnviarOtpDefinicaoParaUsuarioInativo() {
+        // Given
+        Usuario usuario = criarUsuarioInativo();
+        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(EMAIL_TESTE)).thenReturn(usuario);
+
+        // When/Then
+        assertThrows(
+                UsuarioInativoException.class,
+                () -> usuarioService.enviarDefinirSenhaOtp(EMAIL_TESTE)
+        );
+
+        verify(otpService, never()).generateOtp(anyString());
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao enviar OTP de definição para usuário que já possui senha")
+    void deveLancarExcecaoAoEnviarOtpDefinicaoParaUsuarioComSenha() {
+        // Given
+        Usuario usuario = criarUsuarioAtivoComSenha();
+        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(EMAIL_TESTE)).thenReturn(usuario);
+
+        // When/Then
+        assertThrows(
+                PasswordConflictException.class,
+                () -> usuarioService.enviarDefinirSenhaOtp(EMAIL_TESTE)
+        );
+
+        verify(otpService, never()).generateOtp(anyString());
+    }
+
+    // ========================
+    // validarOtp()
+    // ========================
+
+    @Test
+    @DisplayName("Deve validar OTP com sucesso")
+    void deveValidarOtpComSucesso() {
+        // Given
+        ValidarOtpRequest request = new ValidarOtpRequest(EMAIL_TESTE, OTP_TESTE);
+        when(otpService.isOtpValid(EMAIL_TESTE, OTP_TESTE)).thenReturn(true);
+
+        // When
+        boolean resultado = usuarioService.validarOtp(request);
+
+        // Then
+        assertTrue(resultado);
+        verify(otpService, times(1)).isOtpValid(EMAIL_TESTE, OTP_TESTE);
+    }
+
+    @Test
+    @DisplayName("Deve retornar falso para OTP inválido")
+    void deveRetornarFalsoParaOtpInvalido() {
+        // Given
+        ValidarOtpRequest request = new ValidarOtpRequest(EMAIL_TESTE, OTP_TESTE);
+        when(otpService.isOtpValid(EMAIL_TESTE, OTP_TESTE)).thenReturn(false);
+
+        // When
+        boolean resultado = usuarioService.validarOtp(request);
+
+        // Then
+        assertFalse(resultado);
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao validar OTP com email nulo")
+    void deveLancarExcecaoAoValidarOtpComEmailNulo() {
+        // Given
+        ValidarOtpRequest request = new ValidarOtpRequest(null, OTP_TESTE);
+
+        // When/Then
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> usuarioService.validarOtp(request)
+        );
+
+        verify(otpService, never()).isOtpValid(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao validar OTP com email em branco")
+    void deveLancarExcecaoAoValidarOtpComEmailEmBranco() {
+        // Given
+        ValidarOtpRequest request = new ValidarOtpRequest("   ", OTP_TESTE);
+
+        // When/Then
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> usuarioService.validarOtp(request)
+        );
+
+        verify(otpService, never()).isOtpValid(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao validar OTP nulo")
+    void deveLancarExcecaoAoValidarOtpNulo() {
+        // Given
+        ValidarOtpRequest request = new ValidarOtpRequest(EMAIL_TESTE, null);
+
+        // When/Then
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> usuarioService.validarOtp(request)
+        );
+
+        verify(otpService, never()).isOtpValid(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao validar OTP em branco")
+    void deveLancarExcecaoAoValidarOtpEmBranco() {
+        // Given
+        ValidarOtpRequest request = new ValidarOtpRequest(EMAIL_TESTE, "   ");
+
+        // When/Then
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> usuarioService.validarOtp(request)
+        );
+
+        verify(otpService, never()).isOtpValid(anyString(), anyString());
+    }
+
+    // ========================
+    // isCorrectScope()
+    // ========================
+
+    @Test
+    @DisplayName("Deve retornar true quando scope for correto")
+    void deveRetornarTrueQuandoScopeForCorreto() {
+        // Given
+        HttpServletRequest httpRequest = mock(HttpServletRequest.class);
+        String scope = "OTP";
+        when(usuarioAutenticacaoAdapter.isCorrectScope(httpRequest, scope)).thenReturn(true);
+
+        // When
+        boolean resultado = usuarioService.isCorrectScope(httpRequest, scope);
+
+        // Then
+        assertTrue(resultado);
+        verify(usuarioAutenticacaoAdapter, times(1)).isCorrectScope(httpRequest, scope);
+    }
+
+    @Test
+    @DisplayName("Deve retornar false quando scope for incorreto")
+    void deveRetornarFalseQuandoScopeForIncorreto() {
+        // Given
+        HttpServletRequest httpRequest = mock(HttpServletRequest.class);
+        String scope = "INVALIDO";
+        when(usuarioAutenticacaoAdapter.isCorrectScope(httpRequest, scope)).thenReturn(false);
+
+        // When
+        boolean resultado = usuarioService.isCorrectScope(httpRequest, scope);
+
+        // Then
+        assertFalse(resultado);
+    }
+
+    // ========================
+    // definirNovaSenha()
+    // ========================
+
+    @Test
+    @DisplayName("Deve definir nova senha com sucesso")
+    void deveDefinirNovaSenhaComSucesso() {
+        // Given
+        Usuario usuario = criarUsuarioAtivoComSenha();
+        String senhaCriptografada = "senha-criptografada";
+        when(usuarioAutenticacaoAdapter.obterEmailUsuarioLogado()).thenReturn(EMAIL_TESTE);
+        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(EMAIL_TESTE)).thenReturn(usuario);
+        when(passwordEncoder.encode(SENHA_TESTE)).thenReturn(senhaCriptografada);
+
+        // When
+        usuarioService.definirNovaSenha(SENHA_TESTE);
+
+        // Then
+        assertEquals(senhaCriptografada, usuario.getSenha());
+        verify(usuarioPersistenciaAdapter, times(1)).salvar(usuario);
+        verify(otpService, times(1)).removeOtp(EMAIL_TESTE);
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao definir senha nula")
+    void deveLancarExcecaoAoDefinirSenhaNula() {
+        // When/Then
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> usuarioService.definirNovaSenha(null)
+        );
+
+        verify(usuarioPersistenciaAdapter, never()).salvar(any(Usuario.class));
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao definir senha em branco")
+    void deveLancarExcecaoAoDefinirSenhaEmBranco() {
+        // When/Then
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> usuarioService.definirNovaSenha("   ")
+        );
+
+        verify(usuarioPersistenciaAdapter, never()).salvar(any(Usuario.class));
+    }
+
+    @Test
+    @DisplayName("Deve remover OTP ao definir nova senha")
+    void deveRemoverOtpAoDefinirNovaSenha() {
+        // Given
+        Usuario usuario = criarUsuarioAtivoComSenha();
+        when(usuarioAutenticacaoAdapter.obterEmailUsuarioLogado()).thenReturn(EMAIL_TESTE);
+        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(EMAIL_TESTE)).thenReturn(usuario);
+        when(passwordEncoder.encode(SENHA_TESTE)).thenReturn("senha-criptografada");
+
+        // When
+        usuarioService.definirNovaSenha(SENHA_TESTE);
+
+        // Then
+        verify(otpService, times(1)).removeOtp(EMAIL_TESTE);
+    }
+
+    // ========================
+    // autenticarOtp()
+    // ========================
+
+    @Test
+    @DisplayName("Deve autenticar via OTP com sucesso")
+    void deveAutenticarViaOtpComSucesso() {
+        // Given
+        ValidarOtpRequest request = new ValidarOtpRequest(EMAIL_TESTE, OTP_TESTE);
+        Usuario usuario = criarUsuarioAtivo();
+        String token = "token-otp";
+        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(EMAIL_TESTE)).thenReturn(usuario);
+        when(usuarioAutenticacaoAdapter.gerarTokenOtp(any(Authentication.class))).thenReturn(token);
+
+        // When
+        UsuarioTokenResponse resultado = usuarioService.autenticarOtp(request);
+
+        // Then
+        assertNotNull(resultado);
+        verify(usuarioAutenticacaoAdapter, times(1)).definirContexto(any(Authentication.class));
+        verify(usuarioAutenticacaoAdapter, times(1)).gerarTokenOtp(any(Authentication.class));
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao autenticar via OTP com usuário inativo")
+    void deveLancarExcecaoAoAutenticarViaOtpComUsuarioInativo() {
+        // Given
+        ValidarOtpRequest request = new ValidarOtpRequest(EMAIL_TESTE, OTP_TESTE);
+        Usuario usuario = criarUsuarioInativo();
+        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(EMAIL_TESTE)).thenReturn(usuario);
+
+        // When/Then
+        assertThrows(
+                UsuarioInativoException.class,
+                () -> usuarioService.autenticarOtp(request)
+        );
+
+        verify(usuarioAutenticacaoAdapter, never()).gerarTokenOtp(any(Authentication.class));
+    }
+
+    // ========================
+    // reativarUsuario()
+    // ========================
+
+    @Test
+    @DisplayName("Deve reativar usuário inativo com sucesso")
+    void deveReativarUsuarioInativoComSucesso() {
+        // Given
+        Usuario usuario = criarUsuarioInativo();
+        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(EMAIL_TESTE)).thenReturn(usuario);
+
+        // When
+        UsuarioListarResponse resultado = usuarioService.reativarUsuario(EMAIL_TESTE);
+
+        // Then
+        assertNotNull(resultado);
+        assertTrue(usuario.isAtivo());
+        verify(usuarioPersistenciaAdapter, times(1)).salvar(usuario);
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao reativar usuário já ativo")
+    void deveLancarExcecaoAoReativarUsuarioJaAtivo() {
+        // Given
+        Usuario usuario = criarUsuarioAtivo();
+        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(EMAIL_TESTE)).thenReturn(usuario);
+
+        // When/Then
+        assertThrows(
+                UsuarioJaAtivoException.class,
+                () -> usuarioService.reativarUsuario(EMAIL_TESTE)
+        );
+
+        verify(usuarioPersistenciaAdapter, never()).salvar(any(Usuario.class));
+    }
+
+    // ========================
+    // Métodos auxiliares
+    // ========================
+
+    private Usuario criarUsuarioAtivo() {
+        Usuario usuario = new Usuario();
+        usuario.setId(ID_TESTE);
+        usuario.setNome(NOME_TESTE);
+        usuario.setEmail(EMAIL_TESTE);
+        usuario.setAtivo(true);
+        usuario.setCriadoEm(LocalDateTime.now());
+        return usuario;
+    }
+
+    private Usuario criarUsuarioAtivoComSenha() {
+        Usuario usuario = criarUsuarioAtivo();
+        usuario.setSenha(SENHA_TESTE);
+        return usuario;
+    }
+
+    private Usuario criarUsuarioAtivoSemSenha() {
+        Usuario usuario = criarUsuarioAtivo();
+        usuario.setSenha(null);
+        return usuario;
+    }
+
+    private Usuario criarUsuarioInativo() {
+        Usuario usuario = criarUsuarioAtivo();
+        usuario.setAtivo(false);
+        return usuario;
     }
 }

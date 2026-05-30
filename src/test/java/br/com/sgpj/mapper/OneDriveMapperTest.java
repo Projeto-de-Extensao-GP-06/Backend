@@ -41,7 +41,7 @@ class OneDriveMapperTest {
         item.setFile(file);
 
         ItemReference parent = new ItemReference();
-        parent.setPath("/drive/root:/sgpj/usuarios/joao");
+        parent.setPath("/drives/EB8E68C94C594ADF/root:/sgpj/usuarios/joao");
         item.setParentReference(parent);
 
         Map<String, Object> additionalData = new HashMap<>();
@@ -58,7 +58,7 @@ class OneDriveMapperTest {
         assertEquals("https://download.test/file", dto.urlDownload());
         assertEquals("https://thumb.test", dto.thumbnailUrl());
         assertEquals(agora, dto.criadoEm());
-        assertEquals("/drive/root:/sgpj/usuarios/joao/relatorio.pdf", dto.caminho());
+        assertEquals("joao/relatorio.pdf", dto.caminho());
     }
 
     @Test

@@ -1,5 +1,6 @@
 package br.com.sgpj.entity;
 
+import br.com.sgpj.entity.documentos.CaminhoPadraoDeArmazenamento;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -35,6 +36,9 @@ public class Cliente {
 
     @Column(name = "data_hora_transformacao_em_cliente")
     private LocalDateTime dataHoraTransformacaoEmCliente;
+
+    @OneToMany(mappedBy = "cliente", fetch = FetchType.LAZY)
+    private List<CaminhoPadraoDeArmazenamento> caminhos;
 
     @OneToMany(mappedBy = "cliente", fetch = FetchType.LAZY)
     private List<Contato> contatos;
@@ -111,6 +115,14 @@ public class Cliente {
 
     public void setContatos(List<Contato> contatos) {
         this.contatos = contatos;
+    }
+
+    public List<CaminhoPadraoDeArmazenamento> getCaminhos() {
+        return caminhos;
+    }
+
+    public void setCaminhos(List<CaminhoPadraoDeArmazenamento> caminhos) {
+        this.caminhos = caminhos;
     }
 }
 

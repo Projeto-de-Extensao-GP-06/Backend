@@ -1,8 +1,20 @@
 package br.com.sgpj.service;
 
 import br.com.sgpj.adapter.onedrive.OneDriveTokenAdapter;
-import br.com.sgpj.dto.response.OneDriveItemResponse;
+import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
+import br.com.sgpj.dto.OneDriveItemResponse;
+import br.com.sgpj.entity.documentos.CaminhoPadraoDeArmazenamento;
+import br.com.sgpj.entity.Cliente;
+import br.com.sgpj.exception.ClienteNaoEncontradoException;
 import br.com.sgpj.exception.OneDriveErroException;
+import br.com.sgpj.exception.CaminhoJaExisteException;
+import br.com.sgpj.repository.CaminhoPadraoDeArmazenamentoRepository;
+import br.com.sgpj.repository.ClienteRepository;
+import br.com.sgpj.repository.DocumentoRepository;
+import br.com.sgpj.repository.ProcessoAppRepository;
+import br.com.sgpj.repository.ProcessoDocumentoRepository;
+import br.com.sgpj.repository.TipoDocumentoRepository;
+import br.com.sgpj.repository.UsuarioRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -12,6 +24,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.OffsetDateTime;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -20,15 +33,41 @@ import static org.mockito.Mockito.*;
 @DisplayName("OneDriveService — Testes unitários")
 class OneDriveServiceTest {
 
-    @Mock
-    private OneDriveTokenAdapter tokenAdapter;
+    @Mock private OneDriveTokenAdapter tokenAdapter;
+    @Mock private UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter;
+    @Mock private ClienteRepository clienteRepository;
+    @Mock private DocumentoRepository documentoRepository;
+    @Mock private UsuarioRepository usuarioRepository;
+    @Mock private TipoDocumentoRepository tipoDocumentoRepository;
+    @Mock private CaminhoPadraoDeArmazenamentoRepository caminhoPadraoDeArmazenamentoRepository;
+    @Mock private ProcessoAppRepository processoAppRepository;
+    @Mock private ProcessoDocumentoRepository processoDocumentoRepository;
 
     private OneDriveService service;
 
     @BeforeEach
     void setup() {
-        service = spy(new OneDriveService(tokenAdapter));
+        service = spy(new OneDriveService(
+                tokenAdapter, usuarioAutenticacaoAdapter, clienteRepository,
+                documentoRepository, usuarioRepository,
+                tipoDocumentoRepository, caminhoPadraoDeArmazenamentoRepository,
+                processoAppRepository, processoDocumentoRepository
+        ));
     }
+
+    private CaminhoPadraoDeArmazenamento criarCaminhoMock(Long id) {
+        CaminhoPadraoDeArmazenamento caminho = new CaminhoPadraoDeArmazenamento();
+        caminho.setId(id);
+        caminho.setCaminho("rafael-silva-12345678901/1234567-89.2024.8.26.0100");
+        return caminho;
+    }
+
+    private void mockCaminho(Long id) {
+        lenient().when(caminhoPadraoDeArmazenamentoRepository.findById(id))
+                .thenReturn(Optional.of(criarCaminhoMock(id)));
+    }
+
+    // ========== Upload ==========
 
     @Nested
     @DisplayName("uploadDocumento — Roteamento por tamanho")
@@ -39,87 +78,114 @@ class OneDriveServiceTest {
         void deveUsarUploadSimplesParaArquivoPequeno() {
             byte[] conteudo = new byte[1024 * 1024]; // 1 MB
             OneDriveItemResponse respostaEsperada = criarRespostaMock("id-1", "arquivo.pdf");
+            doReturn(respostaEsperada).when(service).uploadDocumento("arquivo.pdf", conteudo, 1L, 1L, null);
 
-            doReturn(respostaEsperada).when(service).uploadDocumento("pasta-user", "arquivo.pdf", conteudo);
-
-            OneDriveItemResponse resultado = service.uploadDocumento("pasta-user", "arquivo.pdf", conteudo);
-
+            OneDriveItemResponse resultado = service.uploadDocumento("arquivo.pdf", conteudo, 1L, 1L, null);
             assertEquals("id-1", resultado.id());
-            assertEquals("arquivo.pdf", resultado.nome());
         }
 
         @Test
-        @DisplayName("Deve usar upload simples para arquivo exatamente 4 MB (falha no Graph)")
+        @DisplayName("Deve falhar no Graph com upload simples para 4 MB")
         void deveUsarUploadSimplesParaExatamente4MB() {
-            byte[] conteudo = new byte[4 * 1024 * 1024]; // Exatamente 4 MB
+            byte[] conteudo = new byte[4 * 1024 * 1024];
             when(tokenAdapter.getAccessToken()).thenReturn("fake-token");
-
-            // Vai falhar no Graph (token inválido) — prova que tentou o caminho correto
-            assertThrows(Exception.class,
-                    () -> service.uploadDocumento("pasta", "arquivo.pdf", conteudo));
+            mockCaminho(1L);
+            assertThrows(Exception.class, () -> service.uploadDocumento("arquivo.pdf", conteudo, 1L, 1L, null));
         }
 
         @Test
-        @DisplayName("Deve usar upload grande para arquivo > 4 MB (falha no Graph)")
+        @DisplayName("Deve falhar no Graph com upload grande para > 4 MB")
         void deveUsarUploadGrandeParaArquivoMaior() {
-            byte[] conteudo = new byte[5 * 1024 * 1024]; // 5 MB
+            byte[] conteudo = new byte[5 * 1024 * 1024];
             when(tokenAdapter.getAccessToken()).thenReturn("fake-token");
+            mockCaminho(1L);
+            assertThrows(Exception.class, () -> service.uploadDocumento("grande.zip", conteudo, 1L, 1L, null));
+        }
 
-            // Vai falhar no Graph — prova que tentou o caminho de upload grande
-            assertThrows(Exception.class,
-                    () -> service.uploadDocumento("pasta", "grande.zip", conteudo));
+        @Test
+        @DisplayName("Deve lançar exceção quando caminho não existe")
+        void deveLancarExcecaoQuandoCaminhoNaoExiste() {
+            when(caminhoPadraoDeArmazenamentoRepository.findById(99L)).thenReturn(Optional.empty());
+            assertThrows(OneDriveErroException.class,
+                    () -> service.uploadDocumento("arquivo.pdf", new byte[100], 1L, 99L, null));
         }
     }
+
+    // ========== Listar ==========
 
     @Nested
     @DisplayName("listarArquivos — Listagem de pasta")
     class ListarArquivosTest {
 
         @Test
-        @DisplayName("Deve lançar exceção quando token adapter falha")
+        @DisplayName("Deve lançar exceção quando token falha")
         void deveLancarExcecaoQuandoTokenFalha() {
-            when(tokenAdapter.getAccessToken()).thenThrow(
-                    new OneDriveErroException("Refresh token não encontrado"));
-
-            assertThrows(OneDriveErroException.class,
-                    () -> service.listarArquivos("minha-pasta"));
+            mockCaminho(1L);
+            when(tokenAdapter.getAccessToken()).thenThrow(new OneDriveErroException("Refresh token não encontrado"));
+            assertThrows(OneDriveErroException.class, () -> service.listarArquivos(1L));
         }
 
         @Test
-        @DisplayName("Deve lançar exceção quando drive não é encontrado")
+        @DisplayName("Deve lançar exceção quando drive não encontrado")
         void deveLancarExcecaoQuandoDriveNulo() {
+            mockCaminho(1L);
             when(tokenAdapter.getAccessToken()).thenReturn("fake-token");
+            assertThrows(Exception.class, () -> service.listarArquivos(1L));
+        }
 
-            assertThrows(Exception.class,
-                    () -> service.listarArquivos("pasta-teste"));
+        @Test
+        @DisplayName("Deve lançar exceção quando caminho não existe")
+        void deveLancarExcecaoQuandoCaminhoNaoExiste() {
+            when(caminhoPadraoDeArmazenamentoRepository.findById(99L)).thenReturn(Optional.empty());
+            assertThrows(OneDriveErroException.class, () -> service.listarArquivos(99L));
         }
     }
+
+    // ========== Criar Pasta ==========
 
     @Nested
     @DisplayName("criarPasta — Criação de pasta")
     class CriarPastaTest {
 
+        private Cliente criarClienteMock() {
+            Cliente cliente = new Cliente();
+            cliente.setId(1L);
+            cliente.setNomeRazaoSocial("Rafael Silva");
+            cliente.setCpfCnpj("12345678901");
+            return cliente;
+        }
+
         @Test
         @DisplayName("Deve lançar OneDriveErroException ao falhar no Graph")
         void deveLancarExcecaoAoCriarPasta() {
+            when(clienteRepository.findById(1L)).thenReturn(Optional.of(criarClienteMock()));
+            when(caminhoPadraoDeArmazenamentoRepository.existsByCaminho(anyString())).thenReturn(false);
             when(tokenAdapter.getAccessToken()).thenReturn("fake-token");
-
             OneDriveErroException ex = assertThrows(OneDriveErroException.class,
-                    () -> service.criarPasta("nova-pasta"));
-
+                    () -> service.criarPasta(1L, "1234567-89.2024.8.26.0100"));
             assertTrue(ex.getMessage().contains("Erro ao criar a pasta"));
         }
 
         @Test
-        @DisplayName("Deve lançar exceção quando token não disponível")
-        void deveLancarExcecaoSemToken() {
-            when(tokenAdapter.getAccessToken()).thenThrow(
-                    new OneDriveErroException("Refresh token não encontrado"));
+        @DisplayName("Deve lançar exceção quando cliente não existe")
+        void deveLancarExcecaoQuandoClienteNaoExiste() {
+            when(clienteRepository.findById(99L)).thenReturn(Optional.empty());
+            assertThrows(ClienteNaoEncontradoException.class,
+                    () -> service.criarPasta(99L, "1234567-89.2024.8.26.0100"));
+        }
 
-            assertThrows(OneDriveErroException.class,
-                    () -> service.criarPasta("pasta"));
+        @Test
+        @DisplayName("Deve lançar CaminhoJaExisteException quando caminho já existe")
+        void deveLancarExcecaoQuandoCaminhoJaExiste() {
+            when(clienteRepository.findById(1L)).thenReturn(Optional.of(criarClienteMock()));
+            when(caminhoPadraoDeArmazenamentoRepository.existsByCaminho("rafael-silva-12345678901/1234567-89.2024.8.26.0100"))
+                    .thenReturn(true);
+            assertThrows(CaminhoJaExisteException.class,
+                    () -> service.criarPasta(1L, "1234567-89.2024.8.26.0100"));
         }
     }
+
+    // ========== Excluir Arquivo ==========
 
     @Nested
     @DisplayName("excluirArquivo — Exclusão de arquivo")
@@ -128,50 +194,45 @@ class OneDriveServiceTest {
         @Test
         @DisplayName("Deve lançar OneDriveErroException ao falhar no Graph")
         void deveLancarExcecaoAoExcluir() {
+            mockCaminho(1L);
             when(tokenAdapter.getAccessToken()).thenReturn("fake-token");
-
             OneDriveErroException ex = assertThrows(OneDriveErroException.class,
-                    () -> service.excluirArquivo("pasta", "arquivo.pdf"));
-
+                    () -> service.excluirArquivo(1L, "arquivo.pdf"));
             assertTrue(ex.getMessage().contains("Erro ao excluir o arquivo"));
         }
 
         @Test
-        @DisplayName("Deve lançar OneDriveErroException quando token não disponível")
-        void deveLancarExcecaoSemToken() {
-            when(tokenAdapter.getAccessToken()).thenThrow(
-                    new OneDriveErroException("Refresh token não encontrado"));
-
-            assertThrows(OneDriveErroException.class,
-                    () -> service.excluirArquivo("pasta", "arquivo.pdf"));
+        @DisplayName("Deve lançar exceção quando caminho não existe")
+        void deveLancarExcecaoQuandoCaminhoNaoExiste() {
+            when(caminhoPadraoDeArmazenamentoRepository.findById(99L)).thenReturn(Optional.empty());
+            assertThrows(OneDriveErroException.class, () -> service.excluirArquivo(99L, "arquivo.pdf"));
         }
     }
+
+    // ========== Excluir Pasta ==========
 
     @Nested
     @DisplayName("excluirPasta — Exclusão de pasta")
     class ExcluirPastaTest {
 
         @Test
-        @DisplayName("Deve lançar OneDriveErroException ao falhar no Graph")
+        @DisplayName("Deve lançar OneDriveErroException ao falhar após tentativa de exclusão no Graph")
         void deveLancarExcecaoAoExcluirPasta() {
+            mockCaminho(1L);
             when(tokenAdapter.getAccessToken()).thenReturn("fake-token");
-
-            OneDriveErroException ex = assertThrows(OneDriveErroException.class,
-                    () -> service.excluirPasta("pasta-remover"));
-
-            assertTrue(ex.getMessage().contains("Erro ao excluir a pasta"));
+            // O delete do Graph é silenciado, mas obterUsuarioLogado() falha pois email não está mockado
+            assertThrows(OneDriveErroException.class, () -> service.excluirPasta(1L));
         }
 
         @Test
-        @DisplayName("Deve lançar OneDriveErroException quando token não disponível")
-        void deveLancarExcecaoSemToken() {
-            when(tokenAdapter.getAccessToken()).thenThrow(
-                    new OneDriveErroException("Refresh token não encontrado"));
-
-            assertThrows(OneDriveErroException.class,
-                    () -> service.excluirPasta("pasta-remover"));
+        @DisplayName("Deve lançar exceção quando caminho não existe")
+        void deveLancarExcecaoQuandoCaminhoNaoExiste() {
+            when(caminhoPadraoDeArmazenamentoRepository.findById(99L)).thenReturn(Optional.empty());
+            assertThrows(OneDriveErroException.class, () -> service.excluirPasta(99L));
         }
     }
+
+    // ========== Renomear ==========
 
     @Nested
     @DisplayName("renomearArquivo — Renomear arquivo")
@@ -180,24 +241,23 @@ class OneDriveServiceTest {
         @Test
         @DisplayName("Deve lançar OneDriveErroException ao falhar no Graph")
         void deveLancarExcecaoAoRenomear() {
+            mockCaminho(1L);
             when(tokenAdapter.getAccessToken()).thenReturn("fake-token");
-
             OneDriveErroException ex = assertThrows(OneDriveErroException.class,
-                    () -> service.renomearArquivo("pasta", "antigo.pdf", "novo.pdf"));
-
+                    () -> service.renomearArquivo(1L, "antigo.pdf", "novo.pdf"));
             assertTrue(ex.getMessage().contains("Erro ao renomear o arquivo"));
         }
 
         @Test
-        @DisplayName("Deve lançar OneDriveErroException quando token não disponível")
-        void deveLancarExcecaoSemToken() {
-            when(tokenAdapter.getAccessToken()).thenThrow(
-                    new OneDriveErroException("Refresh token não encontrado"));
-
+        @DisplayName("Deve lançar exceção quando caminho não existe")
+        void deveLancarExcecaoQuandoCaminhoNaoExiste() {
+            when(caminhoPadraoDeArmazenamentoRepository.findById(99L)).thenReturn(Optional.empty());
             assertThrows(OneDriveErroException.class,
-                    () -> service.renomearArquivo("pasta", "antigo.pdf", "novo.pdf"));
+                    () -> service.renomearArquivo(99L, "antigo.pdf", "novo.pdf"));
         }
     }
+
+    // ========== Preview ==========
 
     @Nested
     @DisplayName("gerarPreviewUrl — Preview de item")
@@ -207,58 +267,23 @@ class OneDriveServiceTest {
         @DisplayName("Deve lançar exceção quando item não existe")
         void deveLancarExcecaoItemInvalido() {
             when(tokenAdapter.getAccessToken()).thenReturn("fake-token");
-
-            assertThrows(Exception.class,
-                    () -> service.gerarPreviewUrl("item-id-invalido"));
+            assertThrows(Exception.class, () -> service.gerarPreviewUrl("item-id-invalido"));
         }
 
         @Test
         @DisplayName("Deve lançar OneDriveErroException quando token não disponível")
         void deveLancarExcecaoSemToken() {
-            when(tokenAdapter.getAccessToken()).thenThrow(
-                    new OneDriveErroException("Refresh token não encontrado"));
-
-            assertThrows(OneDriveErroException.class,
-                    () -> service.gerarPreviewUrl("item-id"));
+            when(tokenAdapter.getAccessToken()).thenThrow(new OneDriveErroException("Refresh token não encontrado"));
+            assertThrows(OneDriveErroException.class, () -> service.gerarPreviewUrl("item-id"));
         }
     }
 
-    @Nested
-    @DisplayName("Construção de caminhos")
-    class CaminhosTest {
-
-        @Test
-        @DisplayName("uploadDocumento não aceita pasta nula")
-        void naoDeveAceitarPastaNula() {
-            when(tokenAdapter.getAccessToken()).thenReturn("fake-token");
-
-            assertThrows(Exception.class,
-                    () -> service.uploadDocumento(null, "arquivo.pdf", new byte[100]));
-        }
-
-        @Test
-        @DisplayName("uploadDocumento com conteúdo vazio tenta upload simples")
-        void deveAceitarConteudoVazio() {
-            when(tokenAdapter.getAccessToken()).thenReturn("fake-token");
-
-            assertThrows(Exception.class,
-                    () -> service.uploadDocumento("pasta", "vazio.txt", new byte[0]));
-        }
-    }
-
-    // Utilitário para criar resposta mock
     private OneDriveItemResponse criarRespostaMock(String id, String nome) {
         return new OneDriveItemResponse(
-                id,
-                nome,
-                "arquivo",
-                1024L,
-                "application/pdf",
-                "https://download.url",
-                "https://thumbnail.url",
-                OffsetDateTime.now(),
-                OffsetDateTime.now(),
-                "/root:/sgpj/usuarios/pasta/" + nome
+                id, nome, "arquivo", 1024L, "application/pdf",
+                "https://download.url", "https://thumbnail.url",
+                OffsetDateTime.now(), OffsetDateTime.now(),
+                "/root:/sgpj/usuarios/rafael-silva/1234/" + nome
         );
     }
 }

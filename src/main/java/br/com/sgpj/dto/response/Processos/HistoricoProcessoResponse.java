@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 public record HistoricoProcessoResponse(
         Long historicoProcessoId,
+        Long processoAppId,
         Long usuarioUtilizadoId,
         String usuarioUtilizadoNome,
         String descricaoAlteracao,

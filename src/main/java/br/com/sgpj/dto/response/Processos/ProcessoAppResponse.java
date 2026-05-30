@@ -26,7 +26,7 @@ public record ProcessoAppResponse(
         String encerradoPorUsuarioNome,
         SiglaTribunal siglaTribunal,
         Double valorCausa,
-        ProcessoApiCreateResponse processoApi,
+        ProcessoApiResponse processoApi,
         List<HistoricoProcessoResponse> historicoProcessoResponses
 ) {
 }

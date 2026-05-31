@@ -17,7 +17,7 @@ public class ProcessoApp {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(nullable = false, name = "usuario_responsavel_id")
+    @JoinColumn(name = "usuario_responsavel_id")
     private Usuario usuarioResponsavel;
 
     @ManyToOne

@@ -12,14 +12,12 @@ import br.com.sgpj.entity.Processo.SiglaTribunal;
 import br.com.sgpj.entity.StatusCliente;
 import br.com.sgpj.entity.SolicitacaoDuvida;
 import br.com.sgpj.entity.SolicitacaoStatus;
-import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
 import br.com.sgpj.mapper.SolicitacaoDuvidaMapper;
 import br.com.sgpj.repository.ClienteRepository;
 import br.com.sgpj.repository.ContatoRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.StatusClienteRepository;
-import br.com.sgpj.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,25 +30,23 @@ public class SolicitacaoDuvidaService {
     private static final String STATUS_LEAD = "LEAD";
     private static final String STATUS_ATIVO = "ATIVO";
     private static final String STATUS_INATIVO = "INATIVO";
+    private static final String OBSERVACAO_SOLICITACAO_PREFIXO = "Solicitação enviada pelo formulário público. Estado: ";
 
     private final ClienteRepository clienteRepository;
     private final ContatoRepository contatoRepository;
     private final ProcessoAppRepository processoAppRepository;
     private final StatusClienteRepository statusClienteRepository;
-    private final UsuarioRepository usuarioRepository;
     private final ProcessoService processoService;
 
     public SolicitacaoDuvidaService(ClienteRepository clienteRepository,
                                     ContatoRepository contatoRepository,
                                     ProcessoAppRepository processoAppRepository,
                                     StatusClienteRepository statusClienteRepository,
-                                    UsuarioRepository usuarioRepository,
                                     ProcessoService processoService) {
         this.clienteRepository = clienteRepository;
         this.contatoRepository = contatoRepository;
         this.processoAppRepository = processoAppRepository;
         this.statusClienteRepository = statusClienteRepository;
-        this.usuarioRepository = usuarioRepository;
         this.processoService = processoService;
     }
 
@@ -75,12 +71,11 @@ public class SolicitacaoDuvidaService {
 
         ProcessoApp processoApp = new ProcessoApp();
         processoApp.setCliente(cliente);
-        processoApp.setUsuarioResponsavel(buscarUsuarioResponsavel());
         processoApp.setDescricaoCaso(request.descricao().trim());
-        processoApp.setObservacao("Solicitação enviada pelo formulário público. Estado: " + estado);
+        processoApp.setObservacao(OBSERVACAO_SOLICITACAO_PREFIXO + estado);
         processoApp.setDataHoraInicio(cliente.getDataHoraEnvioFormulario());
         processoApp.setUltimaAtualizacao(cliente.getDataHoraEnvioFormulario());
-        processoApp.setAtivo(true);
+        processoApp.setAtivo(false);
 
         if (numeroProcesso != null) {
             processoApp.setProcessoApi(buscarProcessoOficial(numeroProcesso, estado));
@@ -110,6 +105,9 @@ public class SolicitacaoDuvidaService {
         cliente.setStatusCliente(buscarStatus(STATUS_ATIVO));
         cliente.setDataHoraTransformacaoEmCliente(LocalDateTime.now());
         clienteRepository.save(cliente);
+        processoApp.setAtivo(true);
+        processoApp.setUltimaAtualizacao(LocalDateTime.now());
+        processoAppRepository.save(processoApp);
 
         return SolicitacaoDuvidaMapper.toClientePreenchimentoResponse(toSolicitacao(processoApp));
     }
@@ -121,6 +119,9 @@ public class SolicitacaoDuvidaService {
         cliente.setStatusCliente(buscarStatus(STATUS_INATIVO));
         cliente.setDataHoraTransformacaoEmCliente(LocalDateTime.now());
         clienteRepository.save(cliente);
+        processoApp.setAtivo(false);
+        processoApp.setUltimaAtualizacao(LocalDateTime.now());
+        processoAppRepository.save(processoApp);
     }
 
     private SolicitacaoDuvida buscarSolicitacao(Long id) {
@@ -135,11 +136,6 @@ public class SolicitacaoDuvidaService {
     private StatusCliente buscarStatus(String nome) {
         return statusClienteRepository.findByNomeIgnoreCase(nome)
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Status de cliente não encontrado: " + nome));
-    }
-
-    private Usuario buscarUsuarioResponsavel() {
-        return usuarioRepository.findFirstByAtivoTrueOrderByIdAsc()
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Nenhum usuário ativo encontrado para vincular à solicitação."));
     }
 
     private SolicitacaoDuvida toSolicitacao(ProcessoApp processoApp) {
@@ -187,11 +183,10 @@ public class SolicitacaoDuvidaService {
     }
 
     private String extrairEstado(String observacao) {
-        String prefixo = "Solicitação enviada pelo formulário público. Estado: ";
-        if (observacao == null || !observacao.startsWith(prefixo)) {
+        if (observacao == null || !observacao.startsWith(OBSERVACAO_SOLICITACAO_PREFIXO)) {
             return null;
         }
-        return observacao.substring(prefixo.length());
+        return observacao.substring(OBSERVACAO_SOLICITACAO_PREFIXO.length());
     }
 
     private ProcessoApi buscarProcessoOficial(String numeroProcesso, String estado) {

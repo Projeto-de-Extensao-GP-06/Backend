@@ -67,7 +67,8 @@ public class SolicitacaoDuvidaService {
         contato.setTelefone(request.telefone().trim());
         contato.setPrincipal(true);
         contato.setCliente(cliente);
-        contatoRepository.save(contato);
+        contato = contatoRepository.save(contato);
+        cliente.setContatos(List.of(contato));
 
         ProcessoApp processoApp = new ProcessoApp();
         processoApp.setCliente(cliente);

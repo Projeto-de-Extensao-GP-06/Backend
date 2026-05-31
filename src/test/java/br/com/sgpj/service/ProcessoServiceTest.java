@@ -291,6 +291,23 @@ class ProcessoServiceTest {
     class ConsultasTest {
 
         @Test
+        @DisplayName("Deve ocultar solicitações ainda não aceitas da lista de processos")
+        void deveOcultarSolicitacoesAindaNaoAceitasDaLista() {
+            ProcessoApp processoNormal = criarProcessoBase(20L, true);
+            ProcessoApp solicitacaoPendente = criarProcessoSolicitacao(21L, false);
+            ProcessoApp solicitacaoAceita = criarProcessoSolicitacao(22L, true);
+            when(processoAppRepository.findAll()).thenReturn(List.of(processoNormal, solicitacaoPendente, solicitacaoAceita));
+
+            List<ProcessoAppMiniResponse> response = service.listarProcessos();
+
+            assertAll(
+                    () -> assertEquals(2, response.size()),
+                    () -> assertEquals(20L, response.get(0).id()),
+                    () -> assertEquals(22L, response.get(1).id())
+            );
+        }
+
+        @Test
         @DisplayName("Deve listar processos mini response")
         void deveListarProcessos() {
             ProcessoApp processo = criarProcessoBase(20L, true);
@@ -328,6 +345,32 @@ class ProcessoServiceTest {
         }
 
         @Test
+        @DisplayName("Deve tratar solicitação pendente como processo não encontrado")
+        void deveTratarSolicitacaoPendenteComoProcessoNaoEncontrado() {
+            ProcessoApp solicitacaoPendente = criarProcessoSolicitacao(31L, false);
+            when(processoAppRepository.findById(31L)).thenReturn(Optional.of(solicitacaoPendente));
+
+            assertThrows(ObjetoNaoEncontradoException.class, () -> service.buscarPorId(31L));
+            verifyNoInteractions(historicoProcessoRepository);
+        }
+
+        @Test
+        @DisplayName("Deve permitir buscar solicitação aceita como processo")
+        void devePermitirBuscarSolicitacaoAceitaComoProcesso() {
+            ProcessoApp solicitacaoAceita = criarProcessoSolicitacao(32L, true);
+            when(processoAppRepository.findById(32L)).thenReturn(Optional.of(solicitacaoAceita));
+            when(historicoProcessoRepository.findByProcessoApp(solicitacaoAceita)).thenReturn(List.of());
+
+            ProcessoAppResponse response = service.buscarPorId(32L);
+
+            assertAll(
+                    () -> assertEquals(32L, response.id()),
+                    () -> assertEquals(solicitacaoAceita.getCliente().getId(), response.clienteId()),
+                    () -> assertEquals("10108901220228260292", response.processoApi().numeroCnj())
+            );
+        }
+
+        @Test
         @DisplayName("Deve buscar processos por cliente")
         void deveBuscarPorClienteId() {
             Cliente cliente = criarCliente(2L, "Cliente Teste");
@@ -341,6 +384,23 @@ class ProcessoServiceTest {
                     () -> assertEquals(1, response.size()),
                     () -> assertEquals(cliente.getId(), response.get(0).clienteId()),
                     () -> assertEquals("10108901220228260292", response.get(0).numeroProcesso())
+            );
+        }
+
+        @Test
+        @DisplayName("Deve ocultar solicitações pendentes na busca por cliente")
+        void deveOcultarSolicitacoesPendentesNaBuscaPorCliente() {
+            Cliente cliente = criarCliente(2L, "Cliente Teste");
+            ProcessoApp solicitacaoPendente = criarProcessoSolicitacao(41L, false);
+            ProcessoApp solicitacaoAceita = criarProcessoSolicitacao(42L, true);
+            when(clienteRepository.findById(2L)).thenReturn(Optional.of(cliente));
+            when(processoAppRepository.findByCliente(cliente)).thenReturn(List.of(solicitacaoPendente, solicitacaoAceita));
+
+            List<ProcessoAppMiniResponse> response = service.buscarPorClienteId(2L);
+
+            assertAll(
+                    () -> assertEquals(1, response.size()),
+                    () -> assertEquals(42L, response.get(0).id())
             );
         }
 
@@ -359,6 +419,22 @@ class ProcessoServiceTest {
             );
 
             verify(processoAppRepository).buscaFiltro(null, 4L, 5L);
+        }
+
+        @Test
+        @DisplayName("Deve ocultar solicitações pendentes na busca por filtro")
+        void deveOcultarSolicitacoesPendentesNaBuscaPorFiltro() {
+            ProcessoApp solicitacaoPendente = criarProcessoSolicitacao(51L, false);
+            ProcessoApp solicitacaoAceita = criarProcessoSolicitacao(52L, true);
+            when(processoAppRepository.buscaFiltro("Maria", null, null)).thenReturn(List.of(solicitacaoPendente, solicitacaoAceita));
+
+            List<ProcessoAppMiniResponse> response = service.buscaFiltro(" Maria ", null, null);
+
+            assertAll(
+                    () -> assertEquals(1, response.size()),
+                    () -> assertEquals(52L, response.get(0).id())
+            );
+            verify(processoAppRepository).buscaFiltro("Maria", null, null);
         }
     }
 
@@ -406,6 +482,13 @@ class ProcessoServiceTest {
             processo.setProcessoApi(criarProcessoApi(90L, "10108901220228260292"));
         }
 
+        return processo;
+    }
+
+    private ProcessoApp criarProcessoSolicitacao(Long id, boolean aceita) {
+        ProcessoApp processo = criarProcessoBase(id, true);
+        processo.setObservacao("Solicitação enviada pelo formulário público. Estado: SP");
+        processo.setAtivo(aceita);
         return processo;
     }
 

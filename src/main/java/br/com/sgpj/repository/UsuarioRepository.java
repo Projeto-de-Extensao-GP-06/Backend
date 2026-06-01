@@ -12,6 +12,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
   Optional<Usuario> findByEmail(String email);
 
+  Optional<Usuario> findFirstByAtivoTrueOrderByIdAsc();
+
   boolean existsByEmail(String email);
 
   List<Usuario> findByCargo_NomeIgnoreCase(String funcao);

@@ -35,6 +35,11 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
+    @ExceptionHandler(ClienteJaExistenteException.class)
+    public ResponseEntity<Map<String, Object>> handleClienteJaExistente(ClienteJaExistenteException ex) {
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
     @ExceptionHandler(EmailDuplicadoException.class)
     public ResponseEntity<Map<String, Object>> handleEmailDuplicado(EmailDuplicadoException ex) {
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage());

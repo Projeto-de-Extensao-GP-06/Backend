@@ -3,7 +3,6 @@ package br.com.sgpj.service;
 import br.com.sgpj.adapter.database.OtpPersistenciaAdapter;
 import br.com.sgpj.entity.Otp;
 import br.com.sgpj.exception.LimiteTentativasExcedidoException;
-import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -11,7 +10,6 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 
 @Service
-@RequiredArgsConstructor
 public class OtpService {
 
     private static final int EXPIRE_MINS = 15;
@@ -20,6 +18,10 @@ public class OtpService {
     private final SecureRandom secureRandom = new SecureRandom();
 
     private final OtpPersistenciaAdapter otpPersistenciaAdapter;
+
+    public OtpService(OtpPersistenciaAdapter otpPersistenciaAdapter) {
+        this.otpPersistenciaAdapter = otpPersistenciaAdapter;
+    }
 
     public String generateOtp(String email) {
         String otp = String.format("%06d", secureRandom.nextInt(1000000));

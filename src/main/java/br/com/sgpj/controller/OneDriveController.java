@@ -1,6 +1,6 @@
 package br.com.sgpj.controller;
 
-import br.com.sgpj.dto.OneDriveItemResponse;
+import br.com.sgpj.dto.response.OneDriveItemResponse;
 import br.com.sgpj.exception.EscopoJwtException;
 import br.com.sgpj.service.OneDriveService;
 import io.swagger.v3.oas.annotations.Operation;

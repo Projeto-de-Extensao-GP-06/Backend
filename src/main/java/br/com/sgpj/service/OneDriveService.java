@@ -2,7 +2,7 @@ package br.com.sgpj.service;
 
 import br.com.sgpj.adapter.onedrive.OneDriveTokenAdapter;
 import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
-import br.com.sgpj.dto.OneDriveItemResponse;
+import br.com.sgpj.dto.response.OneDriveItemResponse;
 import br.com.sgpj.entity.Processo.ProcessoApp;
 import br.com.sgpj.entity.Processo.ProcessoDocumento;
 import br.com.sgpj.entity.Processo.ProcessoDocumentoId;

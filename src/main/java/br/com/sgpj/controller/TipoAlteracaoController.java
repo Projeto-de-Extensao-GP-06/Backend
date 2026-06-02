@@ -4,6 +4,7 @@ import br.com.sgpj.dto.response.TipoAlteracaoResponse;
 import br.com.sgpj.exception.EscopoJwtException;
 import br.com.sgpj.service.TipoAlteracaoService;
 import br.com.sgpj.service.UsuarioService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +28,7 @@ public class TipoAlteracaoController {
     }
 
     @GetMapping
+    @SecurityRequirement(name = "Bearer")
     public ResponseEntity<List<TipoAlteracaoResponse>> listarTiposAlteracao(HttpServletRequest httpRequest) {
 
         if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {

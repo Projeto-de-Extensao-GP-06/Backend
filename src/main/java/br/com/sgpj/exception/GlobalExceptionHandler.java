@@ -35,6 +35,11 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
+    @ExceptionHandler(ClienteJaExistenteException.class)
+    public ResponseEntity<Map<String, Object>> handleClienteJaExistente(ClienteJaExistenteException ex) {
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
     @ExceptionHandler(EmailDuplicadoException.class)
     public ResponseEntity<Map<String, Object>> handleEmailDuplicado(EmailDuplicadoException ex) {
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
@@ -101,6 +106,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(EscopoJwtException.class)
     public ResponseEntity<Map<String, Object>> handleEscopoJwtException(EscopoJwtException ex) {
         return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
+    @ExceptionHandler(UsuarioJaAtivoException.class)
+    public ResponseEntity<Map<String, Object>> handleEscopoJwtException(UsuarioJaAtivoException ex) {
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(UsuarioInativoException.class)
+    public ResponseEntity<Map<String, Object>> handleEscopoJwtException(UsuarioInativoException ex) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage());
+    }
+
+    @ExceptionHandler(UsuarioAutoExclusaoException.class)
+    public ResponseEntity<Map<String, Object>> handleEscopoJwtException(UsuarioAutoExclusaoException ex) {
+        return buildResponse(HttpStatus.UNPROCESSABLE_CONTENT, ex.getMessage());
     }
 
     @ExceptionHandler(ConstraintViolationException.class)

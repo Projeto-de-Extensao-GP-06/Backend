@@ -13,6 +13,8 @@ import java.util.List;
 public interface ProcessoAppRepository extends JpaRepository<ProcessoApp, Long> {
     List<ProcessoApp> findByCliente(Cliente cliente);
 
+    List<ProcessoApp> findByCliente_StatusCliente_NomeIgnoreCaseOrderByDataHoraInicioDesc(String statusNome);
+
     @Query("""
             select p
             from ProcessoApp p

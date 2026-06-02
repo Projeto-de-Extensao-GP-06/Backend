@@ -1,11 +1,11 @@
 package br.com.sgpj.controller;
 
-import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
 import br.com.sgpj.dto.request.*;
 import br.com.sgpj.dto.response.UsuarioListarResponse;
 import br.com.sgpj.dto.response.UsuarioSessaoResponse;
 import br.com.sgpj.dto.response.UsuarioTokenResponse;
 import br.com.sgpj.exception.EscopoJwtException;
+import br.com.sgpj.exception.UsuarioAutoExclusaoException;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.mapper.UsuarioMapper;
@@ -176,6 +176,11 @@ public class UsuarioController {
         if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {
             throw new EscopoJwtException("Acesso negado: Este token não é válido para deleção de usuário.");
         }
+
+        if (!usuarioService.isDifferentId(id)) {
+            throw new UsuarioAutoExclusaoException("Não é possível excluir o próprio usuário.");
+        }
+
         this.usuarioService.deletar(id);
         return ResponseEntity.noContent().build();
     }
@@ -221,5 +226,17 @@ public class UsuarioController {
         usuarioService.definirNovaSenha(request.senha());
         adicionarCookie(response, COOKIE_NOME, Duration.ZERO);
         return ResponseEntity.ok("Nova senha definida com sucesso!");
+    }
+
+    @PostMapping("/reactivate/{id}")
+    @PreAuthorize("isAuthenticated()")
+    @SecurityRequirement(name = "Bearer")
+    public ResponseEntity<UsuarioListarResponse> reativarUsuario(@PathVariable Long id,
+                                                HttpServletRequest httpRequest) {
+        if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {
+            throw new EscopoJwtException("Acesso negado: Este token não é válido para reativação de usuário.");
+        }
+
+        return ResponseEntity.ok().body(usuarioService.reativarUsuario(id));
     }
 }

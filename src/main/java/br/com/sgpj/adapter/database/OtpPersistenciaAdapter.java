@@ -3,17 +3,18 @@ package br.com.sgpj.adapter.database;
 import br.com.sgpj.entity.Otp;
 import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.repository.OtpRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Component
-@RequiredArgsConstructor
 public class OtpPersistenciaAdapter {
 
     private final OtpRepository repository;
+
+    public OtpPersistenciaAdapter(OtpRepository repository) {
+        this.repository = repository;
+    }
 
     public void save(Otp usuarioOtp) {
         repository.save(usuarioOtp);

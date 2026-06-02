@@ -4,6 +4,7 @@ import br.com.sgpj.dto.response.PermissaoResponse;
 import br.com.sgpj.exception.EscopoJwtException;
 import br.com.sgpj.service.PermissaoService;
 import br.com.sgpj.service.UsuarioService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +28,7 @@ public class PermissaoController {
     }
 
     @GetMapping
+    @SecurityRequirement(name = "Bearer")
     public ResponseEntity<List<PermissaoResponse>> listarPermissoes(HttpServletRequest httpRequest) {
 
         if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {

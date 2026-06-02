@@ -1,6 +1,7 @@
 package br.com.sgpj.service;
 
 import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
+import br.com.sgpj.dto.response.CaminhoArmazenamentoResponse;
 import br.com.sgpj.dto.response.CaminhoClienteResponse;
 import br.com.sgpj.dto.response.DocumentoResponse;
 import br.com.sgpj.dto.response.TipoDocumentoResponse;
@@ -13,6 +14,7 @@ import br.com.sgpj.repository.CaminhoPadraoDeArmazenamentoRepository;
 import br.com.sgpj.repository.ClienteRepository;
 import br.com.sgpj.repository.DocumentoRepository;
 import br.com.sgpj.repository.TipoDocumentoRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -51,6 +53,36 @@ class DocumentoServiceTest {
                 clienteRepository
         );
     }
+
+    // ========== listarCaminhosArmazenamento ==========
+
+    @Nested
+    @DisplayName("listarCaminhosArmazenamento")
+    class ListarCaminhosArmazenamentoTest {
+
+        @Test
+        @DisplayName("Deve retornar lista de caminhos")
+        void deveRetornarListaDeCaminhos() {
+            CaminhoPadraoDeArmazenamento c1 = new CaminhoPadraoDeArmazenamento();
+            c1.setId(1L); c1.setCaminho("rafael-silva-12345678901/1234567");
+            CaminhoPadraoDeArmazenamento c2 = new CaminhoPadraoDeArmazenamento();
+            c2.setId(2L); c2.setCaminho("empresa-xyz-12345678000199/7654321");
+            when(caminhoRepository.findAll()).thenReturn(List.of(c1, c2));
+
+            List<CaminhoArmazenamentoResponse> result = service.listarCaminhosArmazenamento();
+
+            assertEquals(2, result.size());
+            assertEquals(1L, result.get(0).id());
+            assertEquals("rafael-silva-12345678901/1234567", result.get(0).caminho());
+        }
+        @Test
+        @DisplayName("Deve retornar lista vazia quando não há caminhos")
+        void deveRetornarVazio() {
+            when(caminhoRepository.findAll()).thenReturn(Collections.emptyList());
+            assertTrue(service.listarCaminhosArmazenamento().isEmpty());
+        }
+    }
+
 
     // ========== listarTiposDocumento ==========
 
@@ -190,6 +222,31 @@ class DocumentoServiceTest {
         doc.setDataHoraCriacao(LocalDateTime.now());
         doc.setUltimaAtualizacao(LocalDateTime.now());
         return doc;
+    }
+
+    // ========== isCorrectScope ==========
+
+    @Nested
+    @DisplayName("isCorrectScope")
+    class IsCorrectScopeTest {
+
+        @Test
+        @DisplayName("Deve retornar true quando escopo é válido")
+        void deveRetornarTrueQuandoEscopoValido() {
+            HttpServletRequest req = mock(HttpServletRequest.class);
+            when(usuarioAutenticacaoAdapter.isCorrectScope(req, "GENERAL_USE")).thenReturn(true);
+
+            assertTrue(service.isCorrectScope(req, "GENERAL_USE"));
+        }
+
+        @Test
+        @DisplayName("Deve retornar false quando escopo é inválido")
+        void deveRetornarFalseQuandoEscopoInvalido() {
+            HttpServletRequest req = mock(HttpServletRequest.class);
+            when(usuarioAutenticacaoAdapter.isCorrectScope(req, "GENERAL_USE")).thenReturn(false);
+
+            assertFalse(service.isCorrectScope(req, "GENERAL_USE"));
+        }
     }
 }
 

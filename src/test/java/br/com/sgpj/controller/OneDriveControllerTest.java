@@ -1,6 +1,7 @@
 package br.com.sgpj.controller;
 
 import br.com.sgpj.dto.response.OneDriveItemResponse;
+import br.com.sgpj.exception.EscopoJwtException;
 import br.com.sgpj.service.OneDriveService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -106,5 +107,84 @@ class OneDriveControllerTest {
         ResponseEntity<Void> resposta = controller.excluirPasta(1L, httpRequest);
         assertEquals(HttpStatus.NO_CONTENT, resposta.getStatusCode());
         verify(service).excluirPasta(1L);
+    }
+
+    // ========== Upload com processoAppId ==========
+
+    @Test
+    @DisplayName("POST — Upload com processoAppId deve repassar o id ao service")
+    void uploadComProcessoAppIdDeveRepassarId() throws IOException {
+        OneDriveItemResponse esperado = new OneDriveItemResponse("id-2", "doc.pdf", "arquivo", 512L,
+                "application/pdf", null, null, null, null, null);
+        when(service.uploadDocumento(eq("doc.pdf"), any(byte[].class), eq(1L), eq(1L), eq(5L)))
+                .thenReturn(esperado);
+        MockMultipartFile arquivo = new MockMultipartFile("arquivo", "doc.pdf", "application/pdf", "bytes".getBytes());
+        ResponseEntity<OneDriveItemResponse> resposta = controller.uploadArquivo(arquivo, 1L, 1L, 5L, httpRequest);
+        assertEquals(HttpStatus.OK, resposta.getStatusCode());
+        assertEquals("id-2", resposta.getBody().id());
+        verify(service).uploadDocumento("doc.pdf", "bytes".getBytes(), 1L, 1L, 5L);
+    }
+
+    // ========== Upload — validações de arquivo ==========
+
+    @Test
+    @DisplayName("POST — Upload com arquivo vazio deve lançar IllegalArgumentException")
+    void uploadArquivoVazioDeveLancarExcecao() {
+        MockMultipartFile vazio = new MockMultipartFile("arquivo", "vazio.pdf", "application/pdf", new byte[0]);
+        assertThrows(IllegalArgumentException.class,
+                () -> controller.uploadArquivo(vazio, 1L, 1L, null, httpRequest));
+    }
+
+    @Test
+    @DisplayName("POST — Upload com nome de arquivo em branco deve lançar IllegalArgumentException")
+    void uploadNomeEmBrancoDeveLancarExcecao() {
+        MockMultipartFile semNome = new MockMultipartFile("arquivo", "", "application/pdf", "conteudo".getBytes());
+        assertThrows(IllegalArgumentException.class,
+                () -> controller.uploadArquivo(semNome, 1L, 1L, null, httpRequest));
+    }
+
+    // ========== Escopo inválido ==========
+
+    @Test
+    @DisplayName("GET — Listar com escopo inválido deve lançar EscopoJwtException")
+    void listarEscopoInvalidoDeveLancarExcecao() {
+        when(service.isCorrectScope(httpRequest, "GENERAL_USE")).thenReturn(false);
+        assertThrows(EscopoJwtException.class, () -> controller.listarArquivosDePasta(1L, httpRequest));
+    }
+
+    @Test
+    @DisplayName("POST — Upload com escopo inválido deve lançar EscopoJwtException")
+    void uploadEscopoInvalidoDeveLancarExcecao() {
+        when(service.isCorrectScope(httpRequest, "GENERAL_USE")).thenReturn(false);
+        MockMultipartFile arquivo = new MockMultipartFile("arquivo", "doc.pdf", "application/pdf", "x".getBytes());
+        assertThrows(EscopoJwtException.class, () -> controller.uploadArquivo(arquivo, 1L, 1L, null, httpRequest));
+    }
+
+    @Test
+    @DisplayName("POST /pasta — Criar pasta com escopo inválido deve lançar EscopoJwtException")
+    void criarPastaEscopoInvalidoDeveLancarExcecao() {
+        when(service.isCorrectScope(httpRequest, "GENERAL_USE")).thenReturn(false);
+        assertThrows(EscopoJwtException.class, () -> controller.criarPasta(1L, "1234567-89.2024.8.26.0100", httpRequest));
+    }
+
+    @Test
+    @DisplayName("PUT /arquivo/renomear — Renomear com escopo inválido deve lançar EscopoJwtException")
+    void renomearEscopoInvalidoDeveLancarExcecao() {
+        when(service.isCorrectScope(httpRequest, "GENERAL_USE")).thenReturn(false);
+        assertThrows(EscopoJwtException.class, () -> controller.renomearArquivo(1L, "antigo.pdf", "novo.pdf", httpRequest));
+    }
+
+    @Test
+    @DisplayName("DELETE /arquivo — Excluir arquivo com escopo inválido deve lançar EscopoJwtException")
+    void excluirArquivoEscopoInvalidoDeveLancarExcecao() {
+        when(service.isCorrectScope(httpRequest, "GENERAL_USE")).thenReturn(false);
+        assertThrows(EscopoJwtException.class, () -> controller.excluirArquivo(1L, "doc.pdf", httpRequest));
+    }
+
+    @Test
+    @DisplayName("DELETE /pasta — Excluir pasta com escopo inválido deve lançar EscopoJwtException")
+    void excluirPastaEscopoInvalidoDeveLancarExcecao() {
+        when(service.isCorrectScope(httpRequest, "GENERAL_USE")).thenReturn(false);
+        assertThrows(EscopoJwtException.class, () -> controller.excluirPasta(1L, httpRequest));
     }
 }

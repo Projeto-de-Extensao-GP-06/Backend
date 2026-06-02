@@ -107,6 +107,12 @@ public class UsuarioService {
     return usuarioPersistenciaAdapter.buscarUsuarioPorId(id);
   }
 
+  public boolean isDifferentId(Long idExcluir) {
+    String email = usuarioAutenticacaoAdapter.obterEmailUsuarioLogado();
+    Usuario usuario = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(email);
+    return !usuario.getId().equals(idExcluir);
+  }
+
   public Void deletar(Long id) {
     Usuario user = obterPorId(id);
     user.setAtivo(false);

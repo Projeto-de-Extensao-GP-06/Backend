@@ -228,15 +228,15 @@ public class UsuarioController {
         return ResponseEntity.ok("Nova senha definida com sucesso!");
     }
 
-    @PostMapping("/reactivate")
+    @PostMapping("/reactivate/{id}")
     @PreAuthorize("isAuthenticated()")
     @SecurityRequirement(name = "Bearer")
-    public ResponseEntity<UsuarioListarResponse> reativarUsuario(@RequestBody ReactivateUserRequest request,
+    public ResponseEntity<UsuarioListarResponse> reativarUsuario(@PathVariable Long id,
                                                 HttpServletRequest httpRequest) {
         if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {
             throw new EscopoJwtException("Acesso negado: Este token não é válido para reativação de usuário.");
         }
 
-        return ResponseEntity.ok().body(usuarioService.reativarUsuario(request.email()));
+        return ResponseEntity.ok().body(usuarioService.reativarUsuario(id));
     }
 }

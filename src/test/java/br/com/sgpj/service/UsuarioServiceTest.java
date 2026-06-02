@@ -167,8 +167,8 @@ class UsuarioServiceTest {
         Usuario usuario = criarUsuarioAtivoComSenha(); // <- Usar usuário com senha
         Authentication authentication = mock(Authentication.class);
         String token = "token-jwt";
-        when(usuarioAutenticacaoAdapter.autenticar(EMAIL_TESTE, SENHA_TESTE)).thenReturn(authentication);
         when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(EMAIL_TESTE)).thenReturn(usuario);
+        when(usuarioAutenticacaoAdapter.autenticar(EMAIL_TESTE, SENHA_TESTE)).thenReturn(authentication);
         when(usuarioAutenticacaoAdapter.gerarToken(authentication)).thenReturn(token);
 
         // When
@@ -176,24 +176,32 @@ class UsuarioServiceTest {
 
         // Then
         assertNotNull(resultado);
-        verify(usuarioAutenticacaoAdapter, times(1)).autenticar(EMAIL_TESTE, SENHA_TESTE);
-        verify(usuarioAutenticacaoAdapter, times(1)).definirContexto(authentication);
-        verify(usuarioAutenticacaoAdapter, times(1)).gerarToken(authentication);
+        assertEquals(token, resultado.token());
+        assertEquals(usuario.getId(), resultado.id());
+        assertEquals(EMAIL_TESTE, resultado.email());
+        verify(usuarioAutenticacaoAdapter).autenticar(EMAIL_TESTE, SENHA_TESTE);
+        verify(usuarioAutenticacaoAdapter).definirContexto(authentication);
+        verify(usuarioAutenticacaoAdapter).gerarToken(authentication);
     }
 
     @Test
     @DisplayName("Deve lançar exceção ao autenticar usuário inativo")
     void deveLancarExcecaoAoAutenticarUsuarioInativo() {
         // Given
-        Usuario usuario = criarUsuarioInativo();
+        Usuario usuarioRequest  = criarUsuarioInativo();
+
+        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(usuarioRequest.getEmail()))
+                .thenReturn(usuarioRequest);
 
         // When/Then
         assertThrows(
                 UsuarioInativoException.class,
-                () -> usuarioService.autenticar(usuario)
+                () -> usuarioService.autenticar(usuarioRequest)
         );
 
         verify(usuarioAutenticacaoAdapter, never()).autenticar(anyString(), anyString());
+        verify(usuarioAutenticacaoAdapter, never()).definirContexto(any());
+        verify(usuarioAutenticacaoAdapter, never()).gerarToken(any());
     }
 
     // ========================
@@ -714,10 +722,10 @@ class UsuarioServiceTest {
     void deveReativarUsuarioInativoComSucesso() {
         // Given
         Usuario usuario = criarUsuarioInativo();
-        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(EMAIL_TESTE)).thenReturn(usuario);
+        when(usuarioPersistenciaAdapter.buscarUsuarioPorId(anyLong())).thenReturn(usuario);
 
         // When
-        UsuarioListarResponse resultado = usuarioService.reativarUsuario(EMAIL_TESTE);
+        UsuarioListarResponse resultado = usuarioService.reativarUsuario(1L);
 
         // Then
         assertNotNull(resultado);
@@ -730,12 +738,12 @@ class UsuarioServiceTest {
     void deveLancarExcecaoAoReativarUsuarioJaAtivo() {
         // Given
         Usuario usuario = criarUsuarioAtivo();
-        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(EMAIL_TESTE)).thenReturn(usuario);
+        when(usuarioPersistenciaAdapter.buscarUsuarioPorId(anyLong())).thenReturn(usuario);
 
         // When/Then
         assertThrows(
                 UsuarioJaAtivoException.class,
-                () -> usuarioService.reativarUsuario(EMAIL_TESTE)
+                () -> usuarioService.reativarUsuario(1L)
         );
 
         verify(usuarioPersistenciaAdapter, never()).salvar(any(Usuario.class));

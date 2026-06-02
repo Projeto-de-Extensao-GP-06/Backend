@@ -208,8 +208,8 @@ public class UsuarioService {
     return UsuarioMapper.toTokenDto(usuarioAutenticado, token);
   }
 
-  public UsuarioListarResponse reativarUsuario(String email) {
-    Usuario usuario = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(email);
+  public UsuarioListarResponse reativarUsuario(Long id) {
+    Usuario usuario = usuarioPersistenciaAdapter.buscarUsuarioPorId(id);
 
     if (usuario.isAtivo()) {
       throw new UsuarioJaAtivoException("Usuário já está ativo.");

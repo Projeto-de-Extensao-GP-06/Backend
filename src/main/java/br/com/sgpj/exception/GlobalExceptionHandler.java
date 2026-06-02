@@ -108,6 +108,21 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage());
     }
 
+    @ExceptionHandler(UsuarioJaAtivoException.class)
+    public ResponseEntity<Map<String, Object>> handleEscopoJwtException(UsuarioJaAtivoException ex) {
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(UsuarioInativoException.class)
+    public ResponseEntity<Map<String, Object>> handleEscopoJwtException(UsuarioInativoException ex) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage());
+    }
+
+    @ExceptionHandler(UsuarioAutoExclusaoException.class)
+    public ResponseEntity<Map<String, Object>> handleEscopoJwtException(UsuarioAutoExclusaoException ex) {
+        return buildResponse(HttpStatus.UNPROCESSABLE_CONTENT, ex.getMessage());
+    }
+
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<Map<String, Object>> handleConstraintViolation(ConstraintViolationException ex) {
         Map<String, String> fieldErrors = ex.getConstraintViolations().stream()

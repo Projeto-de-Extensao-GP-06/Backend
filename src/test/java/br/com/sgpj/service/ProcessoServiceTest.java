@@ -8,6 +8,7 @@ import br.com.sgpj.dto.response.Processos.ProcessoAppCreateResponse;
 import br.com.sgpj.dto.response.Processos.ProcessoAppMiniResponse;
 import br.com.sgpj.dto.response.Processos.ProcessoAppResponse;
 import br.com.sgpj.dto.response.Processos.ProcessoAppUpdateResponse;
+import br.com.sgpj.dto.response.Processos.ProcessoDocumentoResponse;
 import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Processo.FaseProcesso;
 import br.com.sgpj.entity.Processo.HistoricoProcesso;
@@ -15,9 +16,12 @@ import br.com.sgpj.entity.Processo.MovimentacoesOficiais;
 import br.com.sgpj.entity.Processo.Prioridade;
 import br.com.sgpj.entity.Processo.ProcessoApp;
 import br.com.sgpj.entity.Processo.ProcessoApi;
+import br.com.sgpj.entity.Processo.ProcessoDocumento;
+import br.com.sgpj.entity.Processo.ProcessoDocumentoId;
 import br.com.sgpj.entity.Processo.SiglaTribunal;
 import br.com.sgpj.entity.Processo.TipoAlteracao;
 import br.com.sgpj.entity.Usuario;
+import br.com.sgpj.entity.documentos.Documento;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
 import br.com.sgpj.repository.ClienteRepository;
 import br.com.sgpj.repository.DocumentoRepository;
@@ -48,6 +52,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -439,6 +445,114 @@ class ProcessoServiceTest {
     }
 
     @Nested
+    @DisplayName("anexarDocumento")
+    class AnexarDocumentoTest {
+
+        @Test
+        @DisplayName("Deve vincular documento ao processo e retornar response")
+        void deveVincularDocumentoAoProcesso() {
+            ProcessoApp processo = criarProcessoBase(10L, true);
+            Documento documento = criarDocumentoMock(20L, "contrato.pdf");
+            Usuario usuario = criarUsuario(1L, "Usuario Responsavel");
+
+            when(processoAppRepository.findById(10L)).thenReturn(Optional.of(processo));
+            when(documentoRepository.findById(20L)).thenReturn(Optional.of(documento));
+            when(usuarioPersistenciaAdapter.buscarUsuarioPorId(1L)).thenReturn(usuario);
+            when(processoDocumentoRepository.existsById(any())).thenReturn(false);
+            when(processoDocumentoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            ProcessoDocumentoResponse response = service.anexarDocumento(10L, 20L, 1L);
+
+            assertAll(
+                    () -> assertEquals(20L, response.documentoId()),
+                    () -> assertEquals("contrato.pdf", response.nomeOriginal()),
+                    () -> assertEquals(1L, response.anexadoPorUsuarioId()),
+                    () -> assertEquals("Usuario Responsavel", response.anexadoPorUsuarioNome()),
+                    () -> assertNotNull(response.anexadoEm())
+            );
+            verify(processoDocumentoRepository).save(any());
+        }
+
+        @Test
+        @DisplayName("Deve lançar exceção quando processo não encontrado")
+        void deveLancarExcecaoQuandoProcessoNaoEncontrado() {
+            when(processoAppRepository.findById(99L)).thenReturn(Optional.empty());
+
+            assertThrows(ObjetoNaoEncontradoException.class, () -> service.anexarDocumento(99L, 1L, 1L));
+            verifyNoInteractions(documentoRepository);
+        }
+
+        @Test
+        @DisplayName("Deve lançar exceção quando documento não encontrado")
+        void deveLancarExcecaoQuandoDocumentoNaoEncontrado() {
+            ProcessoApp processo = criarProcessoBase(10L, true);
+            when(processoAppRepository.findById(10L)).thenReturn(Optional.of(processo));
+            when(documentoRepository.findById(99L)).thenReturn(Optional.empty());
+
+            assertThrows(ObjetoNaoEncontradoException.class, () -> service.anexarDocumento(10L, 99L, 1L));
+        }
+
+        @Test
+        @DisplayName("Deve lançar exceção quando documento já está vinculado ao processo")
+        void deveLancarExcecaoQuandoJaVinculado() {
+            ProcessoApp processo = criarProcessoBase(10L, true);
+            Documento documento = criarDocumentoMock(20L, "contrato.pdf");
+            Usuario usuario = criarUsuario(1L, "Usuario");
+
+            when(processoAppRepository.findById(10L)).thenReturn(Optional.of(processo));
+            when(documentoRepository.findById(20L)).thenReturn(Optional.of(documento));
+            when(usuarioPersistenciaAdapter.buscarUsuarioPorId(1L)).thenReturn(usuario);
+            when(processoDocumentoRepository.existsById(any())).thenReturn(true);
+
+            assertThrows(ObjetoNaoEncontradoException.class, () -> service.anexarDocumento(10L, 20L, 1L));
+            verify(processoDocumentoRepository, never()).save(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("listarDocumentosDoProcesso")
+    class ListarDocumentosDoProcessoTest {
+
+        @Test
+        @DisplayName("Deve retornar lista de documentos vinculados ao processo")
+        void deveRetornarListaDeDocumentos() {
+            ProcessoApp processo = criarProcessoBase(10L, true);
+            Documento documento = criarDocumentoMock(20L, "contrato.pdf");
+            Usuario usuario = criarUsuario(1L, "Usuario Responsavel");
+
+            ProcessoDocumentoId pdId = new ProcessoDocumentoId(20L, 10L);
+            ProcessoDocumento pd = new ProcessoDocumento();
+            pd.setId(pdId);
+            pd.setDocumento(documento);
+            pd.setProcessoApp(processo);
+            pd.setAnexadoPorUsuario(usuario);
+            pd.setAnexadoEm(LocalDateTime.of(2026, 1, 1, 10, 0));
+
+            when(processoDocumentoRepository.findByProcessoAppId(10L)).thenReturn(List.of(pd));
+
+            List<ProcessoDocumentoResponse> result = service.listarDocumentosDoProcesso(10L);
+
+            assertAll(
+                    () -> assertEquals(1, result.size()),
+                    () -> assertEquals(20L, result.get(0).documentoId()),
+                    () -> assertEquals("contrato.pdf", result.get(0).nomeOriginal()),
+                    () -> assertEquals(1L, result.get(0).anexadoPorUsuarioId()),
+                    () -> assertEquals("Usuario Responsavel", result.get(0).anexadoPorUsuarioNome())
+            );
+        }
+
+        @Test
+        @DisplayName("Deve retornar lista vazia quando processo sem documentos")
+        void deveRetornarListaVaziaQuandoSemDocumentos() {
+            when(processoDocumentoRepository.findByProcessoAppId(10L)).thenReturn(List.of());
+
+            List<ProcessoDocumentoResponse> result = service.listarDocumentosDoProcesso(10L);
+
+            assertTrue(result.isEmpty());
+        }
+    }
+
+    @Nested
     @DisplayName("deletarProcesso")
     class DelecaoTest {
 
@@ -545,6 +659,16 @@ class ProcessoServiceTest {
 
     private Usuario criarUsuario(Long id, String nome) {
         return new Usuario(id, nome, nome.toLowerCase().replace(" ", ".") + "@email.com", null, null, LocalDateTime.of(2024, 1, 1, 0, 0), true);
+    }
+
+    private Documento criarDocumentoMock(Long id, String nome) {
+        Documento doc = new Documento();
+        doc.setId(id);
+        doc.setNomeOriginal(nome);
+        doc.setMimeType("application/pdf");
+        doc.setTamanhoBytes(1024L);
+        doc.setAtivo(true);
+        return doc;
     }
 
     private static String jsonDataJud() {

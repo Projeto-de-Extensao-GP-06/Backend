@@ -69,14 +69,14 @@ public class UsuarioService {
   }
 
   public UsuarioTokenResponse autenticar(Usuario usuario) {
-    if (!usuario.isAtivo()) {
+    Usuario usuarioAutenticado = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(usuario.getEmail());
+
+    if (!usuarioAutenticado.isAtivo()) {
       throw new UsuarioInativoException("Este usuário está inativo. Contate um administrador.");
     }
 
     final Authentication authentication = usuarioAutenticacaoAdapter.autenticar(
             usuario.getEmail(), usuario.getSenha());
-
-    Usuario usuarioAutenticado = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(usuario.getEmail());
 
     usuarioAutenticacaoAdapter.definirContexto(authentication);
 

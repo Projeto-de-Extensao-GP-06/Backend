@@ -10,8 +10,6 @@ import br.com.sgpj.dto.response.CargoResponse;
 import br.com.sgpj.dto.response.PermissaoResponse;
 import br.com.sgpj.entity.*;
 import br.com.sgpj.mapper.CargoMapper;
-import br.com.sgpj.repository.PermissaoRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;

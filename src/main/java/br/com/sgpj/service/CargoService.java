@@ -1,9 +1,12 @@
 package br.com.sgpj.service;
 
+import br.com.sgpj.adapter.database.UsuarioPersistenciaAdapter;
 import br.com.sgpj.dto.request.AtribuirPermissoesRequest;
+import br.com.sgpj.dto.request.CriarCargoRequest;
 import br.com.sgpj.dto.response.CargoResponse;
 import br.com.sgpj.dto.response.PermissaoResponse;
 import br.com.sgpj.entity.*;
+import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.mapper.CargoMapper;
 import br.com.sgpj.repository.CargoPermissaoRepository;
 import br.com.sgpj.repository.CargoRepository;
@@ -17,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +33,7 @@ public class CargoService {
     private final CargoRepository cargoRepository;
     private final CargoPermissaoRepository cargoPermissaoRepository;
     private final PermissaoRepository permissaoRepository;
-    private final UsuarioRepository usuarioRepository;
+    private final UsuarioPersistenciaAdapter usuarioPersistenciaAdapter;
 
     @Transactional(readOnly = true)
     public Page<CargoResponse> listarPaginado(Pageable pageable) {
@@ -44,6 +48,20 @@ public class CargoService {
                 .toList();
 
         return new PageImpl<>(content, pageable, idsPage.getTotalElements());
+    }
+
+    @Transactional
+    public CargoResponse criar(CriarCargoRequest request, String emailUsuario) {
+        Usuario criadoPor = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(emailUsuario);
+
+        Cargo cargo = new Cargo();
+        cargo.setNome(request.nome());
+        cargo.setCriadoPor(criadoPor);
+        cargo.setCriadoEm(LocalDateTime.now());
+
+        Cargo cargoSalvo = cargoRepository.save(cargo);
+
+        return new CargoResponse(cargoSalvo.getId(), cargoSalvo.getNome(), List.of());
     }
 
 }

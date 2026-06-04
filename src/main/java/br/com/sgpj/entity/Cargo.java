@@ -22,7 +22,7 @@ public class Cargo {
     @Column(nullable = false)
     private LocalDate criadoEm;
 
-    @OneToMany(mappedBy = "cargo", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "cargo", fetch = FetchType.LAZY)
     private List<CargoPermissao> permissoes;
 
     // Constructors

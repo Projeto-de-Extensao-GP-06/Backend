@@ -1,8 +1,10 @@
 package br.com.sgpj.controller;
 
+import br.com.sgpj.dto.response.CaminhoArmazenamentoResponse;
 import br.com.sgpj.dto.response.CaminhoClienteResponse;
 import br.com.sgpj.dto.response.DocumentoResponse;
 import br.com.sgpj.dto.response.TipoDocumentoResponse;
+import br.com.sgpj.exception.EscopoJwtException;
 import br.com.sgpj.service.DocumentoService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -97,6 +99,55 @@ class DocumentoControllerTest {
         assertEquals(HttpStatus.NO_CONTENT, controller.listarDocumentosPorCaminho(99L, httpRequest).getStatusCode());
     }
 
+    // ========== GET /caminhos-armazenamento ==========
+
+    @Test
+    @DisplayName("Listar caminhos de armazenamento deve retornar 200 com lista")
+    void listarCaminhosArmazenamentoDeveRetornar200() {
+        when(service.listarCaminhosArmazenamento()).thenReturn(List.of(
+                new CaminhoArmazenamentoResponse(1L, "rafael-silva-12345678901/1234567", "rafael-silva-12345678901/1234567")
+        ));
+        ResponseEntity<List<CaminhoArmazenamentoResponse>> resp = controller.listarCaminhosArmazenamento(httpRequest);
+        assertEquals(HttpStatus.OK, resp.getStatusCode());
+        assertEquals(1, resp.getBody().size());
+    }
+
+    @Test
+    @DisplayName("Listar caminhos de armazenamento deve retornar 204 quando vazio")
+    void listarCaminhosArmazenamentoDeveRetornar204() {
+        when(service.listarCaminhosArmazenamento()).thenReturn(Collections.emptyList());
+        assertEquals(HttpStatus.NO_CONTENT, controller.listarCaminhosArmazenamento(httpRequest).getStatusCode());
+    }
+
+    // ========== Escopo inválido ==========
+
+    @Test
+    @DisplayName("GET /tipos-documento — Escopo inválido deve lançar EscopoJwtException")
+    void listarTiposEscopoInvalidoDeveLancarExcecao() {
+        when(service.isCorrectScope(httpRequest, "GENERAL_USE")).thenReturn(false);
+        assertThrows(EscopoJwtException.class, () -> controller.listarTiposDocumento(httpRequest));
+    }
+
+    @Test
+    @DisplayName("GET /caminhos-armazenamento — Escopo inválido deve lançar EscopoJwtException")
+    void listarCaminhosArmazenamentoEscopoInvalidoDeveLancarExcecao() {
+        when(service.isCorrectScope(httpRequest, "GENERAL_USE")).thenReturn(false);
+        assertThrows(EscopoJwtException.class, () -> controller.listarCaminhosArmazenamento(httpRequest));
+    }
+
+    @Test
+    @DisplayName("GET /cliente/{id}/caminhos — Escopo inválido deve lançar EscopoJwtException")
+    void listarCaminhosClienteEscopoInvalidoDeveLancarExcecao() {
+        when(service.isCorrectScope(httpRequest, "GENERAL_USE")).thenReturn(false);
+        assertThrows(EscopoJwtException.class, () -> controller.listarCaminhosDoCliente(1L, httpRequest));
+    }
+
+    @Test
+    @DisplayName("GET /por-caminho — Escopo inválido deve lançar EscopoJwtException")
+    void listarPorCaminhoEscopoInvalidoDeveLancarExcecao() {
+        when(service.isCorrectScope(httpRequest, "GENERAL_USE")).thenReturn(false);
+        assertThrows(EscopoJwtException.class, () -> controller.listarDocumentosPorCaminho(5L, httpRequest));
+    }
 
     private DocumentoResponse criarDocMock(Long id, String nome) {
         return new DocumentoResponse(

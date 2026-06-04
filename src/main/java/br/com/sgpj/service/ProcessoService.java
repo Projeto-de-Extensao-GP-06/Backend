@@ -26,6 +26,8 @@ import java.util.List;
 
 @Service
 public class ProcessoService {
+    private static final String OBSERVACAO_SOLICITACAO_PREFIXO = "Solicitação enviada pelo formulário público. Estado: ";
+
     private final UsuarioPersistenciaAdapter usuarioPersistenciaAdapter;
     private final DataJudAdapter dataJudAdapter;
 
@@ -156,7 +158,9 @@ public class ProcessoService {
         List<ProcessoAppMiniResponse> processos = new ArrayList<>();
 
         for (ProcessoApp processo : processosEncontrados){
-            processos.add(ProcessoAppMapper.toMiniResponse(processo));
+            if (deveExibirComoProcesso(processo)) {
+                processos.add(ProcessoAppMapper.toMiniResponse(processo));
+            }
         }
         return processos;
     }
@@ -164,6 +168,9 @@ public class ProcessoService {
     public ProcessoAppResponse buscarPorId(Long id) {
         ProcessoApp processoAppEncontrado = processoAppRepository.findById(id)
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Processo nÃ£o encontrado para o ID: " + id));
+        if (!deveExibirComoProcesso(processoAppEncontrado)) {
+            throw new ObjetoNaoEncontradoException("Processo não encontrado para o ID: " + id);
+        }
         List<HistoricoProcesso> historicoProcessoList = historicoProcessoRepository.findByProcessoApp(processoAppEncontrado);
 
         List<HistoricoProcessoResponse> historicoEncontrado = new ArrayList<>();
@@ -183,7 +190,9 @@ public class ProcessoService {
         List<ProcessoAppMiniResponse> processos = new ArrayList<>();
 
         for (ProcessoApp processo : processosEncontrados){
-            processos.add(ProcessoAppMapper.toMiniResponse(processo));
+            if (deveExibirComoProcesso(processo)) {
+                processos.add(ProcessoAppMapper.toMiniResponse(processo));
+            }
         }
         return processos;
     }
@@ -196,9 +205,21 @@ public class ProcessoService {
         List<ProcessoAppMiniResponse> processos = new ArrayList<>();
 
         for (ProcessoApp processo : processosEncontrados){
-            processos.add(ProcessoAppMapper.toMiniResponse(processo));
+            if (deveExibirComoProcesso(processo)) {
+                processos.add(ProcessoAppMapper.toMiniResponse(processo));
+            }
         }
         return processos;
+    }
+
+    private boolean deveExibirComoProcesso(ProcessoApp processo) {
+        return !isSolicitacaoAindaNaoAceita(processo);
+    }
+
+    private boolean isSolicitacaoAindaNaoAceita(ProcessoApp processo) {
+        return processo.getObservacao() != null
+                && processo.getObservacao().startsWith(OBSERVACAO_SOLICITACAO_PREFIXO)
+                && !Boolean.TRUE.equals(processo.getAtivo());
     }
 
 

@@ -22,6 +22,11 @@ public class CargoPersistenciaAdapter {
                 .orElseThrow(() -> new CargoNaoEncontradoException("Cargo não encontrado: " + id));
     }
 
+    public Cargo buscarPorNome(String nomeCargo) {
+        return cargoRepository.findByNome(nomeCargo)
+                .orElseThrow(() -> new CargoNaoEncontradoException("Cargo não encontrado: " + nomeCargo));
+    }
+
     public Cargo salvar(Cargo cargo) {
         return cargoRepository.save(cargo);
     }

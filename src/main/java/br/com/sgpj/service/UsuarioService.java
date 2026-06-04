@@ -1,5 +1,6 @@
 package br.com.sgpj.service;
 
+import br.com.sgpj.adapter.database.CargoPersistenciaAdapter;
 import br.com.sgpj.adapter.database.UsuarioPersistenciaAdapter;
 import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
 import br.com.sgpj.dto.request.UsuarioAtualizacaoRequest;
@@ -15,6 +16,7 @@ import br.com.sgpj.exception.UsuarioInativoException;
 import br.com.sgpj.exception.UsuarioJaAtivoException;
 import br.com.sgpj.mapper.UsuarioMapper;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.User;
@@ -26,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class UsuarioService {
 
   private final PasswordEncoder passwordEncoder;
@@ -33,17 +36,7 @@ public class UsuarioService {
   private final UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter;
   private final OtpService otpService;
   private final EmailService emailService;
-
-  public UsuarioService(PasswordEncoder passwordEncoder,
-                        UsuarioPersistenciaAdapter usuarioPersistenciaAdapter,
-                        UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter,
-                        OtpService otpService, EmailService emailService) {
-    this.passwordEncoder = passwordEncoder;
-    this.usuarioPersistenciaAdapter = usuarioPersistenciaAdapter;
-    this.usuarioAutenticacaoAdapter = usuarioAutenticacaoAdapter;
-    this.otpService = otpService;
-    this.emailService = emailService;
-  }
+  private final CargoPersistenciaAdapter cargoPersistenciaAdapter;
 
   public void criar(UsuarioCriacaoRequest request) {
     if (usuarioPersistenciaAdapter.existeEmail(request.email())) {
@@ -116,6 +109,8 @@ public class UsuarioService {
   public Void deletar(Long id) {
     Usuario user = obterPorId(id);
     user.setAtivo(false);
+    Cargo semCargo = cargoPersistenciaAdapter.buscarPorNome("Sem Cargo");
+    user.setCargo(semCargo);
     usuarioPersistenciaAdapter.salvar(user);
     return null;
   }

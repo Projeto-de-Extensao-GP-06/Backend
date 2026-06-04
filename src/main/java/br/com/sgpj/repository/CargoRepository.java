@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface CargoRepository extends JpaRepository<Cargo, Long> {
@@ -23,4 +24,6 @@ public interface CargoRepository extends JpaRepository<Cargo, Long> {
         WHERE c.id IN :ids
         """)
     List<Cargo> findAllWithPermissoesByIds(@Param("ids") List<Long> ids);
+
+    Optional<Cargo> findByNome(String nomeCargo);
 }

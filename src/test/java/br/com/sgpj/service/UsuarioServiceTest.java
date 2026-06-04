@@ -339,8 +339,8 @@ class UsuarioServiceTest {
         usuarioService.deletar(ID_TESTE);
 
         // Then
-        assertEquals(usuario.getCargo().getId(), 2L);
-        assertEquals(usuario.getCargo().getNome(), "Sem Cargo");
+        assertEquals(2L, usuario.getCargo().getId());
+        assertEquals("Sem Cargo", usuario.getCargo().getNome());
     }
 
     @Test

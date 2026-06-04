@@ -1,5 +1,6 @@
 package br.com.sgpj.service;
 
+import br.com.sgpj.adapter.database.CargoPersistenciaAdapter;
 import br.com.sgpj.adapter.database.UsuarioPersistenciaAdapter;
 import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
 import br.com.sgpj.dto.request.UsuarioAtualizacaoRequest;
@@ -43,6 +44,9 @@ class UsuarioServiceTest {
 
     @Mock
     private UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter;
+
+    @Mock
+    private CargoPersistenciaAdapter cargoPersistenciaAdapter;
 
     @Mock
     private OtpService otpService;
@@ -306,7 +310,11 @@ class UsuarioServiceTest {
     void deveDesativarUsuarioAoDeletar() {
         // Given
         Usuario usuario = criarUsuarioAtivo();
+        Cargo semCargo = new Cargo();
+        semCargo.setId(2L);
+        semCargo.setNome("Sem Cargo");
         when(usuarioPersistenciaAdapter.buscarUsuarioPorId(ID_TESTE)).thenReturn(usuario);
+        when(cargoPersistenciaAdapter.buscarPorNome(anyString())).thenReturn(semCargo);
 
         // When
         usuarioService.deletar(ID_TESTE);
@@ -317,11 +325,34 @@ class UsuarioServiceTest {
     }
 
     @Test
+    @DisplayName("Deve definir cargo como 'Sem Cargo' ao deletar")
+    void deveDefinirCargoComoSemCargoAoDeletar() {
+        // Given
+        Usuario usuario = criarUsuarioAtivo();
+        Cargo semCargo = new Cargo();
+        semCargo.setId(2L);
+        semCargo.setNome("Sem Cargo");
+        when(usuarioPersistenciaAdapter.buscarUsuarioPorId(ID_TESTE)).thenReturn(usuario);
+        when(cargoPersistenciaAdapter.buscarPorNome(anyString())).thenReturn(semCargo);
+
+        // When
+        usuarioService.deletar(ID_TESTE);
+
+        // Then
+        assertEquals(usuario.getCargo().getId(), 2L);
+        assertEquals(usuario.getCargo().getNome(), "Sem Cargo");
+    }
+
+    @Test
     @DisplayName("Deve retornar null ao deletar")
     void deveRetornarNullAoDeletar() {
         // Given
         Usuario usuario = criarUsuarioAtivo();
+        Cargo semCargo = new Cargo();
+        semCargo.setId(2L);
+        semCargo.setNome("Sem Cargo");
         when(usuarioPersistenciaAdapter.buscarUsuarioPorId(ID_TESTE)).thenReturn(usuario);
+        when(cargoPersistenciaAdapter.buscarPorNome(anyString())).thenReturn(semCargo);
 
         // When
         Void resultado = usuarioService.deletar(ID_TESTE);

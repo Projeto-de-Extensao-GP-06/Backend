@@ -29,7 +29,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class ClienteService {
@@ -51,11 +53,11 @@ public class ClienteService {
                           StatusClienteRepository statusClienteRepository,
                           EnderecoRepository enderecoRepository,
                           ContatoRepository contatoRepository,
-                           CaminhoPadraoDeArmazenamentoRepository caminhoRepository,
-                           DocumentoRepository documentoRepository,
-                           ProcessoAppRepository processoAppRepository,
-                           HistoricoProcessoRepository historicoProcessoRepository,
-                           ProcessoDocumentoRepository processoDocumentoRepository,
+                          CaminhoPadraoDeArmazenamentoRepository caminhoRepository,
+                          DocumentoRepository documentoRepository,
+                          ProcessoAppRepository processoAppRepository,
+                          HistoricoProcessoRepository historicoProcessoRepository,
+                          ProcessoDocumentoRepository processoDocumentoRepository,
                           OneDriveService oneDriveService) {
         this.clientePersistenciaAdapter = clientePersistenciaAdapter;
         this.clienteRepository = clienteRepository;
@@ -221,10 +223,28 @@ public class ClienteService {
         Cliente cliente = clientePersistenciaAdapter.buscarPorId(id);
         Endereco endereco = cliente.getEndereco();
 
+        List<CaminhoPadraoDeArmazenamento> caminhos = new ArrayList<>(caminhoRepository.findByClienteId(id));
+        Set<Long> caminhoIds = new HashSet<>(caminhos.stream()
+                .map(CaminhoPadraoDeArmazenamento::getId)
+                .toList());
+        List<Documento> documentos = new ArrayList<>();
+        Set<Long> documentoIds = new HashSet<>();
+
         // Remove dependências dos processos do cliente
         List<ProcessoApp> processos = processoAppRepository.findByCliente(cliente);
         for (ProcessoApp processo : processos) {
             List<ProcessoDocumento> vinculosDocumentos = processoDocumentoRepository.findByProcessoAppId(processo.getId());
+            for (ProcessoDocumento vinculoDocumento : vinculosDocumentos) {
+                Documento documento = vinculoDocumento.getDocumento();
+                if (documento != null && documento.getId() != null && documentoIds.add(documento.getId())) {
+                    documentos.add(documento);
+                }
+                if (documento != null && documento.getPadraoArmazenamento() != null
+                        && documento.getPadraoArmazenamento().getId() != null
+                        && caminhoIds.add(documento.getPadraoArmazenamento().getId())) {
+                    caminhos.add(documento.getPadraoArmazenamento());
+                }
+            }
             if (!vinculosDocumentos.isEmpty()) {
                 processoDocumentoRepository.deleteAll(vinculosDocumentos);
             }
@@ -234,10 +254,12 @@ public class ClienteService {
             processoAppRepository.deleteAll(processos);
         }
 
-        List<CaminhoPadraoDeArmazenamento> caminhos = caminhoRepository.findByClienteId(id);
-        List<Documento> documentos = new ArrayList<>();
         for (CaminhoPadraoDeArmazenamento caminho : caminhos) {
-            documentos.addAll(documentoRepository.findByPadraoArmazenamentoId(caminho.getId()));
+            for (Documento documento : documentoRepository.findByPadraoArmazenamentoId(caminho.getId())) {
+                if (documento.getId() != null && documentoIds.add(documento.getId())) {
+                    documentos.add(documento);
+                }
+            }
         }
 
         // Remove vínculos e documentos associados aos caminhos do cliente
@@ -258,10 +280,10 @@ public class ClienteService {
 
         // Remove pastas/caminhos associados usando a regra atual da main.
         if (!caminhos.isEmpty()) {
-            List<Long> caminhoIds = new ArrayList<>(caminhos.stream()
+            List<Long> idsCaminhosParaExcluir = new ArrayList<>(caminhos.stream()
                     .map(CaminhoPadraoDeArmazenamento::getId)
                     .toList());
-            caminhoIds.forEach(oneDriveService::excluirPasta);
+            idsCaminhosParaExcluir.forEach(oneDriveService::excluirPasta);
         }
 
         // Remove o cliente
@@ -271,4 +293,5 @@ public class ClienteService {
             enderecoRepository.delete(endereco);
         }
     }
+
 }

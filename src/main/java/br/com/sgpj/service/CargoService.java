@@ -4,6 +4,7 @@ import br.com.sgpj.adapter.database.CargoPermissaoAdapter;
 import br.com.sgpj.adapter.database.CargoPersistenciaAdapter;
 import br.com.sgpj.adapter.database.PermissaoPersistenciaAdapter;
 import br.com.sgpj.adapter.database.UsuarioPersistenciaAdapter;
+import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
 import br.com.sgpj.dto.request.AtribuirPermissoesRequest;
 import br.com.sgpj.dto.request.CriarCargoRequest;
 import br.com.sgpj.dto.response.CargoResponse;
@@ -12,6 +13,7 @@ import br.com.sgpj.entity.*;
 import br.com.sgpj.exception.CargoNaoEncontradoException;
 import br.com.sgpj.exception.OperacaoInvalidaException;
 import br.com.sgpj.mapper.CargoMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -32,6 +34,7 @@ public class CargoService {
     private final PermissaoPersistenciaAdapter permissaoPersistenciaAdapter;
     private final UsuarioPersistenciaAdapter usuarioPersistenciaAdapter;
     private final CargoPermissaoAdapter cargoPermissaoAdapter;
+    private final UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter;
 
     private static final Long CARGO_ADMIN_ID = 1L;
     private static final Long SEM_CARGO_ID = 2L;
@@ -117,5 +120,9 @@ public class CargoService {
 
         cargoPermissaoAdapter.deleteAllById_CargoId(cargoId);
         cargoPersistenciaAdapter.deleteById(cargoId);
+    }
+
+    public boolean isCorrectScope(HttpServletRequest httpRequest, String scope) {
+        return usuarioAutenticacaoAdapter.isCorrectScope(httpRequest, scope);
     }
 }

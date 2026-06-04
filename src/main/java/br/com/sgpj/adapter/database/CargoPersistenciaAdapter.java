@@ -3,7 +3,6 @@ package br.com.sgpj.adapter.database;
 import br.com.sgpj.entity.Cargo;
 import br.com.sgpj.exception.CargoNaoEncontradoException;
 import br.com.sgpj.repository.CargoRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

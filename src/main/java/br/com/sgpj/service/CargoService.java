@@ -9,6 +9,8 @@ import br.com.sgpj.dto.request.CriarCargoRequest;
 import br.com.sgpj.dto.response.CargoResponse;
 import br.com.sgpj.dto.response.PermissaoResponse;
 import br.com.sgpj.entity.*;
+import br.com.sgpj.exception.CargoNaoEncontradoException;
+import br.com.sgpj.exception.OperacaoInvalidaException;
 import br.com.sgpj.mapper.CargoMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -30,6 +32,9 @@ public class CargoService {
     private final PermissaoPersistenciaAdapter permissaoPersistenciaAdapter;
     private final UsuarioPersistenciaAdapter usuarioPersistenciaAdapter;
     private final CargoPermissaoAdapter cargoPermissaoAdapter;
+
+    private static final Long CARGO_ADMIN_ID = 1L;
+    private static final Long SEM_CARGO_ID = 2L;
 
     @Transactional(readOnly = true)
     public Page<CargoResponse> listarPaginado(Pageable pageable) {
@@ -81,12 +86,36 @@ public class CargoService {
             ));
         }
 
-        // Recarrega com as permissões atualizadas
         List<CargoPermissao> permissoes = cargoPermissaoAdapter.findAllById_CargoId(cargoId);
         List<PermissaoResponse> permissoesResponse = permissoes.stream()
                 .map(cp -> new PermissaoResponse(cp.getPermissao().getId(), cp.getPermissao().getNome()))
                 .toList();
 
         return new CargoResponse(cargo.getId(), cargo.getNome(), permissoesResponse);
+    }
+
+    @Transactional
+    public void deletar(Long cargoId) {
+        if (cargoId.equals(CARGO_ADMIN_ID)) {
+            throw new OperacaoInvalidaException("O cargo 'ADMIN' não pode ser excluído");
+        }
+
+        if (cargoId.equals(SEM_CARGO_ID)) {
+            throw new OperacaoInvalidaException("O cargo 'Sem Cargo' não pode ser excluído");
+        }
+
+        if (!cargoPersistenciaAdapter.existsById(cargoId)) {
+            throw new CargoNaoEncontradoException("Cargo não encontrado: " + cargoId);
+        }
+
+        if (usuarioPersistenciaAdapter.existsByCargo(cargoId)) {
+            Cargo cargoPadrao = cargoPersistenciaAdapter.buscarCargoPorId(SEM_CARGO_ID);
+
+            usuarioPersistenciaAdapter.findAllByCargo_Id(cargoId)
+                    .forEach(usuario -> usuario.setCargo(cargoPadrao));
+        }
+
+        cargoPermissaoAdapter.deleteAllById_CargoId(cargoId);
+        cargoPersistenciaAdapter.deleteById(cargoId);
     }
 }

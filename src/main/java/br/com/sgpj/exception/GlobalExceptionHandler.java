@@ -109,23 +109,28 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(UsuarioJaAtivoException.class)
-    public ResponseEntity<Map<String, Object>> handleEscopoJwtException(UsuarioJaAtivoException ex) {
+    public ResponseEntity<Map<String, Object>> handleUsuarioJaAtivoException(UsuarioJaAtivoException ex) {
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
     }
 
     @ExceptionHandler(UsuarioInativoException.class)
-    public ResponseEntity<Map<String, Object>> handleEscopoJwtException(UsuarioInativoException ex) {
+    public ResponseEntity<Map<String, Object>> handleUsuarioInativoException(UsuarioInativoException ex) {
         return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
     @ExceptionHandler(UsuarioAutoExclusaoException.class)
-    public ResponseEntity<Map<String, Object>> handleEscopoJwtException(UsuarioAutoExclusaoException ex) {
+    public ResponseEntity<Map<String, Object>> handleUsuarioAutoExclusaoException(UsuarioAutoExclusaoException ex) {
         return buildResponse(HttpStatus.UNPROCESSABLE_CONTENT, ex.getMessage());
     }
 
     @ExceptionHandler(PermissaoNaoEncontradaException.class)
-    public ResponseEntity<Map<String, Object>> handleEscopoJwtException(PermissaoNaoEncontradaException ex) {
+    public ResponseEntity<Map<String, Object>> handlePermissaoNaoEncontradaException(PermissaoNaoEncontradaException ex) {
         return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(OperacaoInvalidaException.class)
+    public ResponseEntity<Map<String, Object>> handleOperacaoInvalidaException(OperacaoInvalidaException ex) {
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
     }
 
     @ExceptionHandler(ConstraintViolationException.class)

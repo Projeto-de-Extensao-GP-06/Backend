@@ -60,4 +60,10 @@ public class CargoController {
 
         return ResponseEntity.ok(cargoService.atualizarPermissoes(cargoId, request, email));
     }
+
+    @DeleteMapping("/{cargoId}")
+    public ResponseEntity<Void> deletar(@PathVariable Long cargoId) {
+        cargoService.deletar(cargoId);
+        return ResponseEntity.noContent().build();
+    }
 }

@@ -62,5 +62,9 @@ public class UsuarioPersistenciaAdapter {
     public Usuario salvar(Usuario usuario) {
         return usuarioRepository.save(usuario);
     }
+
+    public boolean existsByCargo(Long cargoId) { return usuarioRepository.existsByCargo_Id(cargoId); }
+
+    public List<Usuario> findAllByCargo_Id(Long cargoId) { return usuarioRepository.findAllByCargo_Id(cargoId); }
 }
 

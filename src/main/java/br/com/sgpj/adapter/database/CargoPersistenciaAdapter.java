@@ -35,7 +35,9 @@ public class CargoPersistenciaAdapter {
         return cargoRepository.findAllIds(pageable);
     }
 
-    public List<Cargo> findAllWithPermissoesByIds(Page<Long> idsPage) {
-        return cargoRepository.findAllWithPermissoesByIds(idsPage.getContent());
-    }
+    public List<Cargo> findAllWithPermissoesByIds(Page<Long> idsPage) { return cargoRepository.findAllWithPermissoesByIds(idsPage.getContent()); }
+
+    public void deleteById(Long cargoId) { cargoRepository.deleteById(cargoId); }
+
+    public boolean existsById(Long cargoId) { return cargoRepository.existsById(cargoId); }
 }

@@ -30,4 +30,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
         WHERE u.email = :email
         """)
   Optional<Usuario> findByEmailWithPermissoes(@Param("email") String email);
+
+  boolean existsByCargo_Id(Long cargoId);
+
+  List<Usuario> findAllByCargo_Id(Long cargoId);
 }

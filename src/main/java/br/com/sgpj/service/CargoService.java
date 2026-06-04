@@ -10,6 +10,7 @@ import br.com.sgpj.dto.request.CriarCargoRequest;
 import br.com.sgpj.dto.response.CargoResponse;
 import br.com.sgpj.dto.response.PermissaoResponse;
 import br.com.sgpj.entity.*;
+import br.com.sgpj.exception.CargoJaExisteException;
 import br.com.sgpj.exception.CargoNaoEncontradoException;
 import br.com.sgpj.exception.OperacaoInvalidaException;
 import br.com.sgpj.mapper.CargoMapper;
@@ -56,6 +57,10 @@ public class CargoService {
 
     @Transactional
     public CargoResponse criar(CriarCargoRequest request, String emailUsuario) {
+        if (cargoPersistenciaAdapter.existsByNome(request.nome())) {
+            throw new CargoJaExisteException("O cargo "+ request.nome() + " já existe");
+        }
+
         Usuario criadoPor = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(emailUsuario);
 
         Cargo cargo = new Cargo();

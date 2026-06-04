@@ -39,4 +39,6 @@ public class CargoPersistenciaAdapter {
     public void deleteById(Long cargoId) { cargoRepository.deleteById(cargoId); }
 
     public boolean existsById(Long cargoId) { return cargoRepository.existsById(cargoId); }
+
+    public boolean existsByNome(String nomeCargo) { return cargoRepository.existsByNome(nomeCargo); }
 }

@@ -1,5 +1,6 @@
 package br.com.sgpj.controller;
 
+import br.com.sgpj.dto.request.AtribuirPermissoesRequest;
 import br.com.sgpj.dto.request.CriarCargoRequest;
 import br.com.sgpj.dto.response.CargoResponse;
 import br.com.sgpj.dto.response.UsuarioDetalhesResponse;
@@ -46,5 +47,17 @@ public class CargoController {
                 .getName();
 
         return ResponseEntity.status(201).body(cargoService.criar(request, email));
+    }
+
+    @PutMapping("/{cargoId}/permissoes")
+    public ResponseEntity<CargoResponse> atualizarPermissoes(
+            @PathVariable Long cargoId,
+            @RequestBody @Valid AtribuirPermissoesRequest request) {
+
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
+
+        return ResponseEntity.ok(cargoService.atualizarPermissoes(cargoId, request, email));
     }
 }

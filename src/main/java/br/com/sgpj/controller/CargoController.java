@@ -3,9 +3,9 @@ package br.com.sgpj.controller;
 import br.com.sgpj.dto.request.AtribuirPermissoesRequest;
 import br.com.sgpj.dto.request.CriarCargoRequest;
 import br.com.sgpj.dto.response.CargoResponse;
-import br.com.sgpj.dto.response.UsuarioDetalhesResponse;
 import br.com.sgpj.exception.EscopoJwtException;
 import br.com.sgpj.service.CargoService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,9 +16,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,6 +30,7 @@ public class CargoController {
 
     @GetMapping
     @SecurityRequirement(name = "Bearer")
+    @Operation(summary = "Lista os cargos e suas permissões de forma paginada")
     public ResponseEntity<Page<CargoResponse>> listarCargosPaginados(@ParameterObject @PageableDefault(
             size = 10,
             page = 0,
@@ -48,6 +47,7 @@ public class CargoController {
 
     @PostMapping
     @SecurityRequirement(name = "Bearer")
+    @Operation(summary = "Cria cargo com lista de permissões vazia")
     public ResponseEntity<CargoResponse> criar(@RequestBody @Valid CriarCargoRequest request,
                                                HttpServletRequest httpRequest) {
         if (!cargoService.isCorrectScope(httpRequest, "GENERAL_USE")) {
@@ -62,6 +62,8 @@ public class CargoController {
     }
 
     @PutMapping("/{cargoId}/permissoes")
+    @SecurityRequirement(name = "Bearer")
+    @Operation(summary = "Atualiza a lista de permissões de um cargo")
     public ResponseEntity<CargoResponse> atualizarPermissoes(
             @PathVariable Long cargoId,
             @RequestBody @Valid AtribuirPermissoesRequest request,
@@ -78,6 +80,8 @@ public class CargoController {
     }
 
     @DeleteMapping("/{cargoId}")
+    @SecurityRequirement(name = "Bearer")
+    @Operation(summary = "Deleta um cargo e atribui o cargo 'Sem Cargo' aos usuários associados ao cargo excluído")
     public ResponseEntity<Void> deletar(@PathVariable Long cargoId,
                                         HttpServletRequest httpRequest) {
         if (!cargoService.isCorrectScope(httpRequest, "GENERAL_USE")) {

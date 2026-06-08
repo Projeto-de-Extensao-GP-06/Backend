@@ -57,6 +57,7 @@ public class UsuarioService {
     Usuario usuarioEditado = UsuarioMapper.toEntity(request, cargo);
     usuarioEditado.setId(id);
     usuarioEditado.setCriadoEm(usuarioAtual.getCriadoEm());
+    usuarioEditado.setSenha(usuarioAtual.getSenha());
     usuarioPersistenciaAdapter.salvar(usuarioEditado);
     return UsuarioMapper.toListarDto(usuarioEditado);
   }

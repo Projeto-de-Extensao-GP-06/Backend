@@ -43,6 +43,7 @@ public class UsuarioController {
 
     @PostMapping
     @SecurityRequirement(name = "Bearer")
+    @PreAuthorize("hasAuthority('CRIAR USUÁRIO') || hasAuthority('TODAS AS PERMISSÕES')")
     public ResponseEntity<Void> criar(@RequestBody @Valid UsuarioCriacaoRequest usuarioCriacaoRequest,
                                       HttpServletRequest httpRequest) {
         if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {
@@ -133,6 +134,7 @@ public class UsuarioController {
 
     @PutMapping("/{id}")
     @SecurityRequirement(name = "Bearer")
+    @PreAuthorize("hasAuthority('EDITAR USUÁRIO') || hasAuthority('TODAS AS PERMISSÕES')")
     public ResponseEntity<UsuarioListarResponse> atualizarUsuario(@Valid @RequestBody UsuarioAtualizacaoRequest atualizacao,
                                                                   @PathVariable Long id,
                                                                   HttpServletRequest httpRequest){
@@ -171,6 +173,7 @@ public class UsuarioController {
 
     @DeleteMapping("/{id}")
     @SecurityRequirement(name = "Bearer")
+    @PreAuthorize("hasAuthority('EXCLUIR USUÁRIO') || hasAuthority('TODAS AS PERMISSÕES')")
     public ResponseEntity<Void> deletar(@PathVariable Long id,
                                         HttpServletRequest httpRequest) {
         if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {
@@ -229,7 +232,7 @@ public class UsuarioController {
     }
 
     @PostMapping("/reactivate/{id}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAuthority('EDITAR USUÁRIO') || hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
     public ResponseEntity<UsuarioListarResponse> reativarUsuario(@PathVariable Long id,
                                                 HttpServletRequest httpRequest) {

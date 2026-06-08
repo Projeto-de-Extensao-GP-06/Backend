@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,8 +28,9 @@ public class HistoricoProcessoController {
         this.historicoProcessoService = historicoProcessoService;
     }
 
-    @SecurityRequirement(name = "Bearer")
     @PostMapping("/historico")
+    @SecurityRequirement(name = "Bearer")
+    @PreAuthorize("hasAuthority('EDITAR PROCESSO') || hasAuthority('TODAS AS PERMISSÕES')")
     public ResponseEntity<HistoricoProcessoResponse> interacaoProcesso(@Valid @RequestBody HistoricoProcessoRequest novaInteracao, HttpServletRequest httpRequest){
 
         if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {
@@ -56,6 +58,7 @@ public class HistoricoProcessoController {
 
     @SecurityRequirement(name = "Bearer")
     @DeleteMapping("/historico")
+    @PreAuthorize("hasAuthority('EDITAR PROCESSO') || hasAuthority('TODAS AS PERMISSÕES')")
     public ResponseEntity<Void> deletarPorIdProcesso(Long id, HttpServletRequest httpRequest){
 
         if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {

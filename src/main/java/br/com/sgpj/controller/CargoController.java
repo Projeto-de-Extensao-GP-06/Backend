@@ -17,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -46,6 +47,7 @@ public class CargoController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('CRIAR CARGO') || hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
     @Operation(summary = "Cria cargo sem permissões atribuídas")
     public ResponseEntity<CargoResponse> criar(@RequestBody @Valid CriarCargoRequest request,
@@ -62,6 +64,7 @@ public class CargoController {
     }
 
     @PutMapping("/{cargoId}/permissoes")
+    @PreAuthorize("hasAuthority('EDITAR CARGO') || hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
     @Operation(summary = "Atualiza a lista de permissões de um cargo")
     public ResponseEntity<CargoResponse> atualizarPermissoes(
@@ -80,6 +83,7 @@ public class CargoController {
     }
 
     @DeleteMapping("/{cargoId}")
+    @PreAuthorize("hasAuthority('EXCLUIR CARGO') || hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
     @Operation(summary = "Deleta um cargo e atribui o cargo 'Sem Cargo' aos usuários associados ao cargo excluído")
     public ResponseEntity<Void> deletar(@PathVariable Long cargoId,

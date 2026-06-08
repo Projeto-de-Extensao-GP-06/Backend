@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -27,6 +28,7 @@ public class ClienteController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('CRIAR CLIENTE') || hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
     @Operation(summary = "Cria um novo cliente e sua pasta no OneDrive")
     public ResponseEntity<ClienteDetalhesResponse> criar(@RequestBody @Valid ClienteCriacaoRequest request) {
@@ -36,6 +38,7 @@ public class ClienteController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('EDITAR CLIENTE') || hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
     @Operation(summary = "Atualiza um cliente existente. Se nome ou CPF/CNPJ mudar, renomeia a pasta no OneDrive")
     public ResponseEntity<ClienteDetalhesResponse> atualizar(
@@ -86,6 +89,7 @@ public class ClienteController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('EXCLUIR CLIENTE') || hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
     @Operation(summary = "Exclui um cliente e sua pasta no OneDrive")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {

@@ -47,7 +47,7 @@ public class CargoController {
 
     @PostMapping
     @SecurityRequirement(name = "Bearer")
-    @Operation(summary = "Cria cargo com lista de permissões vazia")
+    @Operation(summary = "Cria cargo sem permissões atribuídas")
     public ResponseEntity<CargoResponse> criar(@RequestBody @Valid CriarCargoRequest request,
                                                HttpServletRequest httpRequest) {
         if (!cargoService.isCorrectScope(httpRequest, "GENERAL_USE")) {

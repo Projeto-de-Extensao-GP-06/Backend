@@ -39,6 +39,7 @@ public class CargoService {
 
     private static final Long CARGO_ADMIN_ID = 1L;
     private static final Long SEM_CARGO_ID = 2L;
+    private static final Long SEM_PERMISSOES_ID = 22L;
 
     @Transactional(readOnly = true)
     public Page<CargoResponse> listarPaginado(Pageable pageable) {
@@ -55,13 +56,32 @@ public class CargoService {
         return new PageImpl<>(content, pageable, idsPage.getTotalElements());
     }
 
+//    @Transactional
+//    public CargoResponse criar(CriarCargoRequest request, String emailUsuario) {
+//        if (cargoPersistenciaAdapter.existsByNome(request.nome())) {
+//            throw new CargoJaExisteException("O cargo "+ request.nome() + " já existe");
+//        }
+//
+//        Usuario criadoPor = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(emailUsuario);
+//
+//        Cargo cargo = new Cargo();
+//        cargo.setNome(request.nome());
+//        cargo.setCriadoPor(criadoPor);
+//        cargo.setCriadoEm(LocalDateTime.now());
+//
+//        Cargo cargoSalvo = cargoPersistenciaAdapter.salvar(cargo);
+//
+//        return new CargoResponse(cargoSalvo.getId(), cargoSalvo.getNome(), List.of());
+//    }
+
     @Transactional
     public CargoResponse criar(CriarCargoRequest request, String emailUsuario) {
         if (cargoPersistenciaAdapter.existsByNome(request.nome())) {
-            throw new CargoJaExisteException("O cargo "+ request.nome() + " já existe");
+            throw new CargoJaExisteException("O cargo " + request.nome() + " já existe");
         }
 
         Usuario criadoPor = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(emailUsuario);
+        Permissao semPermissoes = permissaoPersistenciaAdapter.buscarPermissaoPorId(SEM_PERMISSOES_ID);
 
         Cargo cargo = new Cargo();
         cargo.setNome(request.nome());
@@ -70,7 +90,16 @@ public class CargoService {
 
         Cargo cargoSalvo = cargoPersistenciaAdapter.salvar(cargo);
 
-        return new CargoResponse(cargoSalvo.getId(), cargoSalvo.getNome(), List.of());
+        cargoPermissaoAdapter.salvar(new CargoPermissao(
+                new CargoPermissaoId(cargoSalvo.getId(), SEM_PERMISSOES_ID),
+                cargoSalvo,
+                semPermissoes,
+                criadoPor,
+                LocalDateTime.now()
+        ));
+
+        return new CargoResponse(cargoSalvo.getId(), cargoSalvo.getNome(),
+                List.of(new PermissaoResponse(semPermissoes.getId(), semPermissoes.getNome())));
     }
 
     @Transactional

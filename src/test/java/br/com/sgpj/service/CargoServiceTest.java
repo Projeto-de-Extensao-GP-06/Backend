@@ -136,11 +136,13 @@ class CargoServiceTest {
         CriarCargoRequest request = mock(CriarCargoRequest.class);
         Usuario usuario = criarUsuario();
         Cargo cargoSalvo = criarCargo(ID_TESTE, NOME_CARGO_TESTE);
+        Permissao semPermissoes = criarPermissao(21L, "Sem permissões");
 
         when(request.nome()).thenReturn(NOME_CARGO_TESTE);
         when(cargoPersistenciaAdapter.existsByNome(NOME_CARGO_TESTE)).thenReturn(false);
         when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(EMAIL_USUARIO_TESTE)).thenReturn(usuario);
         when(cargoPersistenciaAdapter.salvar(any(Cargo.class))).thenReturn(cargoSalvo);
+        when(permissaoPersistenciaAdapter.buscarPermissaoPorId(21L)).thenReturn(semPermissoes);
 
         // When
         CargoResponse resultado = cargoService.criar(request, EMAIL_USUARIO_TESTE);
@@ -153,24 +155,28 @@ class CargoServiceTest {
     }
 
     @Test
-    @DisplayName("Deve retornar lista de permissões vazia ao criar cargo")
-    void deveRetornarListaPermissoesVaziaAoCriarCargo() {
+    @DisplayName("Deve atribuir permissão 'Sem permissões' ao criar cargo")
+    void deveAtribuirPermissaoSemPermissoesAoCriarCargo() {
         // Given
         CriarCargoRequest request = mock(CriarCargoRequest.class);
         Usuario usuario = criarUsuario();
         Cargo cargoSalvo = criarCargo(ID_TESTE, NOME_CARGO_TESTE);
+        Permissao semPermissoes = criarPermissao(21L, "Sem permissões");
 
         when(request.nome()).thenReturn(NOME_CARGO_TESTE);
         when(cargoPersistenciaAdapter.existsByNome(NOME_CARGO_TESTE)).thenReturn(false);
         when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(EMAIL_USUARIO_TESTE)).thenReturn(usuario);
         when(cargoPersistenciaAdapter.salvar(any(Cargo.class))).thenReturn(cargoSalvo);
+        when(permissaoPersistenciaAdapter.buscarPermissaoPorId(21L)).thenReturn(semPermissoes);
 
         // When
         CargoResponse resultado = cargoService.criar(request, EMAIL_USUARIO_TESTE);
 
         // Then
         assertNotNull(resultado.permissoes());
-        assertTrue(resultado.permissoes().isEmpty());
+        assertEquals(1, resultado.permissoes().size());
+        assertEquals("Sem permissões", resultado.permissoes().getFirst().nome());
+        verify(cargoPermissaoAdapter, times(1)).salvar(any(CargoPermissao.class));
     }
 
     @Test

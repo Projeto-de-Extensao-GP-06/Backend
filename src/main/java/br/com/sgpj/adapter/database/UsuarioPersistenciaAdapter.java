@@ -6,6 +6,7 @@ import br.com.sgpj.exception.CargoNaoEncontradoException;
 import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.repository.CargoRepository;
 import br.com.sgpj.repository.UsuarioRepository;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -40,6 +41,11 @@ public class UsuarioPersistenciaAdapter {
                 .orElseThrow(() -> new UsuarioNaoEncontradoException("Usuário não encontrado para esse endereço de email: " + email));
     }
 
+    public Usuario findByEmailWithPermissoes(String username) {
+        return usuarioRepository.findByEmailWithPermissoes(username)
+                .orElseThrow(() -> new UsernameNotFoundException(String.format("Usuário %s não encontrado", username)));
+    }
+
     public List<Usuario> listarTodos() {
         return usuarioRepository.findAll();
     }
@@ -56,5 +62,9 @@ public class UsuarioPersistenciaAdapter {
     public Usuario salvar(Usuario usuario) {
         return usuarioRepository.save(usuario);
     }
+
+    public boolean existsByCargo(Long cargoId) { return usuarioRepository.existsByCargo_Id(cargoId); }
+
+    public List<Usuario> findAllByCargo_Id(Long cargoId) { return usuarioRepository.findAllByCargo_Id(cargoId); }
 }
 

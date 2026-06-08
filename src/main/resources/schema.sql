@@ -382,7 +382,8 @@ ON processo_dados_aplicacao(processo_dados_api_id);
 -- =========================================================
 
 INSERT INTO cargo (nome)
-VALUES ('ADMIN');
+VALUES ('ADMIN'),
+       ('Sem Cargo');
 
 INSERT INTO usuario (nome, email, senha, cargo_id)
 VALUES (
@@ -407,16 +408,15 @@ INSERT INTO permissao (nome) VALUES
 ('CRIAR USUÁRIO'),
 ('EDITAR USUÁRIO'),
 ('EXCLUIR USUÁRIO'),
-('CRIAR CONTATO'),
-('EDITAR CONTATO'),
-('EXCLUIR CONTATO'),
 ('CRIAR DOCUMENTO'),
 ('EDITAR DOCUMENTO'),
 ('EXCLUIR DOCUMENTO'),
-('TODAS AS PERMISSÕES');
+('TODAS AS PERMISSÕES'),
+('SEM PERMISSÕES');
 
-INSERT INTO cargo_permissao (cargo_id, permissao_id, atribuido_por)
-SELECT 1, id, 1 FROM permissao;
+INSERT INTO cargo_permissao (cargo_id, permissao_id)
+VALUES (1, 18),
+       (2, 19);
 
 INSERT INTO status_cliente (nome) VALUES
 ('LEAD'),

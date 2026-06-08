@@ -39,9 +39,9 @@ public class CargoService {
 
     private static final Long CARGO_ADMIN_ID = 1L;
     private static final Long SEM_CARGO_ID = 2L;
-    private static final Long TODAS_PERMISSOES_ID = 21L;
-    private static final Long SEM_PERMISSOES_ID = 22L;
-    private static final int TOTAL_PERMISSOES_NORMAIS = 20;
+    private static final Long TODAS_PERMISSOES_ID = 18L;
+    private static final Long SEM_PERMISSOES_ID = 19L;
+    private static final int TOTAL_PERMISSOES_NORMAIS = 17;
 
     @Transactional(readOnly = true)
     public Page<CargoResponse> listarPaginado(Pageable pageable) {
@@ -102,7 +102,6 @@ public class CargoService {
             atribuirPermissaoEspecial(cargoId, SEM_PERMISSOES_ID, cargo, atribuidoPor);
 
         } else if (permissaoIds.size() == TOTAL_PERMISSOES_NORMAIS) {
-            // Substitui as 20 pela permissão especial "Todas as permissões"
             atribuirPermissaoEspecial(cargoId, TODAS_PERMISSOES_ID, cargo, atribuidoPor);
 
         } else {

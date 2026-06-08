@@ -408,9 +408,6 @@ INSERT INTO permissao (nome) VALUES
 ('CRIAR USUÁRIO'),
 ('EDITAR USUÁRIO'),
 ('EXCLUIR USUÁRIO'),
-('CRIAR CONTATO'),
-('EDITAR CONTATO'),
-('EXCLUIR CONTATO'),
 ('CRIAR DOCUMENTO'),
 ('EDITAR DOCUMENTO'),
 ('EXCLUIR DOCUMENTO'),
@@ -418,8 +415,8 @@ INSERT INTO permissao (nome) VALUES
 ('SEM PERMISSÕES');
 
 INSERT INTO cargo_permissao (cargo_id, permissao_id)
-VALUES (1, 21),
-       (2, 22);
+VALUES (1, 18),
+       (2, 19);
 
 INSERT INTO status_cliente (nome) VALUES
 ('LEAD'),

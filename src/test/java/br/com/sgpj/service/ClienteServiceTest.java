@@ -513,6 +513,29 @@ class ClienteServiceTest {
         }
 
         @Test
+        @DisplayName("Deve atualizar cliente quando CPF/CNPJ antigo é nulo")
+        void deveAtualizarQuandoCpfAntigoNulo() {
+            Cliente clienteExistente = criarClienteComStatus(1L, "João da Silva", null, "Ativo");
+            StatusCliente statusCliente = new StatusCliente(1L, "Ativo");
+
+            ClienteAtualizacaoRequest request = new ClienteAtualizacaoRequest(
+                    "João da Silva", "12345678901", "123456789", 1L, null, null
+            );
+
+            when(clientePersistenciaAdapter.buscarPorId(1L)).thenReturn(clienteExistente);
+            when(clienteRepository.existsByCpfCnpj("12345678901")).thenReturn(false);
+            when(statusClienteRepository.findById(1L)).thenReturn(Optional.of(statusCliente));
+            when(clientePersistenciaAdapter.salvar(any(Cliente.class))).thenReturn(clienteExistente);
+
+            ClienteDetalhesResponse resultado = clienteService.atualizar(1L, request);
+
+            assertNotNull(resultado);
+            assertEquals("12345678901", clienteExistente.getCpfCnpj());
+            verify(clientePersistenciaAdapter).salvar(clienteExistente);
+            verifyNoInteractions(oneDriveService);
+        }
+
+        @Test
         @DisplayName("Deve lançar exceção quando CPF/CNPJ já pertence a outro cliente")
         void deveLancarExcecaoQuandoCpfJaPertenceAOutro() {
             Cliente clienteExistente = criarClienteComStatus(1L, "João da Silva", "12345678901", "Ativo");
@@ -576,6 +599,7 @@ class ClienteServiceTest {
 
             verify(contatoRepository).deleteAll(anyList());
             verify(contatoRepository).saveAll(anyList());
+            assertDoesNotThrow(() -> clienteExistente.getContatos().clear());
         }
     }
 

@@ -31,6 +31,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 @Service
@@ -136,7 +137,7 @@ public class ClienteService {
         // Salva os contatos, se fornecidos
         if (request.contatos() != null && !request.contatos().isEmpty()) {
             Cliente clienteRef = cliente;
-            List<Contato> contatos = request.contatos().stream()
+            List<Contato> contatos = new ArrayList<>(request.contatos().stream()
                     .map(c -> {
                         Contato contato = new Contato();
                         contato.setNome(c.nome());
@@ -147,7 +148,7 @@ public class ClienteService {
                         contato.setCliente(clienteRef);
                         return contato;
                     })
-                    .toList();
+                    .toList());
             contatoRepository.saveAll(contatos);
             cliente.setContatos(contatos);
         }
@@ -160,7 +161,7 @@ public class ClienteService {
         Cliente cliente = clientePersistenciaAdapter.buscarPorId(id);
 
         // Verifica se o CPF/CNPJ mudou e se já pertence a outro cliente
-        if (!cliente.getCpfCnpj().equals(request.cpfCnpj()) && clienteRepository.existsByCpfCnpj(request.cpfCnpj())) {
+        if (!Objects.equals(cliente.getCpfCnpj(), request.cpfCnpj()) && clienteRepository.existsByCpfCnpj(request.cpfCnpj())) {
             throw new ClienteJaExistenteException(request.cpfCnpj());
         }
 
@@ -195,9 +196,9 @@ public class ClienteService {
         if (request.contatos() != null) {
             if (cliente.getContatos() != null && !cliente.getContatos().isEmpty()) {
                 contatoRepository.deleteAll(cliente.getContatos());
+                cliente.setContatos(new ArrayList<>());
             }
-            Cliente clienteRef = cliente;
-            List<Contato> novosContatos = request.contatos().stream()
+            List<Contato> novosContatos = new ArrayList<>(request.contatos().stream()
                     .map(c -> {
                         Contato contato = new Contato();
                         contato.setNome(c.nome());
@@ -205,10 +206,10 @@ public class ClienteService {
                         contato.setTelefone(c.telefone());
                         contato.setProfissao(c.profissao());
                         contato.setPrincipal(c.principal());
-                        contato.setCliente(clienteRef);
+                        contato.setCliente(cliente);
                         return contato;
                     })
-                    .toList();
+                    .toList());
             contatoRepository.saveAll(novosContatos);
             cliente.setContatos(novosContatos);
         }

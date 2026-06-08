@@ -26,6 +26,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.LongStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -59,6 +60,8 @@ class CargoServiceTest {
     private static final Long SEM_CARGO_ID = 2L;
     private static final String NOME_CARGO_TESTE = "Analista";
     private static final String EMAIL_USUARIO_TESTE = "usuario@teste.com";
+    private static final Long TODAS_PERMISSOES_ID = 21L;
+    private static final Long SEM_PERMISSOES_ID = 22L;
 
     // ========================
     // listarPaginado()
@@ -142,7 +145,7 @@ class CargoServiceTest {
         when(cargoPersistenciaAdapter.existsByNome(NOME_CARGO_TESTE)).thenReturn(false);
         when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(EMAIL_USUARIO_TESTE)).thenReturn(usuario);
         when(cargoPersistenciaAdapter.salvar(any(Cargo.class))).thenReturn(cargoSalvo);
-        when(permissaoPersistenciaAdapter.buscarPermissaoPorId(21L)).thenReturn(semPermissoes);
+        when(permissaoPersistenciaAdapter.buscarPermissaoPorId(22L)).thenReturn(semPermissoes);
 
         // When
         CargoResponse resultado = cargoService.criar(request, EMAIL_USUARIO_TESTE);
@@ -161,13 +164,13 @@ class CargoServiceTest {
         CriarCargoRequest request = mock(CriarCargoRequest.class);
         Usuario usuario = criarUsuario();
         Cargo cargoSalvo = criarCargo(ID_TESTE, NOME_CARGO_TESTE);
-        Permissao semPermissoes = criarPermissao(21L, "Sem permissões");
+        Permissao semPermissoes = criarPermissao(22L, "Sem permissões");
 
         when(request.nome()).thenReturn(NOME_CARGO_TESTE);
         when(cargoPersistenciaAdapter.existsByNome(NOME_CARGO_TESTE)).thenReturn(false);
         when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(EMAIL_USUARIO_TESTE)).thenReturn(usuario);
         when(cargoPersistenciaAdapter.salvar(any(Cargo.class))).thenReturn(cargoSalvo);
-        when(permissaoPersistenciaAdapter.buscarPermissaoPorId(21L)).thenReturn(semPermissoes);
+        when(permissaoPersistenciaAdapter.buscarPermissaoPorId(22L)).thenReturn(semPermissoes);
 
         // When
         CargoResponse resultado = cargoService.criar(request, EMAIL_USUARIO_TESTE);
@@ -286,24 +289,62 @@ class CargoServiceTest {
     }
 
     @Test
-    @DisplayName("Deve retornar cargo com lista vazia ao atualizar sem permissões")
-    void deveRetornarCargoComListaVaziaAoAtualizarSemPermissoes() {
+    @DisplayName("Deve atribuir 'Sem permissões' ao atualizar com lista vazia")
+    void deveAtribuirSemPermissoesAoAtualizarComListaVazia() {
         // Given
         AtribuirPermissoesRequest request = mock(AtribuirPermissoesRequest.class);
         Cargo cargo = criarCargo(ID_TESTE, NOME_CARGO_TESTE);
         Usuario usuario = criarUsuario();
+        Permissao semPermissoes = criarPermissao(SEM_PERMISSOES_ID, "Sem permissões");
+        CargoPermissao cargoPermissao = criarCargoPermissao(cargo, semPermissoes, usuario);
 
         when(request.permissaoIds()).thenReturn(List.of());
         when(cargoPersistenciaAdapter.buscarCargoPorId(ID_TESTE)).thenReturn(cargo);
         when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(EMAIL_USUARIO_TESTE)).thenReturn(usuario);
-        when(cargoPermissaoAdapter.findAllById_CargoId(ID_TESTE)).thenReturn(List.of());
+        when(permissaoPersistenciaAdapter.buscarPermissaoPorId(SEM_PERMISSOES_ID)).thenReturn(semPermissoes);
+        when(cargoPermissaoAdapter.findAllById_CargoId(ID_TESTE)).thenReturn(List.of(cargoPermissao));
 
         // When
         CargoResponse resultado = cargoService.atualizarPermissoes(ID_TESTE, request, EMAIL_USUARIO_TESTE);
 
         // Then
         assertNotNull(resultado);
-        assertTrue(resultado.permissoes().isEmpty());
+        assertEquals(1, resultado.permissoes().size());
+        assertEquals("Sem permissões", resultado.permissoes().getFirst().nome());
+        verify(cargoPermissaoAdapter, times(1)).salvar(any(CargoPermissao.class));
+        verify(permissaoPersistenciaAdapter, times(1)).buscarPermissaoPorId(SEM_PERMISSOES_ID);
+    }
+
+    @Test
+    @DisplayName("Deve atribuir 'Todas as permissões' ao atualizar com as 20 permissões normais")
+    void deveAtribuirTodasAsPermissoesAoAtualizarComAs20PermissoesNormais() {
+        // Given
+        List<Long> ids20Permissoes = LongStream.rangeClosed(1, 20)
+                .boxed()
+                .toList();
+
+        AtribuirPermissoesRequest request = mock(AtribuirPermissoesRequest.class);
+        Cargo cargo = criarCargo(ID_TESTE, NOME_CARGO_TESTE);
+        Usuario usuario = criarUsuario();
+        Permissao todasPermissoes = criarPermissao(TODAS_PERMISSOES_ID, "Todas as permissões");
+        CargoPermissao cargoPermissao = criarCargoPermissao(cargo, todasPermissoes, usuario);
+
+        when(request.permissaoIds()).thenReturn(ids20Permissoes);
+        when(cargoPersistenciaAdapter.buscarCargoPorId(ID_TESTE)).thenReturn(cargo);
+        when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(EMAIL_USUARIO_TESTE)).thenReturn(usuario);
+        when(permissaoPersistenciaAdapter.buscarPermissaoPorId(TODAS_PERMISSOES_ID)).thenReturn(todasPermissoes);
+        when(cargoPermissaoAdapter.findAllById_CargoId(ID_TESTE)).thenReturn(List.of(cargoPermissao));
+
+        // When
+        CargoResponse resultado = cargoService.atualizarPermissoes(ID_TESTE, request, EMAIL_USUARIO_TESTE);
+
+        // Then
+        assertNotNull(resultado);
+        assertEquals(1, resultado.permissoes().size());
+        assertEquals("Todas as permissões", resultado.permissoes().getFirst().nome());
+        verify(cargoPermissaoAdapter, times(1)).salvar(any(CargoPermissao.class));
+        verify(permissaoPersistenciaAdapter, times(1)).buscarPermissaoPorId(TODAS_PERMISSOES_ID);
+        verify(permissaoPersistenciaAdapter, never()).buscarPermissaoPorId(SEM_PERMISSOES_ID);
     }
 
     // ========================

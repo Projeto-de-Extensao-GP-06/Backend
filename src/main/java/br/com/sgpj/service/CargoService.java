@@ -39,7 +39,9 @@ public class CargoService {
 
     private static final Long CARGO_ADMIN_ID = 1L;
     private static final Long SEM_CARGO_ID = 2L;
+    private static final Long TODAS_PERMISSOES_ID = 21L;
     private static final Long SEM_PERMISSOES_ID = 22L;
+    private static final int TOTAL_PERMISSOES_NORMAIS = 20;
 
     @Transactional(readOnly = true)
     public Page<CargoResponse> listarPaginado(Pageable pageable) {
@@ -55,24 +57,6 @@ public class CargoService {
 
         return new PageImpl<>(content, pageable, idsPage.getTotalElements());
     }
-
-//    @Transactional
-//    public CargoResponse criar(CriarCargoRequest request, String emailUsuario) {
-//        if (cargoPersistenciaAdapter.existsByNome(request.nome())) {
-//            throw new CargoJaExisteException("O cargo "+ request.nome() + " já existe");
-//        }
-//
-//        Usuario criadoPor = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(emailUsuario);
-//
-//        Cargo cargo = new Cargo();
-//        cargo.setNome(request.nome());
-//        cargo.setCriadoPor(criadoPor);
-//        cargo.setCriadoEm(LocalDateTime.now());
-//
-//        Cargo cargoSalvo = cargoPersistenciaAdapter.salvar(cargo);
-//
-//        return new CargoResponse(cargoSalvo.getId(), cargoSalvo.getNome(), List.of());
-//    }
 
     @Transactional
     public CargoResponse criar(CriarCargoRequest request, String emailUsuario) {
@@ -104,31 +88,37 @@ public class CargoService {
 
     @Transactional
     public CargoResponse atualizarPermissoes(Long cargoId,
-                                            AtribuirPermissoesRequest request,
-                                            String emailUsuario) {
+                                             AtribuirPermissoesRequest request,
+                                             String emailUsuario) {
 
         Cargo cargo = cargoPersistenciaAdapter.buscarCargoPorId(cargoId);
         Usuario atribuidoPor = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(emailUsuario);
+
         cargoPermissaoAdapter.deleteAllById_CargoId(cargoId);
 
-        for (Long permissaoId : request.permissaoIds()) {
-            Permissao permissao = permissaoPersistenciaAdapter.buscarPermissaoPorId(permissaoId);
+        List<Long> permissaoIds = request.permissaoIds();
 
-            cargoPermissaoAdapter.salvar(new CargoPermissao(
-                    new CargoPermissaoId(cargoId, permissaoId),
-                    cargo,
-                    permissao,
-                    atribuidoPor,
-                    LocalDateTime.now()
-            ));
+        if (permissaoIds.isEmpty()) {
+            atribuirPermissaoEspecial(cargoId, SEM_PERMISSOES_ID, cargo, atribuidoPor);
+
+        } else if (permissaoIds.size() == TOTAL_PERMISSOES_NORMAIS) {
+            // Substitui as 20 pela permissão especial "Todas as permissões"
+            atribuirPermissaoEspecial(cargoId, TODAS_PERMISSOES_ID, cargo, atribuidoPor);
+
+        } else {
+            for (Long permissaoId : permissaoIds) {
+                Permissao permissao = permissaoPersistenciaAdapter.buscarPermissaoPorId(permissaoId);
+                cargoPermissaoAdapter.salvar(new CargoPermissao(
+                        new CargoPermissaoId(cargoId, permissaoId),
+                        cargo, permissao, atribuidoPor, LocalDateTime.now()
+                ));
+            }
         }
 
         List<CargoPermissao> permissoes = cargoPermissaoAdapter.findAllById_CargoId(cargoId);
-        List<PermissaoResponse> permissoesResponse = permissoes.stream()
-                .map(cp -> new PermissaoResponse(cp.getPermissao().getId(), cp.getPermissao().getNome()))
-                .toList();
+        cargo.setPermissoes(permissoes);
 
-        return new CargoResponse(cargo.getId(), cargo.getNome(), permissoesResponse);
+        return CargoMapper.toResponse(cargo);
     }
 
     @Transactional
@@ -158,5 +148,13 @@ public class CargoService {
 
     public boolean isCorrectScope(HttpServletRequest httpRequest, String scope) {
         return usuarioAutenticacaoAdapter.isCorrectScope(httpRequest, scope);
+    }
+
+    private void atribuirPermissaoEspecial(Long cargoId, Long permissaoId, Cargo cargo, Usuario atribuidoPor) {
+        Permissao permissao = permissaoPersistenciaAdapter.buscarPermissaoPorId(permissaoId);
+        cargoPermissaoAdapter.salvar(new CargoPermissao(
+                new CargoPermissaoId(cargoId, permissaoId),
+                cargo, permissao, atribuidoPor, LocalDateTime.now()
+        ));
     }
 }

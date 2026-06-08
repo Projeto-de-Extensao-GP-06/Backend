@@ -58,7 +58,7 @@ CREATE TABLE endereco (
 
 CREATE TABLE padrao_caminho_armazenamento (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    nome VARCHAR(50) NOT NULL UNIQUE,
+    cliente_id BIGINT NOT NULL,
     caminho_base VARCHAR(255) NOT NULL UNIQUE
 );
 
@@ -118,6 +118,10 @@ CREATE TABLE contato (
 
     FOREIGN KEY (cliente_id) REFERENCES cliente(id)
 );
+
+ALTER TABLE padrao_caminho_armazenamento
+ADD CONSTRAINT fk_padrao_caminho_cliente
+FOREIGN KEY (cliente_id) REFERENCES cliente(id);
 
 -- =========================================================
 -- PROCESSO API (ALTERADO CONFORME DER)

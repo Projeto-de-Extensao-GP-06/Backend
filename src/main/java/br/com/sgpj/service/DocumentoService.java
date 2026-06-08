@@ -81,4 +81,5 @@ public class DocumentoService {
                 .map(c -> new CaminhoClienteResponse(c.getId(), prefixo, c.getCaminho()))
                 .toList();
     }
+
 }

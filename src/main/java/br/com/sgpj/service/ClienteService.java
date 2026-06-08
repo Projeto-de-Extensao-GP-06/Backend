@@ -8,20 +8,30 @@ import br.com.sgpj.dto.response.ClienteListarResponse;
 import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Contato;
 import br.com.sgpj.entity.Endereco;
+import br.com.sgpj.entity.Processo.ProcessoApp;
+import br.com.sgpj.entity.Processo.ProcessoDocumento;
 import br.com.sgpj.entity.StatusCliente;
 import br.com.sgpj.entity.documentos.CaminhoPadraoDeArmazenamento;
+import br.com.sgpj.entity.documentos.Documento;
 import br.com.sgpj.exception.ClienteJaExistenteException;
 import br.com.sgpj.mapper.ClienteMapper;
+import br.com.sgpj.repository.CaminhoPadraoDeArmazenamentoRepository;
 import br.com.sgpj.repository.ClienteRepository;
 import br.com.sgpj.repository.ContatoRepository;
+import br.com.sgpj.repository.DocumentoRepository;
 import br.com.sgpj.repository.EnderecoRepository;
+import br.com.sgpj.repository.HistoricoProcessoRepository;
+import br.com.sgpj.repository.ProcessoAppRepository;
+import br.com.sgpj.repository.ProcessoDocumentoRepository;
 import br.com.sgpj.repository.StatusClienteRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class ClienteService {
@@ -31,6 +41,11 @@ public class ClienteService {
     private final StatusClienteRepository statusClienteRepository;
     private final EnderecoRepository enderecoRepository;
     private final ContatoRepository contatoRepository;
+    private final CaminhoPadraoDeArmazenamentoRepository caminhoRepository;
+    private final DocumentoRepository documentoRepository;
+    private final ProcessoAppRepository processoAppRepository;
+    private final HistoricoProcessoRepository historicoProcessoRepository;
+    private final ProcessoDocumentoRepository processoDocumentoRepository;
     private final OneDriveService oneDriveService;
 
     public ClienteService(ClientePersistenciaAdapter clientePersistenciaAdapter,
@@ -38,12 +53,22 @@ public class ClienteService {
                           StatusClienteRepository statusClienteRepository,
                           EnderecoRepository enderecoRepository,
                           ContatoRepository contatoRepository,
+                          CaminhoPadraoDeArmazenamentoRepository caminhoRepository,
+                          DocumentoRepository documentoRepository,
+                          ProcessoAppRepository processoAppRepository,
+                          HistoricoProcessoRepository historicoProcessoRepository,
+                          ProcessoDocumentoRepository processoDocumentoRepository,
                           OneDriveService oneDriveService) {
         this.clientePersistenciaAdapter = clientePersistenciaAdapter;
         this.clienteRepository = clienteRepository;
         this.statusClienteRepository = statusClienteRepository;
         this.enderecoRepository = enderecoRepository;
         this.contatoRepository = contatoRepository;
+        this.caminhoRepository = caminhoRepository;
+        this.documentoRepository = documentoRepository;
+        this.processoAppRepository = processoAppRepository;
+        this.historicoProcessoRepository = historicoProcessoRepository;
+        this.processoDocumentoRepository = processoDocumentoRepository;
         this.oneDriveService = oneDriveService;
     }
 
@@ -196,6 +221,57 @@ public class ClienteService {
     @Transactional
     public void deletar(Long id) {
         Cliente cliente = clientePersistenciaAdapter.buscarPorId(id);
+        Endereco endereco = cliente.getEndereco();
+
+        List<CaminhoPadraoDeArmazenamento> caminhos = new ArrayList<>(caminhoRepository.findByClienteId(id));
+        Set<Long> caminhoIds = new HashSet<>(caminhos.stream()
+                .map(CaminhoPadraoDeArmazenamento::getId)
+                .toList());
+        List<Documento> documentos = new ArrayList<>();
+        Set<Long> documentoIds = new HashSet<>();
+
+        // Remove dependências dos processos do cliente
+        List<ProcessoApp> processos = processoAppRepository.findByCliente(cliente);
+        for (ProcessoApp processo : processos) {
+            List<ProcessoDocumento> vinculosDocumentos = processoDocumentoRepository.findByProcessoAppId(processo.getId());
+            for (ProcessoDocumento vinculoDocumento : vinculosDocumentos) {
+                Documento documento = vinculoDocumento.getDocumento();
+                if (documento != null && documento.getId() != null && documentoIds.add(documento.getId())) {
+                    documentos.add(documento);
+                }
+                if (documento != null && documento.getPadraoArmazenamento() != null
+                        && documento.getPadraoArmazenamento().getId() != null
+                        && caminhoIds.add(documento.getPadraoArmazenamento().getId())) {
+                    caminhos.add(documento.getPadraoArmazenamento());
+                }
+            }
+            if (!vinculosDocumentos.isEmpty()) {
+                processoDocumentoRepository.deleteAll(vinculosDocumentos);
+            }
+            historicoProcessoRepository.deleteByProcessoApp(processo);
+        }
+        if (!processos.isEmpty()) {
+            processoAppRepository.deleteAll(processos);
+        }
+
+        for (CaminhoPadraoDeArmazenamento caminho : caminhos) {
+            for (Documento documento : documentoRepository.findByPadraoArmazenamentoId(caminho.getId())) {
+                if (documento.getId() != null && documentoIds.add(documento.getId())) {
+                    documentos.add(documento);
+                }
+            }
+        }
+
+        // Remove vínculos e documentos associados aos caminhos do cliente
+        for (Documento documento : documentos) {
+            List<ProcessoDocumento> vinculosDocumentos = processoDocumentoRepository.findByDocumentoId(documento.getId());
+            if (!vinculosDocumentos.isEmpty()) {
+                processoDocumentoRepository.deleteAll(vinculosDocumentos);
+            }
+        }
+        if (!documentos.isEmpty()) {
+            documentoRepository.deleteAll(documentos);
+        }
 
         // Remove contatos
         if (cliente.getContatos() != null && !cliente.getContatos().isEmpty()) {
@@ -203,14 +279,19 @@ public class ClienteService {
         }
 
         // Remove pastas/caminhos associados usando a regra atual da main.
-        if (cliente.getCaminhos() != null && !cliente.getCaminhos().isEmpty()) {
-            List<Long> caminhoIds = new ArrayList<>(cliente.getCaminhos().stream()
+        if (!caminhos.isEmpty()) {
+            List<Long> idsCaminhosParaExcluir = new ArrayList<>(caminhos.stream()
                     .map(CaminhoPadraoDeArmazenamento::getId)
                     .toList());
-            caminhoIds.forEach(oneDriveService::excluirPasta);
+            idsCaminhosParaExcluir.forEach(oneDriveService::excluirPasta);
         }
 
         // Remove o cliente
         clientePersistenciaAdapter.deletar(id);
+
+        if (endereco != null) {
+            enderecoRepository.delete(endereco);
+        }
     }
+
 }

@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -72,6 +73,7 @@ public class SolicitacaoDuvidaController {
 
     @PatchMapping("/{id}/aceitar")
     @SecurityRequirement(name = "Bearer")
+    @PreAuthorize("hasAuthority('ACEITAR SOLICITAÇÃO') || hasAuthority('TODAS AS PERMISSÕES')")
     @Operation(summary = "Aceita a solicitação e retorna dados para preencher o cadastro de cliente")
     public ResponseEntity<SolicitacaoClientePreenchimentoResponse> aceitar(@PathVariable Long id,
                                                                            HttpServletRequest httpRequest) {
@@ -82,6 +84,7 @@ public class SolicitacaoDuvidaController {
 
     @PatchMapping("/{id}/negar")
     @SecurityRequirement(name = "Bearer")
+    @PreAuthorize("hasAuthority('NEGAR SOLICITAÇÃO') || hasAuthority('TODAS AS PERMISSÕES')")
     @Operation(summary = "Nega a solicitação, removendo-a da lista de pendentes")
     public ResponseEntity<Void> negar(@PathVariable Long id, HttpServletRequest httpRequest) {
         validarEscopo(httpRequest, "negação de solicitação");

@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -31,6 +32,7 @@ public class ProcessosController {
 
 
     @PostMapping("/processos")
+    @PreAuthorize("hasAuthority('CRIAR PROCESSO') || hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
     public ResponseEntity<ProcessoAppCreateResponse> novoProcesso(@Valid @RequestBody ProcessoAppCriacaoRequest novoProcesso, HttpServletRequest httpRequest){
 
@@ -45,6 +47,7 @@ public class ProcessosController {
     }
 
     @PutMapping("/processos/{id}")
+    @PreAuthorize("hasAuthority('EDITAR PROCESSO') || hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
     public ResponseEntity<ProcessoAppUpdateResponse> atualizarProcesso(
             @Valid @RequestBody ProcessoAppUpdateRequest processoAtualizar,
@@ -62,6 +65,7 @@ public class ProcessosController {
     }
 
     @DeleteMapping("/processos/{id}")
+    @PreAuthorize("hasAuthority('EXCLUIR PROCESSO') || hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
     public ResponseEntity<Void> deletarProcesso(@PathVariable Long id, HttpServletRequest httpRequest){
 
@@ -131,6 +135,7 @@ public class ProcessosController {
     }
 
     @PostMapping("/processos/{processoId}/documentos")
+    @PreAuthorize("hasAuthority('CRIAR DOCUMENTO') || hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
     public ResponseEntity<ProcessoDocumentoResponse> anexarDocumento(
             @PathVariable Long processoId,

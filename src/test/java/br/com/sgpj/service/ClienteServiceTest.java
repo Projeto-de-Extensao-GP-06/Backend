@@ -643,13 +643,16 @@ class ClienteServiceTest {
 
             clienteService.deletar(1L);
 
+            verify(processoDocumentoRepository).deleteAll(List.of(vinculoProcesso));
+            verify(historicoProcessoRepository).deleteByProcessoApp(processo);
+            verify(processoAppRepository).deleteAll(List.of(processo));
             verify(processoDocumentoRepository).deleteAll(List.of(vinculoDocumento));
             verify(documentoRepository).deleteAll(List.of(documento));
             verify(contatoRepository).deleteAll(anyList());
-            verify(oneDriveService).excluirPasta(10L);
-            verify(caminhoRepository).deleteAll(List.of(caminho));
             verify(clientePersistenciaAdapter).deletar(1L);
+            verify(oneDriveService).excluirPasta(10L);
             verify(enderecoRepository).delete(endereco);
+        }
 
         @Test
         @DisplayName("Deve deletar cliente sem contatos")

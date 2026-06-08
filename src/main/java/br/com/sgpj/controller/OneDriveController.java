@@ -12,6 +12,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -50,6 +51,7 @@ public class OneDriveController {
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAuthority('CRIAR DOCUMENTO') || hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
     @Operation(summary = "Faz upload de um arquivo para a pasta do processo no OneDrive")
     public ResponseEntity<OneDriveItemResponse> uploadArquivo(
@@ -77,6 +79,7 @@ public class OneDriveController {
     }
 
     @PostMapping("/pasta")
+    @PreAuthorize("hasAuthority('CRIAR DOCUMENTO') || hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
     @Operation(summary = "Cria a pasta do processo no OneDrive (nomeCliente - Cpf ou Cnpj/numero_cnj) e vincula ao cliente")
     public ResponseEntity<OneDriveItemResponse> criarPasta(
@@ -93,6 +96,7 @@ public class OneDriveController {
     }
 
     @PutMapping("/arquivo/renomear")
+    @PreAuthorize("hasAuthority('EDITAR DOCUMENTO') || hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
     @Operation(summary = "Renomeia um arquivo na pasta do processo")
     public ResponseEntity<OneDriveItemResponse> renomearArquivo(
@@ -110,6 +114,7 @@ public class OneDriveController {
     }
 
     @DeleteMapping("/arquivo")
+    @PreAuthorize("hasAuthority('EXCLUIR DOCUMENTO') || hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
     @Operation(summary = "Exclui um arquivo do OneDrive")
     public ResponseEntity<Void> excluirArquivo(
@@ -126,6 +131,7 @@ public class OneDriveController {
     }
 
     @DeleteMapping("/pasta")
+    @PreAuthorize("hasAuthority('EXCLUIR DOCUMENTO') || hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
     @Operation(summary = "Exclui uma pasta (e todo seu conteúdo) do OneDrive")
     public ResponseEntity<Void> excluirPasta(

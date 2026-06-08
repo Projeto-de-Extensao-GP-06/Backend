@@ -8,6 +8,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AutenticacaoService implements UserDetailsService {
@@ -20,11 +21,12 @@ public class AutenticacaoService implements UserDetailsService {
 
   // Metodo da interface implementada
   @Override
+  @Transactional(readOnly = true) // mantém a sessão aberta durante o loadAuthorities
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
     Usuario usuario;
 
     try {
-      usuario = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(username);
+      usuario = usuarioPersistenciaAdapter.findByEmailWithPermissoes(username);
     } catch (UsuarioNaoEncontradoException exception) {
       throw new UsernameNotFoundException(String.format("usuário: %s não encontrado", username), exception);
     }

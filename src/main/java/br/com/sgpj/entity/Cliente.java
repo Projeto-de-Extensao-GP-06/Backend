@@ -124,5 +124,6 @@ public class Cliente {
     public void setCaminhos(List<CaminhoPadraoDeArmazenamento> caminhos) {
         this.caminhos = caminhos;
     }
+
 }
 

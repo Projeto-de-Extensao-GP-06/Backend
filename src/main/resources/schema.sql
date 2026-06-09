@@ -58,7 +58,7 @@ CREATE TABLE endereco (
 
 CREATE TABLE padrao_caminho_armazenamento (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    nome VARCHAR(50) NOT NULL UNIQUE,
+    cliente_id BIGINT NOT NULL,
     caminho_base VARCHAR(255) NOT NULL UNIQUE
 );
 
@@ -118,6 +118,10 @@ CREATE TABLE contato (
 
     FOREIGN KEY (cliente_id) REFERENCES cliente(id)
 );
+
+ALTER TABLE padrao_caminho_armazenamento
+ADD CONSTRAINT fk_padrao_caminho_cliente
+FOREIGN KEY (cliente_id) REFERENCES cliente(id);
 
 -- =========================================================
 -- PROCESSO API (ALTERADO CONFORME DER)
@@ -378,7 +382,8 @@ ON processo_dados_aplicacao(processo_dados_api_id);
 -- =========================================================
 
 INSERT INTO cargo (nome)
-VALUES ('ADMIN');
+VALUES ('ADMIN'),
+       ('Sem Cargo');
 
 INSERT INTO usuario (nome, email, senha, cargo_id)
 VALUES (
@@ -403,16 +408,15 @@ INSERT INTO permissao (nome) VALUES
 ('CRIAR USUÁRIO'),
 ('EDITAR USUÁRIO'),
 ('EXCLUIR USUÁRIO'),
-('CRIAR CONTATO'),
-('EDITAR CONTATO'),
-('EXCLUIR CONTATO'),
 ('CRIAR DOCUMENTO'),
 ('EDITAR DOCUMENTO'),
 ('EXCLUIR DOCUMENTO'),
-('TODAS AS PERMISSÕES');
+('TODAS AS PERMISSÕES'),
+('SEM PERMISSÕES');
 
-INSERT INTO cargo_permissao (cargo_id, permissao_id, atribuido_por)
-SELECT 1, id, 1 FROM permissao;
+INSERT INTO cargo_permissao (cargo_id, permissao_id)
+VALUES (1, 18),
+       (2, 19);
 
 INSERT INTO status_cliente (nome) VALUES
 ('LEAD'),

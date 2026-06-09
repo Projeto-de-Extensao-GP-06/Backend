@@ -1,10 +1,16 @@
 package br.com.sgpj.controller;
 
-import br.com.sgpj.dto.response.Processos.ProcessoDocumentoResponse;
+import br.com.sgpj.dto.request.ProcessoAppCriacaoRequest;
+import br.com.sgpj.dto.request.ProcessoAppUpdateRequest;
+import br.com.sgpj.dto.response.Processos.*;
+import br.com.sgpj.exception.EscopoJwtException;
+import br.com.sgpj.exception.ObjetoNaoEncontradoException;
 import br.com.sgpj.service.ProcessoService;
 import br.com.sgpj.service.UsuarioService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -18,6 +24,8 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -26,9 +34,20 @@ class ProcessosControllerTest {
 
     @Mock private ProcessoService processoService;
     @Mock private UsuarioService usuarioService;
+    @Mock private HttpServletRequest httpRequest;
+    @Mock private ProcessoAppCriacaoRequest processoAppCriacaoRequest;
+    @Mock private ProcessoAppUpdateRequest processoAppUpdateRequest;
+    @Mock private ProcessoAppCreateResponse processoAppCreateResponse;
+    @Mock private ProcessoAppUpdateResponse processoAppUpdateResponse;
+    @Mock private ProcessoAppResponse processoAppResponse;
+    @Mock private ProcessoAppMiniResponse processoAppMiniResponse;
     @InjectMocks private ProcessosController controller;
 
     private ProcessoDocumentoResponse docResponse;
+
+    private static final Long PROCESSO_ID = 1L;
+    private static final Long CLIENTE_ID = 10L;
+    private static final String SCOPE_GENERAL_USE = "GENERAL_USE";
 
     @BeforeEach
     void setup() {
@@ -38,6 +57,307 @@ class ProcessosControllerTest {
                 LocalDateTime.of(2026, 1, 1, 10, 0),
                 "RG", 5L, "rafael-silva-12345678901/001"
         );
+    }
+
+    // ========== POST /processos ==========
+
+    @Nested
+    @DisplayName("POST /processos - novoProcesso")
+    class NovoProcesso {
+
+        @Test
+        @DisplayName("Deve criar processo e retornar status 201 quando escopo é válido")
+        void deveCriarProcessoComStatus201QuandoEscopoValido() {
+            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
+            when(processoService.criarProcesso(processoAppCriacaoRequest)).thenReturn(processoAppCreateResponse);
+
+            ResponseEntity<ProcessoAppCreateResponse> resposta = controller.novoProcesso(processoAppCriacaoRequest, httpRequest);
+
+            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+            assertThat(resposta.getBody()).isEqualTo(processoAppCreateResponse);
+
+            verify(usuarioService).isCorrectScope(httpRequest, SCOPE_GENERAL_USE);
+            verify(processoService).criarProcesso(processoAppCriacaoRequest);
+        }
+
+        @Test
+        @DisplayName("Deve lançar EscopoJwtException quando escopo é inválido ao criar processo")
+        void deveLancarEscopoJwtExceptionQuandoEscopoInvalido() {
+            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(false);
+
+            assertThatThrownBy(() -> controller.novoProcesso(processoAppCriacaoRequest, httpRequest))
+                    .isInstanceOf(EscopoJwtException.class)
+                    .hasMessageContaining("Acesso negado")
+                    .hasMessageContaining("criação de processo");
+
+            verify(processoService, never()).criarProcesso(any());
+        }
+    }
+
+    // ========== PUT /processos/{id} ==========
+
+    @Nested
+    @DisplayName("PUT /processos/{id} - atualizarProcesso")
+    class AtualizarProcesso {
+
+        @Test
+        @DisplayName("Deve atualizar processo e retornar status 200 quando escopo é válido")
+        void deveAtualizarProcessoComStatus200QuandoEscopoValido() {
+            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
+            when(processoService.atualizarProcesso(PROCESSO_ID, processoAppUpdateRequest)).thenReturn(processoAppUpdateResponse);
+
+            ResponseEntity<ProcessoAppUpdateResponse> resposta = controller.atualizarProcesso(
+                    processoAppUpdateRequest, PROCESSO_ID, httpRequest);
+
+            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(resposta.getBody()).isEqualTo(processoAppUpdateResponse);
+
+            verify(usuarioService).isCorrectScope(httpRequest, SCOPE_GENERAL_USE);
+            verify(processoService).atualizarProcesso(PROCESSO_ID, processoAppUpdateRequest);
+        }
+
+        @Test
+        @DisplayName("Deve lançar EscopoJwtException quando escopo é inválido ao atualizar processo")
+        void deveLancarEscopoJwtExceptionQuandoEscopoInvalido() {
+            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(false);
+
+            assertThatThrownBy(() -> controller.atualizarProcesso(
+                    processoAppUpdateRequest, PROCESSO_ID, httpRequest))
+                    .isInstanceOf(EscopoJwtException.class)
+                    .hasMessageContaining("Acesso negado")
+                    .hasMessageContaining("atualização de processo");
+
+            verify(processoService, never()).atualizarProcesso(any(), any());
+        }
+    }
+
+    // ========== DELETE /processos/{id} ==========
+
+    @Nested
+    @DisplayName("DELETE /processos/{id} - deletarProcesso")
+    class DeletarProcesso {
+
+        @Test
+        @DisplayName("Deve deletar processo e retornar status 204 quando escopo é válido")
+        void deveDeletarProcessoComStatus204QuandoEscopoValido() {
+            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
+            doNothing().when(processoService).deletarProcesso(PROCESSO_ID);
+
+            ResponseEntity<Void> resposta = controller.deletarProcesso(PROCESSO_ID, httpRequest);
+
+            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+            assertThat(resposta.getBody()).isNull();
+
+            verify(usuarioService).isCorrectScope(httpRequest, SCOPE_GENERAL_USE);
+            verify(processoService).deletarProcesso(PROCESSO_ID);
+        }
+
+        @Test
+        @DisplayName("Deve lançar EscopoJwtException quando escopo é inválido ao deletar processo")
+        void deveLancarEscopoJwtExceptionQuandoEscopoInvalido() {
+            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(false);
+
+            assertThatThrownBy(() -> controller.deletarProcesso(PROCESSO_ID, httpRequest))
+                    .isInstanceOf(EscopoJwtException.class)
+                    .hasMessageContaining("Acesso negado")
+                    .hasMessageContaining("deleção de processo");
+
+            verify(processoService, never()).deletarProcesso(any());
+        }
+
+        @Test
+        @DisplayName("Deve propagar exceção lançada pelo service ao deletar processo")
+        void devePropagaExcecaoDoServiceAoDeletarProcesso() {
+            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
+            doThrow(new ObjetoNaoEncontradoException("Processo não encontrado")).when(processoService).deletarProcesso(PROCESSO_ID);
+
+            assertThatThrownBy(() -> controller.deletarProcesso(PROCESSO_ID, httpRequest))
+                    .isInstanceOf(ObjetoNaoEncontradoException.class)
+                    .hasMessage("Processo não encontrado");
+        }
+    }
+
+    // ========== GET /processos ==========
+
+    @Nested
+    @DisplayName("GET /processos - listarProcessos")
+    class ListarProcessos {
+
+        @Test
+        @DisplayName("Deve retornar lista de processos com status 200 quando escopo é válido")
+        void deveRetornarListaComStatus200QuandoEscopoValido() {
+            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
+            when(processoService.listarProcessos()).thenReturn(List.of(processoAppMiniResponse));
+
+            ResponseEntity<List<ProcessoAppMiniResponse>> resposta = controller.listarProcessos(httpRequest);
+
+            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(resposta.getBody()).hasSize(1);
+
+            verify(processoService).listarProcessos();
+        }
+
+        @Test
+        @DisplayName("Deve retornar lista vazia com status 200 quando não há processos")
+        void deveRetornarListaVaziaComStatus200QuandoNaoHaProcessos() {
+            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
+            when(processoService.listarProcessos()).thenReturn(List.of());
+
+            ResponseEntity<List<ProcessoAppMiniResponse>> resposta = controller.listarProcessos(httpRequest);
+
+            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(resposta.getBody()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("Deve lançar EscopoJwtException quando escopo é inválido ao listar processos")
+        void deveLancarEscopoJwtExceptionQuandoEscopoInvalido() {
+            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(false);
+
+            assertThatThrownBy(() -> controller.listarProcessos(httpRequest))
+                    .isInstanceOf(EscopoJwtException.class)
+                    .hasMessageContaining("Acesso negado")
+                    .hasMessageContaining("visualização de processos");
+
+            verify(processoService, never()).listarProcessos();
+        }
+    }
+
+    // ========== GET /processos/{id} ==========
+
+    @Nested
+    @DisplayName("GET /processos/{id} - buscarProcessoPorId")
+    class BuscarProcessoPorId {
+
+        @Test
+        @DisplayName("Deve retornar processo com status 200 quando escopo é válido")
+        void deveRetornarProcessoComStatus200QuandoEscopoValido() {
+            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
+            when(processoService.buscarPorId(PROCESSO_ID)).thenReturn(processoAppResponse);
+
+            ResponseEntity<ProcessoAppResponse> resposta = controller.buscarProcessoPorId(PROCESSO_ID, httpRequest);
+
+            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(resposta.getBody()).isEqualTo(processoAppResponse);
+
+            verify(processoService).buscarPorId(PROCESSO_ID);
+        }
+
+        @Test
+        @DisplayName("Deve lançar EscopoJwtException quando escopo é inválido ao buscar processo por id")
+        void deveLancarEscopoJwtExceptionQuandoEscopoInvalido() {
+            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(false);
+
+            assertThatThrownBy(() -> controller.buscarProcessoPorId(PROCESSO_ID, httpRequest))
+                    .isInstanceOf(EscopoJwtException.class)
+                    .hasMessageContaining("Acesso negado")
+                    .hasMessageContaining("visualização de processos");
+
+            verify(processoService, never()).buscarPorId(any());
+        }
+    }
+
+    // ========== GET /clientes/{clienteId}/processos ==========
+
+    @Nested
+    @DisplayName("GET /clientes/{clienteId}/processos - buscarPorClienteId")
+    class BuscarPorClienteId {
+
+        @Test
+        @DisplayName("Deve retornar lista de processos do cliente com status 200 quando escopo é válido")
+        void deveRetornarProcessosDoClienteComStatus200QuandoEscopoValido() {
+            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
+            when(processoService.buscarPorClienteId(CLIENTE_ID)).thenReturn(List.of(processoAppMiniResponse));
+
+            ResponseEntity<List<ProcessoAppMiniResponse>> resposta = controller.buscarPorClienteId(CLIENTE_ID, httpRequest);
+
+            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(resposta.getBody()).hasSize(1);
+
+            verify(processoService).buscarPorClienteId(CLIENTE_ID);
+        }
+
+        @Test
+        @DisplayName("Deve retornar lista vazia com status 200 quando cliente não possui processos")
+        void deveRetornarListaVaziaComStatus200QuandoClienteSemProcessos() {
+            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
+            when(processoService.buscarPorClienteId(CLIENTE_ID)).thenReturn(List.of());
+
+            ResponseEntity<List<ProcessoAppMiniResponse>> resposta = controller.buscarPorClienteId(CLIENTE_ID, httpRequest);
+
+            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(resposta.getBody()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("Deve lançar EscopoJwtException quando escopo é inválido ao buscar processos por cliente")
+        void deveLancarEscopoJwtExceptionQuandoEscopoInvalido() {
+            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(false);
+
+            assertThatThrownBy(() -> controller.buscarPorClienteId(CLIENTE_ID, httpRequest))
+                    .isInstanceOf(EscopoJwtException.class)
+                    .hasMessageContaining("Acesso negado")
+                    .hasMessageContaining("visualização de processos");
+
+            verify(processoService, never()).buscarPorClienteId(any());
+        }
+    }
+
+    // ========== GET /processos/buscaFiltro ==========
+
+    @Nested
+    @DisplayName("GET /processos/buscaFiltro - buscaFiltro")
+    class BuscaFiltro {
+
+        private static final String QUERY = "contrato";
+        private static final Long FASE_ID = 2L;
+        private static final Long TRIBUNAL_ID = 3L;
+
+        @Test
+        @DisplayName("Deve retornar lista filtrada com status 200 quando todos os parâmetros são informados")
+        void deveRetornarListaFiltradaComTodosOsParametros() {
+            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
+            when(processoService.buscaFiltro(QUERY, FASE_ID, TRIBUNAL_ID)).thenReturn(List.of(processoAppMiniResponse));
+
+            ResponseEntity<List<ProcessoAppMiniResponse>> resposta = controller.buscaFiltro(
+                    QUERY, FASE_ID, TRIBUNAL_ID, httpRequest);
+
+            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(resposta.getBody()).hasSize(1);
+            assertThat(resposta.getBody().getFirst()).isEqualTo(processoAppMiniResponse);
+            assertThat(resposta.getBody()).hasSize(1);
+
+            verify(processoService).buscaFiltro(QUERY, FASE_ID, TRIBUNAL_ID);
+        }
+
+        @Test
+        @DisplayName("Deve retornar lista com status 200 quando parâmetros opcionais são nulos")
+        void deveRetornarListaComStatus200QuandoParametrosOpcionaisNulos() {
+            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
+            when(processoService.buscaFiltro(null, null, null)).thenReturn(List.of(processoAppMiniResponse));
+
+            ResponseEntity<List<ProcessoAppMiniResponse>> resposta = controller.buscaFiltro(
+                    null, null, null, httpRequest);
+
+            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(resposta.getBody()).hasSize(1);
+            assertThat(resposta.getBody().getFirst()).isEqualTo(processoAppMiniResponse);
+
+            verify(processoService).buscaFiltro(null, null, null);
+        }
+
+        @Test
+        @DisplayName("Deve lançar EscopoJwtException quando escopo é inválido ao buscar com filtro")
+        void deveLancarEscopoJwtExceptionQuandoEscopoInvalido() {
+            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(false);
+
+            assertThatThrownBy(() -> controller.buscaFiltro(QUERY, FASE_ID, TRIBUNAL_ID, httpRequest))
+                    .isInstanceOf(EscopoJwtException.class)
+                    .hasMessageContaining("Acesso negado")
+                    .hasMessageContaining("visualização de processos");
+
+            verify(processoService, never()).buscaFiltro(any(), any(), any());
+        }
     }
 
     // ========== POST /processos/{id}/documentos ==========
@@ -79,8 +399,8 @@ class ProcessosControllerTest {
         assertEquals(HttpStatus.OK, resp.getStatusCode());
         assertNotNull(resp.getBody());
         assertEquals(1, resp.getBody().size());
-        assertEquals(20L, resp.getBody().get(0).documentoId());
-        assertEquals("contrato.pdf", resp.getBody().get(0).nomeOriginal());
+        assertEquals(20L, resp.getBody().getFirst().documentoId());
+        assertEquals("contrato.pdf", resp.getBody().getFirst().nomeOriginal());
     }
 
     @Test

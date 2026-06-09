@@ -1,5 +1,10 @@
 package br.com.sgpj.controller;
 
+import br.com.sgpj.dto.response.Processos.ProcessoDocumentoResponse;
+import br.com.sgpj.service.ProcessoService;
+import br.com.sgpj.service.UsuarioService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import br.com.sgpj.dto.request.ProcessoAppCriacaoRequest;
 import br.com.sgpj.dto.request.ProcessoAppUpdateRequest;
 import br.com.sgpj.dto.response.Processos.*;

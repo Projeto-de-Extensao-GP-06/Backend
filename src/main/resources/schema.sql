@@ -381,9 +381,9 @@ ON processo_dados_aplicacao(processo_dados_api_id);
 -- INSERTS BASE
 -- =========================================================
 
-INSERT INTO cargo (nome)
-VALUES ('ADMIN'),
-       ('Sem Cargo');
+INSERT INTO cargo (id, nome)
+VALUES (1, 'ADMIN'),
+       (2, 'Sem Cargo');
 
 INSERT INTO usuario (nome, email, senha, cargo_id)
 VALUES (
@@ -433,8 +433,32 @@ INSERT INTO fase_processo (nome) VALUES
 
 INSERT INTO sigla_tribunal (sigla_tribunal) VALUES
 ('tjsp'),
-('tjrg'),
-('tjpr');
+ ('tjal'),
+ ('tjap'),
+ ('tjam'),
+ ('tjba'),
+ ('tjce'),
+ ('tjdft'),
+ ('tjes'),
+ ('tjgo'),
+ ('tjma'),
+ ('tjmt'),
+ ('tjms'),
+ ('tjmg'),
+ ('tjpa'),
+ ('tjpb'),
+ ('tjpr'),
+ ('tjpe'),
+ ('tjpi'),
+ ('tjrj'),
+ ('tjrn'),
+ ('tjrs'),
+ ('tjro'),
+ ('tjrr'),
+ ('tjsc'),
+ ('tjac'),
+ ('tjse'),
+ ('tjto');
 
 INSERT INTO prioridade (nome) VALUES
 ('ALTA'),
@@ -519,3 +543,10 @@ VALUES (
     1,
     1
 );
+
+use sgpj;
+
+select * from processo_dados_api;
+select * from processo_dados_aplicacao;
+select * from movimentacoes_oficiais;
+select * from historico_processo;

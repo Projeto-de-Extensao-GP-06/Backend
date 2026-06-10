@@ -41,6 +41,12 @@ CREATE TABLE permissao (
     nome VARCHAR(150) NOT NULL UNIQUE
 );
 
+CREATE TABLE microsoft_token_config (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    refresh_token TEXT NULL,
+    data_criacao DATETIME NULL
+);
+
 -- =========================================================
 -- TABELAS BASE
 -- =========================================================
@@ -174,6 +180,8 @@ CREATE TABLE documento (
     onedrive_drive_id VARCHAR(100),
     onedrive_item_id VARCHAR(200),
     onedrive_web_url VARCHAR(1024),
+    onedrive_url_thumbnail TEXT,
+    onedrive_url_download TEXT,
 
     data_hora_criacao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     ultima_atualizacao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

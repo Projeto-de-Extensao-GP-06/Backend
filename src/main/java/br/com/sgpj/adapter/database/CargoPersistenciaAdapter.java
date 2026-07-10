@@ -11,8 +11,11 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-@RequiredArgsConstructor
 public class CargoPersistenciaAdapter {
+
+    public CargoPersistenciaAdapter(CargoRepository cargoRepository) {
+        this.cargoRepository = cargoRepository;
+    }
 
     private final CargoRepository cargoRepository;
 

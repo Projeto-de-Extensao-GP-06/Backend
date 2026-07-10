@@ -56,7 +56,8 @@ public class ProcessoApiMapper {
             movimentacoes.add(movimentacao);
         }
 
-        processoApi.setMovimentacoes(movimentacoes);
+        int inicio = Math.max(0, movimentacoes.size() - 10);
+        processoApi.setMovimentacoes(movimentacoes.subList(inicio, movimentacoes.size()));
 
         return processoApi;
     }

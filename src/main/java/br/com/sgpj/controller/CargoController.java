@@ -24,8 +24,11 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/cargos")
 @Tag(name = "Cargos")
-@RequiredArgsConstructor
 public class CargoController {
+
+    public CargoController(CargoService cargoService) {
+        this.cargoService = cargoService;
+    }
 
     private final CargoService cargoService;
 

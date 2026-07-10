@@ -28,8 +28,16 @@ import java.util.Collections;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class UsuarioService {
+
+  public UsuarioService(PasswordEncoder passwordEncoder, UsuarioPersistenciaAdapter usuarioPersistenciaAdapter, UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter, OtpService otpService, EmailService emailService, CargoPersistenciaAdapter cargoPersistenciaAdapter) {
+    this.passwordEncoder = passwordEncoder;
+    this.usuarioPersistenciaAdapter = usuarioPersistenciaAdapter;
+    this.usuarioAutenticacaoAdapter = usuarioAutenticacaoAdapter;
+    this.otpService = otpService;
+    this.emailService = emailService;
+    this.cargoPersistenciaAdapter = cargoPersistenciaAdapter;
+  }
 
   private final PasswordEncoder passwordEncoder;
   private final UsuarioPersistenciaAdapter usuarioPersistenciaAdapter;

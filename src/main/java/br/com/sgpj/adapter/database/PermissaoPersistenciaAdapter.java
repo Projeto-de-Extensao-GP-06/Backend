@@ -8,8 +8,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 public class PermissaoPersistenciaAdapter {
+
+    public PermissaoPersistenciaAdapter(PermissaoRepository permissaoRepository) {
+        this.permissaoRepository = permissaoRepository;
+    }
 
     private final PermissaoRepository permissaoRepository;
 

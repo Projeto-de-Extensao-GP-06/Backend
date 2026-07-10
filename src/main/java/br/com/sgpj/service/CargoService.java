@@ -28,8 +28,15 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class CargoService {
+
+    public CargoService(CargoPersistenciaAdapter cargoPersistenciaAdapter, PermissaoPersistenciaAdapter permissaoPersistenciaAdapter, UsuarioPersistenciaAdapter usuarioPersistenciaAdapter, CargoPermissaoAdapter cargoPermissaoAdapter, UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter) {
+        this.cargoPersistenciaAdapter = cargoPersistenciaAdapter;
+        this.permissaoPersistenciaAdapter = permissaoPersistenciaAdapter;
+        this.usuarioPersistenciaAdapter = usuarioPersistenciaAdapter;
+        this.cargoPermissaoAdapter = cargoPermissaoAdapter;
+        this.usuarioAutenticacaoAdapter = usuarioAutenticacaoAdapter;
+    }
 
     private final CargoPersistenciaAdapter cargoPersistenciaAdapter;
     private final PermissaoPersistenciaAdapter permissaoPersistenciaAdapter;

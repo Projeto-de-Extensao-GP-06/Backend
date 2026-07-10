@@ -8,10 +8,13 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-@RequiredArgsConstructor
 public class CargoPermissaoAdapter {
 
     private final CargoPermissaoRepository cargoPermissaoRepository;
+
+    public CargoPermissaoAdapter(CargoPermissaoRepository cargoPermissaoRepository) {
+        this.cargoPermissaoRepository = cargoPermissaoRepository;
+    }
 
     public CargoPermissao salvar(CargoPermissao cargoPermissao) {
         return cargoPermissaoRepository.save(cargoPermissao);

@@ -4,6 +4,9 @@ import br.com.sgpj.adapter.database.UsuarioPersistenciaAdapter;
 import br.com.sgpj.dto.response.UsuarioDetalhesResponse;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.UsuarioNaoEncontradoException;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -14,6 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class AutenticacaoService implements UserDetailsService {
 
   private final UsuarioPersistenciaAdapter usuarioPersistenciaAdapter;
+
+  @Value("${jwt.secret}")
+  private String jwtSecret;
 
   public AutenticacaoService(UsuarioPersistenciaAdapter usuarioPersistenciaAdapter) {
     this.usuarioPersistenciaAdapter = usuarioPersistenciaAdapter;
@@ -32,5 +38,20 @@ public class AutenticacaoService implements UserDetailsService {
     }
 
     return new UsuarioDetalhesResponse(usuario);
+  }
+
+  public String getScope(String token) {
+    try {
+      // Se usar JJWT versão mais recente (0.11.x ou superior)
+      Claims claims = Jwts.parser()
+              .setSigningKey(jwtSecret)
+              .build()
+              .parseClaimsJws(token)
+              .getBody();
+
+      return claims.get("scope", String.class);
+    } catch (Exception e) {
+      return null;
+    }
   }
 }

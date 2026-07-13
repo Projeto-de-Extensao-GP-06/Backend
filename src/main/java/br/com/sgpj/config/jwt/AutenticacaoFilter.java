@@ -12,6 +12,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -20,7 +22,9 @@ import br.com.sgpj.controller.UsuarioController;
 import br.com.sgpj.service.AutenticacaoService;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Filtro de autenticação JWT que intercepta todas as requisições HTTP recebidas pela API.
@@ -139,10 +143,13 @@ public class AutenticacaoFilter extends OncePerRequestFilter {
      */
     private void registrarAutenticacaoNoContexto(HttpServletRequest request, String username, String jwtToken) {
         UserDetails userDetails = autenticacaoService.loadUserByUsername(username);
+        String scopeDoToken = autenticacaoService.getScope(jwtToken);
+        List<GrantedAuthority> authorities = new ArrayList<>(userDetails.getAuthorities());
+        authorities.add(new SimpleGrantedAuthority("SCOPE_" + scopeDoToken));
 
         if (jwtTokenManager.validateToken(jwtToken, userDetails)) {
             UsernamePasswordAuthenticationToken autenticacao = new UsernamePasswordAuthenticationToken(
-                    userDetails, null, userDetails.getAuthorities());
+                    userDetails, null, authorities);
 
             autenticacao.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(autenticacao);

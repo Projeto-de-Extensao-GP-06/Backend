@@ -116,7 +116,8 @@ public class SecurityConfiguracao {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(URLS_PERMITIDAS).permitAll()  // rotas públicas
                         .requestMatchers(HttpMethod.POST, "/solicitacoes").permitAll()
-                        .anyRequest().authenticated()                  // todas as outras exigem token
+                        .requestMatchers("/usuarios/definir-nova-senha").hasAuthority("SCOPE_SET_PASSWORD") // rota /definir-nova-senha exige claim set password
+                        .anyRequest().hasAuthority("SCOPE_GENERAL_USE")  // todas as outras exigem token com claim general use
                 )
 
                 // Configura o handler para erros de autenticação (token ausente/inválido → 401/403)

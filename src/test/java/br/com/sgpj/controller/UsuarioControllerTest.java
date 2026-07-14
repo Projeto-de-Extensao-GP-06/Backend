@@ -5,11 +5,9 @@ import br.com.sgpj.dto.response.UsuarioListarResponse;
 import br.com.sgpj.dto.response.UsuarioSessaoResponse;
 import br.com.sgpj.dto.response.UsuarioTokenResponse;
 import br.com.sgpj.entity.Usuario;
-import br.com.sgpj.exception.EscopoJwtException;
 import br.com.sgpj.exception.UsuarioAutoExclusaoException;
 import br.com.sgpj.mapper.UsuarioMapper;
 import br.com.sgpj.service.UsuarioService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -36,9 +34,6 @@ class UsuarioControllerTest {
 
     @Mock
     private UsuarioService usuarioService;
-
-    @Mock
-    private HttpServletRequest httpRequest;
 
     @Mock
     private HttpServletResponse httpResponse;
@@ -77,8 +72,6 @@ class UsuarioControllerTest {
     private UsuarioController usuarioController;
 
     private static final Long USUARIO_ID = 1L;
-    private static final String SCOPE_GENERAL_USE = "GENERAL_USE";
-    private static final String SCOPE_SET_PASSWORD = "SET_PASSWORD";
     private static final String EMAIL = "usuario@teste.com";
     private static final String TOKEN = "jwt-token-mock";
 
@@ -91,30 +84,14 @@ class UsuarioControllerTest {
     class Criar {
 
         @Test
-        @DisplayName("Deve criar usuário e retornar status 201 quando escopo é válido")
-        void deveCriarUsuarioComStatus201QuandoEscopoValido() {
-            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
-
-            ResponseEntity<Void> resposta = usuarioController.criar(usuarioCriacaoRequest, httpRequest);
+        @DisplayName("Deve criar usuário e retornar status 201")
+        void deveCriarUsuarioComStatus201() {
+            ResponseEntity<Void> resposta = usuarioController.criar(usuarioCriacaoRequest);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.CREATED);
             assertThat(resposta.getBody()).isNull();
 
-            verify(usuarioService).isCorrectScope(httpRequest, SCOPE_GENERAL_USE);
             verify(usuarioService).criar(usuarioCriacaoRequest);
-        }
-
-        @Test
-        @DisplayName("Deve lançar EscopoJwtException quando escopo é inválido ao criar usuário")
-        void deveLancarEscopoJwtExceptionQuandoEscopoInvalido() {
-            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(false);
-
-            assertThatThrownBy(() -> usuarioController.criar(usuarioCriacaoRequest, httpRequest))
-                    .isInstanceOf(EscopoJwtException.class)
-                    .hasMessageContaining("Acesso negado")
-                    .hasMessageContaining("criação de usuário");
-
-            verify(usuarioService, never()).criar(any());
         }
     }
 
@@ -205,10 +182,9 @@ class UsuarioControllerTest {
         @Test
         @DisplayName("Deve retornar lista de usuários com status 200 quando há usuários cadastrados")
         void deveRetornarListaComStatus200QuandoHaUsuarios() {
-            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
             when(usuarioService.listarTodos()).thenReturn(List.of(usuarioListarResponse));
 
-            ResponseEntity<List<UsuarioListarResponse>> resposta = usuarioController.listarTodos(httpRequest);
+            ResponseEntity<List<UsuarioListarResponse>> resposta = usuarioController.listarTodos();
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
             assertThat(resposta.getBody()).hasSize(1);
@@ -219,25 +195,11 @@ class UsuarioControllerTest {
         @Test
         @DisplayName("Deve retornar status 204 quando não há usuários cadastrados")
         void deveRetornarStatus204QuandoListaVazia() {
-            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
             when(usuarioService.listarTodos()).thenReturn(List.of());
 
-            ResponseEntity<List<UsuarioListarResponse>> resposta = usuarioController.listarTodos(httpRequest);
+            ResponseEntity<List<UsuarioListarResponse>> resposta = usuarioController.listarTodos();
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-        }
-
-        @Test
-        @DisplayName("Deve lançar EscopoJwtException quando escopo é inválido ao listar usuários")
-        void deveLancarEscopoJwtExceptionQuandoEscopoInvalido() {
-            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(false);
-
-            assertThatThrownBy(() -> usuarioController.listarTodos(httpRequest))
-                    .isInstanceOf(EscopoJwtException.class)
-                    .hasMessageContaining("Acesso negado")
-                    .hasMessageContaining("listagem de usuários");
-
-            verify(usuarioService, never()).listarTodos();
         }
     }
 
@@ -254,10 +216,9 @@ class UsuarioControllerTest {
         @Test
         @DisplayName("Deve retornar lista com status 200 quando há usuários com a função informada")
         void deveRetornarListaComStatus200QuandoHaUsuarios() {
-            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
             when(usuarioService.listarPorFuncao(FUNCAO)).thenReturn(List.of(usuarioListarResponse));
 
-            ResponseEntity<List<UsuarioListarResponse>> resposta = usuarioController.listarPorFuncao(FUNCAO, httpRequest);
+            ResponseEntity<List<UsuarioListarResponse>> resposta = usuarioController.listarPorFuncao(FUNCAO);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
             assertThat(resposta.getBody()).hasSize(1);
@@ -268,25 +229,11 @@ class UsuarioControllerTest {
         @Test
         @DisplayName("Deve retornar status 204 quando não há usuários com a função informada")
         void deveRetornarStatus204QuandoListaVazia() {
-            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
             when(usuarioService.listarPorFuncao(FUNCAO)).thenReturn(List.of());
 
-            ResponseEntity<List<UsuarioListarResponse>> resposta = usuarioController.listarPorFuncao(FUNCAO, httpRequest);
+            ResponseEntity<List<UsuarioListarResponse>> resposta = usuarioController.listarPorFuncao(FUNCAO);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-        }
-
-        @Test
-        @DisplayName("Deve lançar EscopoJwtException quando escopo é inválido ao listar por função")
-        void deveLancarEscopoJwtExceptionQuandoEscopoInvalido() {
-            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(false);
-
-            assertThatThrownBy(() -> usuarioController.listarPorFuncao(FUNCAO, httpRequest))
-                    .isInstanceOf(EscopoJwtException.class)
-                    .hasMessageContaining("Acesso negado")
-                    .hasMessageContaining("listagem de usuários");
-
-            verify(usuarioService, never()).listarPorFuncao(any());
         }
     }
 
@@ -303,10 +250,9 @@ class UsuarioControllerTest {
         @Test
         @DisplayName("Deve retornar lista com status 200 quando há resultados para a pesquisa")
         void deveRetornarListaComStatus200QuandoHaResultados() {
-            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
             when(usuarioService.buscarPorNomeOuEmail(PESQUISA)).thenReturn(List.of(usuarioListarResponse));
 
-            ResponseEntity<List<UsuarioListarResponse>> resposta = usuarioController.pesquisarPorNomeOuEmail(PESQUISA, httpRequest);
+            ResponseEntity<List<UsuarioListarResponse>> resposta = usuarioController.pesquisarPorNomeOuEmail(PESQUISA);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
             assertThat(resposta.getBody()).hasSize(1);
@@ -317,25 +263,11 @@ class UsuarioControllerTest {
         @Test
         @DisplayName("Deve retornar status 204 quando não há resultados para a pesquisa")
         void deveRetornarStatus204QuandoSemResultados() {
-            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
             when(usuarioService.buscarPorNomeOuEmail(PESQUISA)).thenReturn(List.of());
 
-            ResponseEntity<List<UsuarioListarResponse>> resposta = usuarioController.pesquisarPorNomeOuEmail(PESQUISA, httpRequest);
+            ResponseEntity<List<UsuarioListarResponse>> resposta = usuarioController.pesquisarPorNomeOuEmail(PESQUISA);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-        }
-
-        @Test
-        @DisplayName("Deve lançar EscopoJwtException quando escopo é inválido ao pesquisar usuários")
-        void deveLancarEscopoJwtExceptionQuandoEscopoInvalido() {
-            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(false);
-
-            assertThatThrownBy(() -> usuarioController.pesquisarPorNomeOuEmail(PESQUISA, httpRequest))
-                    .isInstanceOf(EscopoJwtException.class)
-                    .hasMessageContaining("Acesso negado")
-                    .hasMessageContaining("listagem de usuários");
-
-            verify(usuarioService, never()).buscarPorNomeOuEmail(any());
         }
     }
 
@@ -348,31 +280,16 @@ class UsuarioControllerTest {
     class AtualizarUsuario {
 
         @Test
-        @DisplayName("Deve atualizar usuário e retornar status 200 quando escopo é válido")
-        void deveAtualizarUsuarioComStatus200QuandoEscopoValido() {
-            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
+        @DisplayName("Deve atualizar usuário e retornar status 200")
+        void deveAtualizarUsuarioComStatus200() {
             when(usuarioService.atualizarUsuario(usuarioAtualizacaoRequest, USUARIO_ID)).thenReturn(usuarioListarResponse);
 
-            ResponseEntity<UsuarioListarResponse> resposta = usuarioController.atualizarUsuario(
-                    usuarioAtualizacaoRequest, USUARIO_ID, httpRequest);
+            ResponseEntity<UsuarioListarResponse> resposta = usuarioController.atualizarUsuario(usuarioAtualizacaoRequest, USUARIO_ID);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
             assertThat(resposta.getBody()).isEqualTo(usuarioListarResponse);
 
             verify(usuarioService).atualizarUsuario(usuarioAtualizacaoRequest, USUARIO_ID);
-        }
-
-        @Test
-        @DisplayName("Deve lançar EscopoJwtException quando escopo é inválido ao atualizar usuário")
-        void deveLancarEscopoJwtExceptionQuandoEscopoInvalido() {
-            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(false);
-
-            assertThatThrownBy(() -> usuarioController.atualizarUsuario(usuarioAtualizacaoRequest, USUARIO_ID, httpRequest))
-                    .isInstanceOf(EscopoJwtException.class)
-                    .hasMessageContaining("Acesso negado")
-                    .hasMessageContaining("atualização de usuário");
-
-            verify(usuarioService, never()).atualizarUsuario(any(), any());
         }
     }
 
@@ -385,12 +302,11 @@ class UsuarioControllerTest {
     class Deletar {
 
         @Test
-        @DisplayName("Deve deletar usuário e retornar status 204 quando escopo é válido e id é diferente")
-        void deveDeletarUsuarioComStatus204QuandoEscopoValidoEIdDiferente() {
-            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
+        @DisplayName("Deve deletar usuário e retornar status 204 quando id é diferente do logado")
+        void deveDeletarUsuarioComStatus204QuandoIdDiferente() {
             when(usuarioService.isDifferentId(USUARIO_ID)).thenReturn(true);
 
-            ResponseEntity<Void> resposta = usuarioController.deletar(USUARIO_ID, httpRequest);
+            ResponseEntity<Void> resposta = usuarioController.deletar(USUARIO_ID);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
             assertThat(resposta.getBody()).isNull();
@@ -401,27 +317,12 @@ class UsuarioControllerTest {
         @Test
         @DisplayName("Deve lançar UsuarioAutoExclusaoException quando usuário tenta deletar a si mesmo")
         void deveLancarUsuarioAutoExclusaoExceptionQuandoMesmoId() {
-            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
             when(usuarioService.isDifferentId(USUARIO_ID)).thenReturn(false);
 
-            assertThatThrownBy(() -> usuarioController.deletar(USUARIO_ID, httpRequest))
+            assertThatThrownBy(() -> usuarioController.deletar(USUARIO_ID))
                     .isInstanceOf(UsuarioAutoExclusaoException.class)
                     .hasMessageContaining("próprio usuário");
 
-            verify(usuarioService, never()).deletar(any());
-        }
-
-        @Test
-        @DisplayName("Deve lançar EscopoJwtException quando escopo é inválido ao deletar usuário")
-        void deveLancarEscopoJwtExceptionQuandoEscopoInvalido() {
-            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(false);
-
-            assertThatThrownBy(() -> usuarioController.deletar(USUARIO_ID, httpRequest))
-                    .isInstanceOf(EscopoJwtException.class)
-                    .hasMessageContaining("Acesso negado")
-                    .hasMessageContaining("deleção de usuário");
-
-            verify(usuarioService, never()).isDifferentId(any());
             verify(usuarioService, never()).deletar(any());
         }
     }
@@ -519,33 +420,17 @@ class UsuarioControllerTest {
         private static final String NOVA_SENHA = "novaSenha@123";
 
         @Test
-        @DisplayName("Deve definir nova senha, expirar cookie e retornar status 200 quando escopo é válido")
-        void deveDefinirNovaSenhaERetornarStatus200QuandoEscopoValido() {
-            when(usuarioService.isCorrectScope(httpRequest, SCOPE_SET_PASSWORD)).thenReturn(true);
+        @DisplayName("Deve definir nova senha, expirar cookie e retornar status 200")
+        void deveDefinirNovaSenhaERetornarStatus200() {
             when(definirNovaSenhaRequest.senha()).thenReturn(NOVA_SENHA);
 
-            ResponseEntity<String> resposta = usuarioController.definirNovaSenha(
-                    definirNovaSenhaRequest, httpRequest, httpResponse);
+            ResponseEntity<String> resposta = usuarioController.definirNovaSenha(definirNovaSenhaRequest, httpResponse);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
             assertThat(resposta.getBody()).contains("sucesso");
 
             verify(usuarioService).definirNovaSenha(NOVA_SENHA);
             verify(httpResponse).addHeader(eq(HttpHeaders.SET_COOKIE), contains("Max-Age=0"));
-        }
-
-        @Test
-        @DisplayName("Deve lançar EscopoJwtException quando escopo é inválido ao definir nova senha")
-        void deveLancarEscopoJwtExceptionQuandoEscopoInvalido() {
-            when(usuarioService.isCorrectScope(httpRequest, SCOPE_SET_PASSWORD)).thenReturn(false);
-
-            assertThatThrownBy(() -> usuarioController.definirNovaSenha(
-                    definirNovaSenhaRequest, httpRequest, httpResponse))
-                    .isInstanceOf(EscopoJwtException.class)
-                    .hasMessageContaining("Acesso negado")
-                    .hasMessageContaining("redefinição de senha");
-
-            verify(usuarioService, never()).definirNovaSenha(any());
         }
     }
 
@@ -558,30 +443,16 @@ class UsuarioControllerTest {
     class ReativarUsuario {
 
         @Test
-        @DisplayName("Deve reativar usuário e retornar status 200 quando escopo é válido")
-        void deveReativarUsuarioComStatus200QuandoEscopoValido() {
-            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
+        @DisplayName("Deve reativar usuário e retornar status 200")
+        void deveReativarUsuarioComStatus200() {
             when(usuarioService.reativarUsuario(USUARIO_ID)).thenReturn(usuarioListarResponse);
 
-            ResponseEntity<UsuarioListarResponse> resposta = usuarioController.reativarUsuario(USUARIO_ID, httpRequest);
+            ResponseEntity<UsuarioListarResponse> resposta = usuarioController.reativarUsuario(USUARIO_ID);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
             assertThat(resposta.getBody()).isEqualTo(usuarioListarResponse);
 
             verify(usuarioService).reativarUsuario(USUARIO_ID);
-        }
-
-        @Test
-        @DisplayName("Deve lançar EscopoJwtException quando escopo é inválido ao reativar usuário")
-        void deveLancarEscopoJwtExceptionQuandoEscopoInvalido() {
-            when(usuarioService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(false);
-
-            assertThatThrownBy(() -> usuarioController.reativarUsuario(USUARIO_ID, httpRequest))
-                    .isInstanceOf(EscopoJwtException.class)
-                    .hasMessageContaining("Acesso negado")
-                    .hasMessageContaining("reativação de usuário");
-
-            verify(usuarioService, never()).reativarUsuario(any());
         }
     }
 }

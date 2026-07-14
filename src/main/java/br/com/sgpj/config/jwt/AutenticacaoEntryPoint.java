@@ -3,11 +3,13 @@ package br.com.sgpj.config.jwt;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import java.io.IOException;
 
@@ -31,23 +33,32 @@ import java.io.IOException;
 public class AutenticacaoEntryPoint implements AuthenticationEntryPoint {
 
     /**
-     * Trata erros de autenticação e define o código de status HTTP da resposta.
-     *
-     * @param request       requisição HTTP que falhou na autenticação
-     * @param response      resposta HTTP a ser enviada ao cliente
-     * @param authException exceção de autenticação que foi lançada
-     */
+     //     * Trata erros de autenticação e define o código de status HTTP da resposta.
+     //     *
+     //     * @param request       requisição HTTP que falhou na autenticação
+     //     * @param response      resposta HTTP a ser enviada ao cliente
+     //     * @param authException exceção de autenticação que foi lançada
+     //     */
+
+    private final HandlerExceptionResolver resolver;
+
+    // Injetamos a "ponte" para o GlobalExceptionHandler
+    public AutenticacaoEntryPoint(@Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver) {
+        this.resolver = resolver;
+    }
+
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response,
-                         AuthenticationException authException) throws IOException, ServletException {
+                         AuthenticationException authException) {
+//        if (authException instanceof BadCredentialsException
+//                || authException instanceof InsufficientAuthenticationException) {
+//            // 401: credenciais inválidas ou ausentes (sem token JWT no header)
+//            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+//        } else {
+//            // 403: autenticado, mas sem permissão suficiente para o recurso
+//            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+//        }
 
-        if (authException instanceof BadCredentialsException
-                || authException instanceof InsufficientAuthenticationException) {
-            // 401: credenciais inválidas ou ausentes (sem token JWT no header)
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-        } else {
-            // 403: autenticado, mas sem permissão suficiente para o recurso
-            response.sendError(HttpServletResponse.SC_FORBIDDEN);
-        }
+        resolver.resolveException(request, response, null, authException);
     }
 }

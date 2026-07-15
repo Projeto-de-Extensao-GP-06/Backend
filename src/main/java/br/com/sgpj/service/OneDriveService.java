@@ -26,7 +26,6 @@ import com.microsoft.graph.serviceclient.GraphServiceClient;
 import com.microsoft.kiota.authentication.AccessTokenProvider;
 import com.microsoft.kiota.authentication.AllowedHostsValidator;
 import com.microsoft.kiota.authentication.BaseBearerTokenAuthenticationProvider;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
@@ -65,10 +64,6 @@ public class OneDriveService {
         this.caminhoPadraoDeArmazenamentoRepository = caminhoPadraoDeArmazenamentoRepository;
         this.processoAppRepository = processoAppRepository;
         this.processoDocumentoRepository = processoDocumentoRepository;
-    }
-
-    public boolean isCorrectScope(HttpServletRequest httpRequest, String scope) {
-        return usuarioAutenticacaoAdapter.isCorrectScope(httpRequest, scope);
     }
 
     private Usuario obterUsuarioLogado() {

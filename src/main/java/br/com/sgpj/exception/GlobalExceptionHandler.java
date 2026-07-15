@@ -4,6 +4,7 @@ import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -46,7 +47,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<Map<String, Object>> handleBadCredentials(BadCredentialsException ex) {
+    public ResponseEntity<Map<String, Object>> handleBadCredentials() {
         return buildResponse(HttpStatus.UNAUTHORIZED, "E-mail ou senha inválidos");
     }
 
@@ -80,11 +81,7 @@ public class GlobalExceptionHandler {
                         (a, b) -> a
                 ));
 
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("timestamp", LocalDateTime.now().toString());
-        body.put("status", HttpStatus.BAD_REQUEST.value());
-        body.put("errors", fieldErrors);
-
+        Map<String, Object> body = buildValidationResponse(fieldErrors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
@@ -106,6 +103,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(EscopoJwtException.class)
     public ResponseEntity<Map<String, Object>> handleEscopoJwtException(EscopoJwtException ex) {
         return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<Map<String, Object>> handleAuthenticationException(AuthenticationException ex) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
     @ExceptionHandler(UsuarioJaAtivoException.class)
@@ -150,11 +152,7 @@ public class GlobalExceptionHandler {
                         (a, b) -> a
                 ));
 
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("timestamp", LocalDateTime.now().toString());
-        body.put("status", HttpStatus.BAD_REQUEST.value());
-        body.put("errors", fieldErrors);
-
+        Map<String, Object> body = buildValidationResponse(fieldErrors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
@@ -178,5 +176,13 @@ public class GlobalExceptionHandler {
         body.put("status", status.value());
         body.put("message", message);
         return ResponseEntity.status(status).body(body);
+    }
+
+    private Map<String, Object> buildValidationResponse(Map<String, String> fieldErrors) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", LocalDateTime.now().toString());
+        body.put("status", HttpStatus.BAD_REQUEST.value());
+        body.put("errors", fieldErrors);
+        return body;
     }
 }

@@ -3,14 +3,11 @@ package br.com.sgpj.controller;
 import br.com.sgpj.dto.request.AtribuirPermissoesRequest;
 import br.com.sgpj.dto.request.CriarCargoRequest;
 import br.com.sgpj.dto.response.CargoResponse;
-import br.com.sgpj.exception.EscopoJwtException;
 import br.com.sgpj.service.CargoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,6 +17,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/cargos")
@@ -36,16 +35,9 @@ public class CargoController {
     @SecurityRequirement(name = "Bearer")
     @Operation(summary = "Lista os cargos e suas permissões de forma paginada")
     public ResponseEntity<Page<CargoResponse>> listarCargosPaginados(@ParameterObject @PageableDefault(
-            size = 10,
-            page = 0,
             sort = "nome",
             direction = Sort.Direction.ASC
-    ) Pageable pageable, HttpServletRequest httpRequest) {
-
-        if (!cargoService.isCorrectScope(httpRequest, "GENERAL_USE")) {
-            throw new EscopoJwtException("Acesso negado: Este token não é válido para listagem de cargos.");
-        }
-
+    ) Pageable pageable) {
         return ResponseEntity.ok(cargoService.listarPaginado(pageable));
     }
 
@@ -53,15 +45,10 @@ public class CargoController {
     @PreAuthorize("hasAuthority('CRIAR CARGO') || hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
     @Operation(summary = "Cria cargo sem permissões atribuídas")
-    public ResponseEntity<CargoResponse> criar(@RequestBody @Valid CriarCargoRequest request,
-                                               HttpServletRequest httpRequest) {
-        if (!cargoService.isCorrectScope(httpRequest, "GENERAL_USE")) {
-            throw new EscopoJwtException("Acesso negado: Este token não é válido para criação de cargo.");
-        }
-
-        String email = SecurityContextHolder.getContext()
-                .getAuthentication()
-                .getName();
+    public ResponseEntity<CargoResponse> criar(@RequestBody @Valid CriarCargoRequest request) {
+        String email = Objects.requireNonNull(SecurityContextHolder.getContext()
+                        .getAuthentication())
+                        .getName();
 
         return ResponseEntity.status(201).body(cargoService.criar(request, email));
     }
@@ -72,15 +59,10 @@ public class CargoController {
     @Operation(summary = "Atualiza a lista de permissões de um cargo")
     public ResponseEntity<CargoResponse> atualizarPermissoes(
             @PathVariable Long cargoId,
-            @RequestBody @Valid AtribuirPermissoesRequest request,
-            HttpServletRequest httpRequest) {
-        if (!cargoService.isCorrectScope(httpRequest, "GENERAL_USE")) {
-            throw new EscopoJwtException("Acesso negado: Este token não é válido para atualização de cargo.");
-        }
-
-        String email = SecurityContextHolder.getContext()
-                .getAuthentication()
-                .getName();
+            @RequestBody @Valid AtribuirPermissoesRequest request) {
+        String email = Objects.requireNonNull(SecurityContextHolder.getContext()
+                        .getAuthentication())
+                        .getName();
 
         return ResponseEntity.ok(cargoService.atualizarPermissoes(cargoId, request, email));
     }
@@ -89,12 +71,7 @@ public class CargoController {
     @PreAuthorize("hasAuthority('EXCLUIR CARGO') || hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
     @Operation(summary = "Deleta um cargo e atribui o cargo 'Sem Cargo' aos usuários associados ao cargo excluído")
-    public ResponseEntity<Void> deletar(@PathVariable Long cargoId,
-                                        HttpServletRequest httpRequest) {
-        if (!cargoService.isCorrectScope(httpRequest, "GENERAL_USE")) {
-            throw new EscopoJwtException("Acesso negado: Este token não é válido para deleção de cargo.");
-        }
-
+    public ResponseEntity<Void> deletar(@PathVariable Long cargoId) {
         cargoService.deletar(cargoId);
         return ResponseEntity.noContent().build();
     }

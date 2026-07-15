@@ -4,7 +4,6 @@ import br.com.sgpj.adapter.database.CargoPermissaoAdapter;
 import br.com.sgpj.adapter.database.CargoPersistenciaAdapter;
 import br.com.sgpj.adapter.database.PermissaoPersistenciaAdapter;
 import br.com.sgpj.adapter.database.UsuarioPersistenciaAdapter;
-import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
 import br.com.sgpj.dto.request.AtribuirPermissoesRequest;
 import br.com.sgpj.dto.request.CriarCargoRequest;
 import br.com.sgpj.dto.response.CargoResponse;
@@ -12,7 +11,6 @@ import br.com.sgpj.entity.*;
 import br.com.sgpj.exception.CargoJaExisteException;
 import br.com.sgpj.exception.CargoNaoEncontradoException;
 import br.com.sgpj.exception.OperacaoInvalidaException;
-import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,9 +46,6 @@ class CargoServiceTest {
 
     @Mock
     private CargoPermissaoAdapter cargoPermissaoAdapter;
-
-    @Mock
-    private UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter;
 
     @InjectMocks
     private CargoService cargoService;
@@ -451,42 +446,6 @@ class CargoServiceTest {
         assertThrows(OperacaoInvalidaException.class, () -> cargoService.deletar(SEM_CARGO_ID));
 
         verify(cargoPersistenciaAdapter, never()).existsById(anyLong());
-    }
-
-    // ========================
-    // isCorrectScope()
-    // ========================
-
-    @Test
-    @DisplayName("Deve retornar true quando scope for correto")
-    void deveRetornarTrueQuandoScopeForCorreto() {
-        // Given
-        HttpServletRequest httpRequest = mock(HttpServletRequest.class);
-        String scope = "ADMIN";
-        when(usuarioAutenticacaoAdapter.isCorrectScope(httpRequest, scope)).thenReturn(true);
-
-        // When
-        boolean resultado = cargoService.isCorrectScope(httpRequest, scope);
-
-        // Then
-        assertTrue(resultado);
-        verify(usuarioAutenticacaoAdapter, times(1)).isCorrectScope(httpRequest, scope);
-    }
-
-    @Test
-    @DisplayName("Deve retornar false quando scope for incorreto")
-    void deveRetornarFalseQuandoScopeForIncorreto() {
-        // Given
-        HttpServletRequest httpRequest = mock(HttpServletRequest.class);
-        String scope = "INVALIDO";
-        when(usuarioAutenticacaoAdapter.isCorrectScope(httpRequest, scope)).thenReturn(false);
-
-        // When
-        boolean resultado = cargoService.isCorrectScope(httpRequest, scope);
-
-        // Then
-        assertFalse(resultado);
-        verify(usuarioAutenticacaoAdapter, times(1)).isCorrectScope(httpRequest, scope);
     }
 
     // ========================

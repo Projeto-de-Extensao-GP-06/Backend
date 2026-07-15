@@ -3,9 +3,7 @@ package br.com.sgpj.controller;
 import br.com.sgpj.dto.request.AtribuirPermissoesRequest;
 import br.com.sgpj.dto.request.CriarCargoRequest;
 import br.com.sgpj.dto.response.CargoResponse;
-import br.com.sgpj.exception.EscopoJwtException;
 import br.com.sgpj.service.CargoService;
-import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -37,9 +35,6 @@ class CargoControllerTest {
     private CargoService cargoService;
 
     @Mock
-    private HttpServletRequest httpRequest;
-
-    @Mock
     private SecurityContext securityContext;
 
     @Mock
@@ -59,7 +54,6 @@ class CargoControllerTest {
 
     private static final String EMAIL_USUARIO = "usuario@teste.com";
     private static final Long CARGO_ID = 1L;
-    private static final String SCOPE_GENERAL_USE = "GENERAL_USE";
 
     private void configurarSecurityContext() {
         SecurityContextHolder.setContext(securityContext);
@@ -81,16 +75,14 @@ class CargoControllerTest {
             Pageable pageable = PageRequest.of(0, 10);
             Page<CargoResponse> paginaEsperada = new PageImpl<>(List.of(cargoResponse));
 
-            when(cargoService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
             when(cargoService.listarPaginado(pageable)).thenReturn(paginaEsperada);
 
-            ResponseEntity<Page<CargoResponse>> resposta = cargoController.listarCargosPaginados(pageable, httpRequest);
+            ResponseEntity<Page<CargoResponse>> resposta = cargoController.listarCargosPaginados(pageable);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
             assertThat(resposta.getBody()).isNotNull();
             assertThat(resposta.getBody().getContent()).hasSize(1);
 
-            verify(cargoService).isCorrectScope(httpRequest, SCOPE_GENERAL_USE);
             verify(cargoService).listarPaginado(pageable);
         }
 
@@ -100,30 +92,13 @@ class CargoControllerTest {
             Pageable pageable = PageRequest.of(0, 10);
             Page<CargoResponse> paginaVazia = new PageImpl<>(List.of());
 
-            when(cargoService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
             when(cargoService.listarPaginado(pageable)).thenReturn(paginaVazia);
 
-            ResponseEntity<Page<CargoResponse>> resposta = cargoController.listarCargosPaginados(pageable, httpRequest);
+            ResponseEntity<Page<CargoResponse>> resposta = cargoController.listarCargosPaginados(pageable);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
             assertThat(resposta.getBody()).isNotNull();
             assertThat(resposta.getBody().getContent()).isEmpty();
-        }
-
-        @Test
-        @DisplayName("Deve lançar EscopoJwtException quando escopo é inválido")
-        void deveLancarEscopoJwtExceptionQuandoEscopoInvalido() {
-            Pageable pageable = PageRequest.of(0, 10);
-
-            when(cargoService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(false);
-
-            assertThatThrownBy(() -> cargoController.listarCargosPaginados(pageable, httpRequest))
-                    .isInstanceOf(EscopoJwtException.class)
-                    .hasMessageContaining("Acesso negado")
-                    .hasMessageContaining("listagem de cargos");
-
-            verify(cargoService).isCorrectScope(httpRequest, SCOPE_GENERAL_USE);
-            verify(cargoService, never()).listarPaginado(any());
         }
     }
 
@@ -139,16 +114,14 @@ class CargoControllerTest {
         @DisplayName("Deve criar cargo e retornar status 201 quando escopo é válido")
         void deveCriarCargoComStatus201QuandoEscopoValido() {
             configurarSecurityContext();
-            when(cargoService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
             when(cargoService.criar(criarCargoRequest, EMAIL_USUARIO)).thenReturn(cargoResponse);
 
-            ResponseEntity<CargoResponse> resposta = cargoController.criar(criarCargoRequest, httpRequest);
+            ResponseEntity<CargoResponse> resposta = cargoController.criar(criarCargoRequest);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.CREATED);
             assertThat(resposta.getBody()).isNotNull();
             assertThat(resposta.getBody()).isEqualTo(cargoResponse);
 
-            verify(cargoService).isCorrectScope(httpRequest, SCOPE_GENERAL_USE);
             verify(cargoService).criar(criarCargoRequest, EMAIL_USUARIO);
         }
 
@@ -156,27 +129,12 @@ class CargoControllerTest {
         @DisplayName("Deve extrair o email do SecurityContext ao criar cargo")
         void deveExtrairEmailDoSecurityContextAoCriarCargo() {
             configurarSecurityContext();
-            when(cargoService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
             when(cargoService.criar(any(), eq(EMAIL_USUARIO))).thenReturn(cargoResponse);
 
-            cargoController.criar(criarCargoRequest, httpRequest);
+            cargoController.criar(criarCargoRequest);
 
             verify(authentication).getName();
             verify(cargoService).criar(criarCargoRequest, EMAIL_USUARIO);
-        }
-
-        @Test
-        @DisplayName("Deve lançar EscopoJwtException quando escopo é inválido ao criar cargo")
-        void deveLancarEscopoJwtExceptionQuandoEscopoInvalido() {
-            when(cargoService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(false);
-
-            assertThatThrownBy(() -> cargoController.criar(criarCargoRequest, httpRequest))
-                    .isInstanceOf(EscopoJwtException.class)
-                    .hasMessageContaining("Acesso negado")
-                    .hasMessageContaining("criação de cargo");
-
-            verify(cargoService).isCorrectScope(httpRequest, SCOPE_GENERAL_USE);
-            verify(cargoService, never()).criar(any(), any());
         }
     }
 
@@ -192,18 +150,16 @@ class CargoControllerTest {
         @DisplayName("Deve atualizar permissões e retornar status 200 quando escopo é válido")
         void deveAtualizarPermissoesComStatus200QuandoEscopoValido() {
             configurarSecurityContext();
-            when(cargoService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
             when(cargoService.atualizarPermissoes(CARGO_ID, atribuirPermissoesRequest, EMAIL_USUARIO))
                     .thenReturn(cargoResponse);
 
             ResponseEntity<CargoResponse> resposta = cargoController.atualizarPermissoes(
-                    CARGO_ID, atribuirPermissoesRequest, httpRequest);
+                    CARGO_ID, atribuirPermissoesRequest);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
             assertThat(resposta.getBody()).isNotNull();
             assertThat(resposta.getBody()).isEqualTo(cargoResponse);
 
-            verify(cargoService).isCorrectScope(httpRequest, SCOPE_GENERAL_USE);
             verify(cargoService).atualizarPermissoes(CARGO_ID, atribuirPermissoesRequest, EMAIL_USUARIO);
         }
 
@@ -211,28 +167,12 @@ class CargoControllerTest {
         @DisplayName("Deve extrair o email do SecurityContext ao atualizar permissões")
         void deveExtrairEmailDoSecurityContextAoAtualizarPermissoes() {
             configurarSecurityContext();
-            when(cargoService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
             when(cargoService.atualizarPermissoes(any(), any(), eq(EMAIL_USUARIO))).thenReturn(cargoResponse);
 
-            cargoController.atualizarPermissoes(CARGO_ID, atribuirPermissoesRequest, httpRequest);
+            cargoController.atualizarPermissoes(CARGO_ID, atribuirPermissoesRequest);
 
             verify(authentication).getName();
             verify(cargoService).atualizarPermissoes(CARGO_ID, atribuirPermissoesRequest, EMAIL_USUARIO);
-        }
-
-        @Test
-        @DisplayName("Deve lançar EscopoJwtException quando escopo é inválido ao atualizar permissões")
-        void deveLancarEscopoJwtExceptionQuandoEscopoInvalido() {
-            when(cargoService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(false);
-
-            assertThatThrownBy(() -> cargoController.atualizarPermissoes(
-                    CARGO_ID, atribuirPermissoesRequest, httpRequest))
-                    .isInstanceOf(EscopoJwtException.class)
-                    .hasMessageContaining("Acesso negado")
-                    .hasMessageContaining("atualização de cargo");
-
-            verify(cargoService).isCorrectScope(httpRequest, SCOPE_GENERAL_USE);
-            verify(cargoService, never()).atualizarPermissoes(any(), any(), any());
         }
     }
 
@@ -247,39 +187,22 @@ class CargoControllerTest {
         @Test
         @DisplayName("Deve deletar cargo e retornar status 204 quando escopo é válido")
         void deveDeletarCargoComStatus204QuandoEscopoValido() {
-            when(cargoService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
             doNothing().when(cargoService).deletar(CARGO_ID);
 
-            ResponseEntity<Void> resposta = cargoController.deletar(CARGO_ID, httpRequest);
+            ResponseEntity<Void> resposta = cargoController.deletar(CARGO_ID);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
             assertThat(resposta.getBody()).isNull();
 
-            verify(cargoService).isCorrectScope(httpRequest, SCOPE_GENERAL_USE);
             verify(cargoService).deletar(CARGO_ID);
-        }
-
-        @Test
-        @DisplayName("Deve lançar EscopoJwtException quando escopo é inválido ao deletar cargo")
-        void deveLancarEscopoJwtExceptionQuandoEscopoInvalido() {
-            when(cargoService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(false);
-
-            assertThatThrownBy(() -> cargoController.deletar(CARGO_ID, httpRequest))
-                    .isInstanceOf(EscopoJwtException.class)
-                    .hasMessageContaining("Acesso negado")
-                    .hasMessageContaining("deleção de cargo");
-
-            verify(cargoService).isCorrectScope(httpRequest, SCOPE_GENERAL_USE);
-            verify(cargoService, never()).deletar(any());
         }
 
         @Test
         @DisplayName("Deve propagar exceção lançada pelo service ao deletar cargo")
         void devePropagaExcecaoDoServiceAoDeletarCargo() {
-            when(cargoService.isCorrectScope(httpRequest, SCOPE_GENERAL_USE)).thenReturn(true);
             doThrow(new RuntimeException("Cargo não encontrado")).when(cargoService).deletar(CARGO_ID);
 
-            assertThatThrownBy(() -> cargoController.deletar(CARGO_ID, httpRequest))
+            assertThatThrownBy(() -> cargoController.deletar(CARGO_ID))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessage("Cargo não encontrado");
 

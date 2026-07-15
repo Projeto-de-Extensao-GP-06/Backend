@@ -1,6 +1,5 @@
 package br.com.sgpj.service;
 
-import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
 import br.com.sgpj.dto.response.CaminhoArmazenamentoResponse;
 import br.com.sgpj.dto.response.CaminhoClienteResponse;
 import br.com.sgpj.dto.response.DocumentoResponse;
@@ -14,7 +13,6 @@ import br.com.sgpj.repository.CaminhoPadraoDeArmazenamentoRepository;
 import br.com.sgpj.repository.ClienteRepository;
 import br.com.sgpj.repository.DocumentoRepository;
 import br.com.sgpj.repository.TipoDocumentoRepository;
-import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -35,7 +33,6 @@ import static org.mockito.Mockito.*;
 @DisplayName("DocumentoService — Testes unitários")
 class DocumentoServiceTest {
 
-    @Mock private UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter;
     @Mock private TipoDocumentoRepository tipoDocumentoRepository;
     @Mock private CaminhoPadraoDeArmazenamentoRepository caminhoRepository;
     @Mock private DocumentoRepository documentoRepository;
@@ -46,7 +43,6 @@ class DocumentoServiceTest {
     @BeforeEach
     void setup() {
         service = new DocumentoService(
-                usuarioAutenticacaoAdapter,
                 tipoDocumentoRepository,
                 caminhoRepository,
                 documentoRepository,
@@ -72,8 +68,8 @@ class DocumentoServiceTest {
             List<CaminhoArmazenamentoResponse> result = service.listarCaminhosArmazenamento();
 
             assertEquals(2, result.size());
-            assertEquals(1L, result.get(0).id());
-            assertEquals("rafael-silva-12345678901/1234567", result.get(0).caminho());
+            assertEquals(1L, result.getFirst().id());
+            assertEquals("rafael-silva-12345678901/1234567", result.getFirst().caminho());
         }
         @Test
         @DisplayName("Deve retornar lista vazia quando não há caminhos")
@@ -100,7 +96,7 @@ class DocumentoServiceTest {
             List<TipoDocumentoResponse> result = service.listarTiposDocumento();
 
             assertEquals(2, result.size());
-            assertEquals("RG", result.get(0).nome());
+            assertEquals("RG", result.getFirst().nome());
             assertEquals("CTPS", result.get(1).nome());
         }
 
@@ -128,7 +124,7 @@ class DocumentoServiceTest {
             List<DocumentoResponse> result = service.listarDocumentosPorCaminho(5L);
 
             assertEquals(1, result.size());
-            assertEquals("contrato.pdf", result.get(0).nomeOriginal());
+            assertEquals("contrato.pdf", result.getFirst().nomeOriginal());
         }
 
         @Test
@@ -164,8 +160,8 @@ class DocumentoServiceTest {
             List<CaminhoClienteResponse> result = service.listarCaminhosDoCliente(1L);
 
             assertEquals(2, result.size());
-            assertEquals(10L, result.get(0).id());
-            assertEquals("Rafael Silva - 12345678901", result.get(0).descricao());
+            assertEquals(10L, result.getFirst().id());
+            assertEquals("Rafael Silva - 12345678901", result.getFirst().descricao());
             assertEquals("rafael-silva-12345678901/1234567", result.get(0).caminho());
             assertEquals(11L, result.get(1).id());
         }
@@ -186,7 +182,7 @@ class DocumentoServiceTest {
             List<CaminhoClienteResponse> result = service.listarCaminhosDoCliente(2L);
 
             assertEquals(1, result.size());
-            assertTrue(result.get(0).descricao().contains("sem documento"));
+            assertTrue(result.getFirst().descricao().contains("sem documento"));
         }
 
         @Test
@@ -222,31 +218,6 @@ class DocumentoServiceTest {
         doc.setDataHoraCriacao(LocalDateTime.now());
         doc.setUltimaAtualizacao(LocalDateTime.now());
         return doc;
-    }
-
-    // ========== isCorrectScope ==========
-
-    @Nested
-    @DisplayName("isCorrectScope")
-    class IsCorrectScopeTest {
-
-        @Test
-        @DisplayName("Deve retornar true quando escopo é válido")
-        void deveRetornarTrueQuandoEscopoValido() {
-            HttpServletRequest req = mock(HttpServletRequest.class);
-            when(usuarioAutenticacaoAdapter.isCorrectScope(req, "GENERAL_USE")).thenReturn(true);
-
-            assertTrue(service.isCorrectScope(req, "GENERAL_USE"));
-        }
-
-        @Test
-        @DisplayName("Deve retornar false quando escopo é inválido")
-        void deveRetornarFalseQuandoEscopoInvalido() {
-            HttpServletRequest req = mock(HttpServletRequest.class);
-            when(usuarioAutenticacaoAdapter.isCorrectScope(req, "GENERAL_USE")).thenReturn(false);
-
-            assertFalse(service.isCorrectScope(req, "GENERAL_USE"));
-        }
     }
 }
 

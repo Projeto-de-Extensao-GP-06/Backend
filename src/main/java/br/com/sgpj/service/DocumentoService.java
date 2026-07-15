@@ -1,6 +1,5 @@
 package br.com.sgpj.service;
 
-import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
 import br.com.sgpj.dto.response.CaminhoArmazenamentoResponse;
 import br.com.sgpj.dto.response.CaminhoClienteResponse;
 import br.com.sgpj.dto.response.DocumentoResponse;
@@ -14,7 +13,6 @@ import br.com.sgpj.repository.CaminhoPadraoDeArmazenamentoRepository;
 import br.com.sgpj.repository.ClienteRepository;
 import br.com.sgpj.repository.DocumentoRepository;
 import br.com.sgpj.repository.TipoDocumentoRepository;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,26 +20,19 @@ import java.util.List;
 @Service
 public class DocumentoService {
 
-    private final UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter;
     private final TipoDocumentoRepository tipoDocumentoRepository;
     private final CaminhoPadraoDeArmazenamentoRepository caminhoRepository;
     private final DocumentoRepository documentoRepository;
     private final ClienteRepository clienteRepository;
 
-    public DocumentoService(UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter,
-                            TipoDocumentoRepository tipoDocumentoRepository,
+    public DocumentoService(TipoDocumentoRepository tipoDocumentoRepository,
                             CaminhoPadraoDeArmazenamentoRepository caminhoRepository,
                             DocumentoRepository documentoRepository,
                             ClienteRepository clienteRepository) {
-        this.usuarioAutenticacaoAdapter = usuarioAutenticacaoAdapter;
         this.tipoDocumentoRepository = tipoDocumentoRepository;
         this.caminhoRepository = caminhoRepository;
         this.documentoRepository = documentoRepository;
         this.clienteRepository = clienteRepository;
-    }
-
-    public boolean isCorrectScope(HttpServletRequest httpRequest, String scope) {
-        return usuarioAutenticacaoAdapter.isCorrectScope(httpRequest, scope);
     }
 
     public List<TipoDocumentoResponse> listarTiposDocumento() {

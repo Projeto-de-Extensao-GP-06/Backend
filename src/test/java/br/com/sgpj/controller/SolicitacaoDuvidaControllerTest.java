@@ -5,10 +5,7 @@ import br.com.sgpj.dto.response.SolicitacaoClientePreenchimentoResponse;
 import br.com.sgpj.dto.response.SolicitacaoDuvidaDetalhesResponse;
 import br.com.sgpj.dto.response.SolicitacaoDuvidaListarResponse;
 import br.com.sgpj.entity.SolicitacaoStatus;
-import br.com.sgpj.exception.EscopoJwtException;
 import br.com.sgpj.service.SolicitacaoDuvidaService;
-import br.com.sgpj.service.UsuarioService;
-import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,10 +20,6 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,8 +29,6 @@ import static org.mockito.Mockito.when;
 class SolicitacaoDuvidaControllerTest {
 
     @Mock private SolicitacaoDuvidaService service;
-    @Mock private UsuarioService usuarioService;
-    @Mock private HttpServletRequest httpRequest;
     @InjectMocks private SolicitacaoDuvidaController controller;
 
     @Test
@@ -56,10 +47,9 @@ class SolicitacaoDuvidaControllerTest {
     @Test
     @DisplayName("GET deve retornar 200 com solicitações pendentes")
     void listarPendentesDeveRetornar200() {
-        when(usuarioService.isCorrectScope(any(HttpServletRequest.class), eq("GENERAL_USE"))).thenReturn(true);
         when(service.listarPendentes()).thenReturn(List.of(criarListagem()));
 
-        ResponseEntity<List<SolicitacaoDuvidaListarResponse>> response = controller.listarPendentes(httpRequest);
+        ResponseEntity<List<SolicitacaoDuvidaListarResponse>> response = controller.listarPendentes();
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(1, response.getBody().size());
@@ -69,10 +59,9 @@ class SolicitacaoDuvidaControllerTest {
     @Test
     @DisplayName("GET deve retornar 204 quando não houver solicitações pendentes")
     void listarPendentesDeveRetornar204() {
-        when(usuarioService.isCorrectScope(any(HttpServletRequest.class), eq("GENERAL_USE"))).thenReturn(true);
         when(service.listarPendentes()).thenReturn(Collections.emptyList());
 
-        ResponseEntity<List<SolicitacaoDuvidaListarResponse>> response = controller.listarPendentes(httpRequest);
+        ResponseEntity<List<SolicitacaoDuvidaListarResponse>> response = controller.listarPendentes();
 
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
     }
@@ -80,10 +69,9 @@ class SolicitacaoDuvidaControllerTest {
     @Test
     @DisplayName("GET por id deve retornar detalhes")
     void buscarPorIdDeveRetornarDetalhes() {
-        when(usuarioService.isCorrectScope(any(HttpServletRequest.class), eq("GENERAL_USE"))).thenReturn(true);
         when(service.buscarPorId(30L)).thenReturn(criarDetalhes());
 
-        ResponseEntity<SolicitacaoDuvidaDetalhesResponse> response = controller.buscarPorId(30L, httpRequest);
+        ResponseEntity<SolicitacaoDuvidaDetalhesResponse> response = controller.buscarPorId(30L);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals("Maria Silva", response.getBody().nomeCompleto());
@@ -92,7 +80,6 @@ class SolicitacaoDuvidaControllerTest {
     @Test
     @DisplayName("PATCH aceitar deve retornar dados para preenchimento de cliente")
     void aceitarDeveRetornarPreenchimentoCliente() {
-        when(usuarioService.isCorrectScope(any(HttpServletRequest.class), eq("GENERAL_USE"))).thenReturn(true);
         when(service.aceitar(30L)).thenReturn(new SolicitacaoClientePreenchimentoResponse(
                 30L,
                 10L,
@@ -106,7 +93,7 @@ class SolicitacaoDuvidaControllerTest {
                 null
         ));
 
-        ResponseEntity<SolicitacaoClientePreenchimentoResponse> response = controller.aceitar(30L, httpRequest);
+        ResponseEntity<SolicitacaoClientePreenchimentoResponse> response = controller.aceitar(30L);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(10L, response.getBody().clienteId());
@@ -116,21 +103,12 @@ class SolicitacaoDuvidaControllerTest {
     @Test
     @DisplayName("PATCH negar deve retornar 204")
     void negarDeveRetornar204() {
-        when(usuarioService.isCorrectScope(any(HttpServletRequest.class), eq("GENERAL_USE"))).thenReturn(true);
         doNothing().when(service).negar(30L);
 
-        ResponseEntity<Void> response = controller.negar(30L, httpRequest);
+        ResponseEntity<Void> response = controller.negar(30L);
 
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
         verify(service).negar(30L);
-    }
-
-    @Test
-    @DisplayName("Deve bloquear rotas protegidas quando escopo for inválido")
-    void deveBloquearEscopoInvalido() {
-        when(usuarioService.isCorrectScope(any(HttpServletRequest.class), eq("GENERAL_USE"))).thenReturn(false);
-
-        assertThrows(EscopoJwtException.class, () -> controller.listarPendentes(httpRequest));
     }
 
     private SolicitacaoDuvidaCriacaoRequest criarRequest() {

@@ -140,6 +140,11 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
     }
 
+    @ExceptionHandler(EmailSendException.class)
+    public ResponseEntity<Map<String, Object>> handleEmailSendException(EmailSendException ex) {
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
+    }
+
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<Map<String, Object>> handleConstraintViolation(ConstraintViolationException ex) {
         Map<String, String> fieldErrors = ex.getConstraintViolations().stream()

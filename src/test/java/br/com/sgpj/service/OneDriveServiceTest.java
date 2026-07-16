@@ -23,7 +23,6 @@ import br.com.sgpj.repository.UsuarioRepository;
 import com.microsoft.graph.models.DriveItemCollectionResponse;
 import com.microsoft.graph.models.ItemPreviewInfo;
 import com.microsoft.graph.serviceclient.GraphServiceClient;
-import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -295,29 +294,6 @@ class OneDriveServiceTest {
         }
     }
 
-    // ========== isCorrectScope ==========
-
-    @Nested
-    @DisplayName("isCorrectScope — Delegação de escopo")
-    class IsCorrectScopeTest {
-
-        @Test
-        @DisplayName("Deve retornar true quando escopo é válido")
-        void deveRetornarTrueQuandoEscopoValido() {
-            HttpServletRequest req = mock(HttpServletRequest.class);
-            when(usuarioAutenticacaoAdapter.isCorrectScope(req, "GENERAL")).thenReturn(true);
-            assertTrue(service.isCorrectScope(req, "GENERAL"));
-        }
-
-        @Test
-        @DisplayName("Deve retornar false quando escopo é inválido")
-        void deveRetornarFalseQuandoEscopoInvalido() {
-            HttpServletRequest req = mock(HttpServletRequest.class);
-            when(usuarioAutenticacaoAdapter.isCorrectScope(req, "GENERAL")).thenReturn(false);
-            assertFalse(service.isCorrectScope(req, "GENERAL"));
-        }
-    }
-
     // ========== gerarPreviewUrl (com mock Graph) ==========
 
     @Nested
@@ -398,7 +374,7 @@ class OneDriveServiceTest {
                 List<OneDriveItemResponse> resultado = service.listarArquivos(1L);
                 assertNotNull(resultado);
                 assertFalse(resultado.isEmpty());
-                assertEquals("arquivo.pdf", resultado.get(0).nome());
+                assertEquals("arquivo.pdf", resultado.getFirst().nome());
             }
         }
 

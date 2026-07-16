@@ -4,6 +4,7 @@ import br.com.sgpj.config.jwt.AutenticacaoEntryPoint;
 import br.com.sgpj.config.jwt.AutenticacaoFilter;
 import br.com.sgpj.config.jwt.AutenticacaoProvider;
 import br.com.sgpj.config.jwt.GerenciadorTokenJwt;
+import br.com.sgpj.exception.CustomAccessDeniedHandler;
 import br.com.sgpj.service.AutenticacaoService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -53,15 +54,18 @@ import java.util.List;
 public class SecurityConfiguracao {
 
     private final AutenticacaoService autenticacaoService;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
     // AutenticacaoEntryPoint é registrado como @Component, o Spring injeta automaticamente
     private final AutenticacaoEntryPoint autenticacaoJwtEntryPoint;
 
     public SecurityConfiguracao(
             AutenticacaoService autenticacaoService,
-            AutenticacaoEntryPoint autenticacaoJwtEntryPoint) {
+            AutenticacaoEntryPoint autenticacaoJwtEntryPoint,
+            CustomAccessDeniedHandler customAccessDeniedHandler) {
         this.autenticacaoService = autenticacaoService;
         this.autenticacaoJwtEntryPoint = autenticacaoJwtEntryPoint;
+        this.customAccessDeniedHandler = customAccessDeniedHandler;
     }
 
     /**
@@ -116,12 +120,14 @@ public class SecurityConfiguracao {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(URLS_PERMITIDAS).permitAll()  // rotas públicas
                         .requestMatchers(HttpMethod.POST, "/solicitacoes").permitAll()
-                        .anyRequest().authenticated()                  // todas as outras exigem token
+                        .requestMatchers("/usuarios/definir-nova-senha").hasAuthority("SCOPE_SET_PASSWORD") // rota /definir-nova-senha exige claim set password
+                        .anyRequest().hasAuthority("SCOPE_GENERAL_USE")  // todas as outras exigem token com claim general use
                 )
 
                 // Configura o handler para erros de autenticação (token ausente/inválido → 401/403)
                 .exceptionHandling(handling -> handling
-                        .authenticationEntryPoint(autenticacaoJwtEntryPoint))
+                        .authenticationEntryPoint(autenticacaoJwtEntryPoint)
+                        .accessDeniedHandler(customAccessDeniedHandler))
 
                 // Define política de sessão: STATELESS
                 // O servidor NÃO cria nem armazena sessões HTTP.

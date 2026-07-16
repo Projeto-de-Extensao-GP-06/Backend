@@ -4,14 +4,12 @@ import br.com.sgpj.dto.request.*;
 import br.com.sgpj.dto.response.UsuarioListarResponse;
 import br.com.sgpj.dto.response.UsuarioSessaoResponse;
 import br.com.sgpj.dto.response.UsuarioTokenResponse;
-import br.com.sgpj.exception.EscopoJwtException;
 import br.com.sgpj.exception.UsuarioAutoExclusaoException;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.mapper.UsuarioMapper;
 import br.com.sgpj.service.UsuarioService;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,12 +42,7 @@ public class UsuarioController {
     @PostMapping
     @SecurityRequirement(name = "Bearer")
     @PreAuthorize("hasAuthority('CRIAR USUÁRIO') || hasAuthority('TODAS AS PERMISSÕES')")
-    public ResponseEntity<Void> criar(@RequestBody @Valid UsuarioCriacaoRequest usuarioCriacaoRequest,
-                                      HttpServletRequest httpRequest) {
-        if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {
-            throw new EscopoJwtException("Acesso negado: Este token não é válido para criação de usuário.");
-        }
-
+    public ResponseEntity<Void> criar(@RequestBody @Valid UsuarioCriacaoRequest usuarioCriacaoRequest) {
         this.usuarioService.criar(usuarioCriacaoRequest);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
@@ -86,11 +79,7 @@ public class UsuarioController {
 
     @GetMapping
     @SecurityRequirement(name = "Bearer")
-    public ResponseEntity<List<UsuarioListarResponse>> listarTodos(HttpServletRequest httpRequest) {
-        if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {
-            throw new EscopoJwtException("Acesso negado: Este token não é válido para listagem de usuários.");
-        }
-
+    public ResponseEntity<List<UsuarioListarResponse>> listarTodos() {
         List<UsuarioListarResponse> usuariosEncontrados = usuarioService.listarTodos();
 
         if (usuariosEncontrados.isEmpty()) {
@@ -101,12 +90,7 @@ public class UsuarioController {
 
     @GetMapping("/funcao")
     @SecurityRequirement(name = "Bearer")
-    public ResponseEntity<List<UsuarioListarResponse>> listarPorFuncao(@RequestParam String funcao,
-                                                                       HttpServletRequest httpRequest) {
-        if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {
-            throw new EscopoJwtException("Acesso negado: Este token não é válido para listagem de usuários.");
-        }
-
+    public ResponseEntity<List<UsuarioListarResponse>> listarPorFuncao(@RequestParam String funcao) {
         List<UsuarioListarResponse> usuariosEncontrados = usuarioService.listarPorFuncao(funcao);
 
         if (usuariosEncontrados.isEmpty()) {
@@ -117,12 +101,7 @@ public class UsuarioController {
 
     @GetMapping("/pesquisar")
     @SecurityRequirement(name = "Bearer")
-    public ResponseEntity<List<UsuarioListarResponse>> pesquisarPorNomeOuEmail(@RequestParam String pesquisa,
-                                                                               HttpServletRequest httpRequest) {
-        if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {
-            throw new EscopoJwtException("Acesso negado: Este token não é válido para listagem de usuários.");
-        }
-
+    public ResponseEntity<List<UsuarioListarResponse>> pesquisarPorNomeOuEmail(@RequestParam String pesquisa) {
         List<UsuarioListarResponse> usuariosEncontrados = usuarioService.buscarPorNomeOuEmail(pesquisa);
 
         if (usuariosEncontrados.isEmpty()) {
@@ -136,14 +115,8 @@ public class UsuarioController {
     @SecurityRequirement(name = "Bearer")
     @PreAuthorize("hasAuthority('EDITAR USUÁRIO') || hasAuthority('TODAS AS PERMISSÕES')")
     public ResponseEntity<UsuarioListarResponse> atualizarUsuario(@Valid @RequestBody UsuarioAtualizacaoRequest atualizacao,
-                                                                  @PathVariable Long id,
-                                                                  HttpServletRequest httpRequest){
-        if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {
-            throw new EscopoJwtException("Acesso negado: Este token não é válido para atualização de usuário.");
-        }
-
+                                                                  @PathVariable Long id){
         UsuarioListarResponse usuarioEditado = usuarioService.atualizarUsuario(atualizacao, id);
-
         return ResponseEntity.status(HttpStatus.OK).body(usuarioEditado);
     }
 
@@ -174,12 +147,7 @@ public class UsuarioController {
     @DeleteMapping("/{id}")
     @SecurityRequirement(name = "Bearer")
     @PreAuthorize("hasAuthority('EXCLUIR USUÁRIO') || hasAuthority('TODAS AS PERMISSÕES')")
-    public ResponseEntity<Void> deletar(@PathVariable Long id,
-                                        HttpServletRequest httpRequest) {
-        if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {
-            throw new EscopoJwtException("Acesso negado: Este token não é válido para deleção de usuário.");
-        }
-
+    public ResponseEntity<Void> deletar(@PathVariable Long id) {
         if (!usuarioService.isDifferentId(id)) {
             throw new UsuarioAutoExclusaoException("Não é possível excluir o próprio usuário.");
         }
@@ -220,12 +188,7 @@ public class UsuarioController {
     @PreAuthorize("isAuthenticated()")
     @SecurityRequirement(name = "Bearer")
     public ResponseEntity<String> definirNovaSenha(@RequestBody DefinirNovaSenhaRequest request,
-                                                   HttpServletRequest httpRequest,
                                                    HttpServletResponse response) {
-        if (!usuarioService.isCorrectScope(httpRequest, "SET_PASSWORD")) {
-            throw new EscopoJwtException("Acesso negado: Este token não é válido para redefinição de senha.");
-        }
-
         usuarioService.definirNovaSenha(request.senha());
         adicionarCookie(response, COOKIE_NOME, Duration.ZERO);
         return ResponseEntity.ok("Nova senha definida com sucesso!");
@@ -234,12 +197,7 @@ public class UsuarioController {
     @PostMapping("/reactivate/{id}")
     @PreAuthorize("hasAuthority('EDITAR USUÁRIO') || hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
-    public ResponseEntity<UsuarioListarResponse> reativarUsuario(@PathVariable Long id,
-                                                HttpServletRequest httpRequest) {
-        if (!usuarioService.isCorrectScope(httpRequest, "GENERAL_USE")) {
-            throw new EscopoJwtException("Acesso negado: Este token não é válido para reativação de usuário.");
-        }
-
+    public ResponseEntity<UsuarioListarResponse> reativarUsuario(@PathVariable Long id) {
         return ResponseEntity.ok().body(usuarioService.reativarUsuario(id));
     }
 }

@@ -1,6 +1,7 @@
 package br.com.sgpj.exception;
 
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.data.core.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -172,6 +173,12 @@ public class GlobalExceptionHandler {
         String mensagem = String.format("O parâmetro '%s' possui valor inválido: '%s'. Tipo esperado: %s.",
                 ex.getName(), ex.getValue(),
                 ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "desconhecido");
+        return buildResponse(HttpStatus.BAD_REQUEST, mensagem);
+    }
+
+    @ExceptionHandler(PropertyReferenceException.class)
+    public ResponseEntity<Map<String, Object>> handlePropertyReference(PropertyReferenceException ex) {
+        String mensagem = String.format("Campo de ordenação inválido: '%s'. Verifique o nome do campo informado no parâmetro 'sort'.", ex.getPropertyName());
         return buildResponse(HttpStatus.BAD_REQUEST, mensagem);
     }
 

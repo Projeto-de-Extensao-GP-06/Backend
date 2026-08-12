@@ -9,6 +9,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -88,6 +92,27 @@ public class ClienteController {
         return ResponseEntity.ok(clientes);
     }
 
+    @GetMapping("/filtrar")
+    @SecurityRequirement(name = "Bearer")
+    @Operation(summary = "Busca clientes por termo (nome, e-mail ou CPF/CNPJ), status e tipo de pessoa (PF/PJ), com paginação")
+    public ResponseEntity<Page<ClienteListarResponse>> pesquisarComFiltros(
+            @RequestParam(required = false) String termo,
+            @RequestParam(required = false, defaultValue = "Todos") String status,
+            @RequestParam(required = false, defaultValue = "Todos") String tipoPessoa,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "nomeRazaoSocial,asc") String sort) {
+
+        String[] sortParts = sort.split(",");
+        Sort.Direction direction = sortParts.length > 1
+                ? Sort.Direction.fromString(sortParts[1])
+                : Sort.Direction.ASC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortParts[0]));
+
+        Page<ClienteListarResponse> clientes = clienteService.pesquisarComFiltros(termo, status, tipoPessoa, pageable);
+        return ResponseEntity.ok(clientes);
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('EXCLUIR CLIENTE') || hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
@@ -97,4 +122,3 @@ public class ClienteController {
         return ResponseEntity.noContent().build();
     }
 }
-

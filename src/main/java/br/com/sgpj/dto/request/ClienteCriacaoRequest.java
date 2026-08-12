@@ -2,9 +2,11 @@ package br.com.sgpj.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import br.com.sgpj.validation.CpfCnpj;
 
 import java.util.List;
 
@@ -17,6 +19,7 @@ public record ClienteCriacaoRequest(
 
         @Schema(description = "CPF ou CNPJ do cliente (somente números)", example = "12345678901")
         @NotBlank(message = "CPF/CNPJ é obrigatório")
+        @CpfCnpj(message = "CPF ou CNPJ inválido")
         @Size(max = 14, message = "CPF/CNPJ deve ter no máximo 14 caracteres")
         String cpfCnpj,
 
@@ -80,6 +83,7 @@ public record ClienteCriacaoRequest(
 
             @Schema(description = "Email do contato", example = "maria@email.com")
             @NotBlank(message = "Email do contato é obrigatório")
+            @Email(message = "Email do contato deve ser válido")
             @Size(max = 255)
             String email,
 

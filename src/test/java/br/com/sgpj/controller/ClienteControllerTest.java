@@ -13,6 +13,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -247,6 +252,81 @@ class ClienteControllerTest {
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
             assertThat(resposta.getBody()).isNull();
+        }
+    }
+
+    // =========================================================================
+    // pesquisarComFiltros
+    // =========================================================================
+
+    @Nested
+    @DisplayName("GET /clientes/filtrar - pesquisarComFiltros")
+    class PesquisarComFiltros {
+
+        @Test
+        @DisplayName("Deve retornar página de clientes com status 200 e ordenação ascendente por padrão")
+        void deveRetornarPaginaComStatus200EOrdenacaoAscendente() {
+            String termo = "João";
+            String status = "Ativo";
+            String tipoPessoa = "PF";
+            int page = 0;
+            int size = 10;
+            String sort = "nomeRazaoSocial,asc";
+
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "nomeRazaoSocial"));
+            Page<ClienteListarResponse> pagina = new PageImpl<>(List.of(clienteListarResponse), pageable, 1);
+
+            when(clienteService.pesquisarComFiltros(termo, status, tipoPessoa, pageable)).thenReturn(pagina);
+
+            ResponseEntity<Page<ClienteListarResponse>> resposta = clienteController.pesquisarComFiltros(
+                    termo, status, tipoPessoa, page, size, sort);
+
+            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(resposta.getBody()).isNotNull();
+            assertThat(resposta.getBody().getContent()).containsExactly(clienteListarResponse);
+
+            verify(clienteService).pesquisarComFiltros(termo, status, tipoPessoa, pageable);
+        }
+
+        @Test
+        @DisplayName("Deve retornar página de clientes com ordenação descendente quando especificada")
+        void deveRetornarPaginaComOrdenacaoDescendente() {
+            String termo = null;
+            String status = "Todos";
+            String tipoPessoa = "Todos";
+            int page = 1;
+            int size = 5;
+            String sort = "nomeRazaoSocial,desc";
+
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "nomeRazaoSocial"));
+            Page<ClienteListarResponse> pagina = new PageImpl<>(List.of(clienteListarResponse), pageable, 1);
+
+            when(clienteService.pesquisarComFiltros(termo, status, tipoPessoa, pageable)).thenReturn(pagina);
+
+            ResponseEntity<Page<ClienteListarResponse>> resposta = clienteController.pesquisarComFiltros(
+                    termo, status, tipoPessoa, page, size, sort);
+
+            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(resposta.getBody()).isNotNull();
+
+            verify(clienteService).pesquisarComFiltros(termo, status, tipoPessoa, pageable);
+        }
+
+        @Test
+        @DisplayName("Deve usar direção ASC por padrão quando direção não for informada no sort")
+        void deveUsarDirecaoAscQuandoDirecaoNaoInformada() {
+            String sort = "cpfCnpj";
+            Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.ASC, "cpfCnpj"));
+            Page<ClienteListarResponse> pagina = new PageImpl<>(List.of(clienteListarResponse), pageable, 1);
+
+            when(clienteService.pesquisarComFiltros(null, "Todos", "Todos", pageable)).thenReturn(pagina);
+
+            ResponseEntity<Page<ClienteListarResponse>> resposta = clienteController.pesquisarComFiltros(
+                    null, "Todos", "Todos", 0, 10, sort);
+
+            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+            verify(clienteService).pesquisarComFiltros(null, "Todos", "Todos", pageable);
         }
     }
 

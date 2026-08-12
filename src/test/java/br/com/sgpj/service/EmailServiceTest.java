@@ -24,21 +24,6 @@ import java.util.Arrays;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-/**
- * Testes unitários para {@link EmailService}.
- *
- * <p>Correções aplicadas em relação à versão anterior:
- * <ul>
- *   <li>Substituído {@code SimpleMailMessage} por {@code MimeMessage} — a implementação
- *       usa {@code MimeMessageHelper}, que produz um {@code MimeMessage}, não um
- *       {@code SimpleMailMessage}. As sobrecargas {@code send(SimpleMailMessage)} e
- *       {@code send(MimeMessage)} são métodos distintos em {@code JavaMailSender}.</li>
- *   <li>Adicionado stub de {@code mailSender.createMimeMessage()} no {@code @BeforeEach},
- *       evitando {@code NullPointerException} ao construir o {@code MimeMessageHelper}.</li>
- *   <li>Leitura de corpo, assunto, remetente e destinatário feita via API {@code MimeMessage},
- *       com suporte a conteúdo {@code multipart/alternative} gerado pelo helper.</li>
- * </ul>
- */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("EmailService")
 class EmailServiceTest {

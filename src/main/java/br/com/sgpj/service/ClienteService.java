@@ -24,6 +24,8 @@ import br.com.sgpj.repository.HistoricoProcessoRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.ProcessoDocumentoRepository;
 import br.com.sgpj.repository.StatusClienteRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -96,6 +98,11 @@ public class ClienteService {
                 .stream()
                 .map(ClienteMapper::toListarDto)
                 .toList();
+    }
+
+    public Page<ClienteListarResponse> pesquisarComFiltros(String termo, String status, String tipoPessoa, Pageable pageable) {
+        return clientePersistenciaAdapter.pesquisarComFiltros(termo, status, tipoPessoa, pageable)
+                .map(ClienteMapper::toListarDto);
     }
 
     @Transactional

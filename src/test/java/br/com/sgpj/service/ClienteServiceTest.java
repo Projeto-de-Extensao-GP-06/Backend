@@ -21,6 +21,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -339,6 +343,51 @@ class ClienteServiceTest {
             assertEquals(2, resultado.size());
             assertEquals("Silva Advogados", resultado.get(0).nomeRazaoSocial());
             assertEquals("José Silva", resultado.get(1).nomeRazaoSocial());
+        }
+    }
+
+    @Nested
+    @DisplayName("pesquisarComFiltros()")
+    class PesquisarComFiltros {
+
+        @Test
+        @DisplayName("Deve retornar página de clientes filtrada corretamente")
+        void deveRetornarPaginaDeClientesComFiltros() {
+            Cliente cliente1 = criarClienteComStatus(1L, "João da Silva", "12345678901", "Ativo");
+            Cliente cliente2 = criarClienteComStatus(2L, "Empresa ABC", "12345678000199", "Ativo");
+
+            Pageable pageable = PageRequest.of(0, 10);
+            Page<Cliente> paginaCliente = new PageImpl<>(List.of(cliente1, cliente2), pageable, 2);
+
+            when(clientePersistenciaAdapter.pesquisarComFiltros("termo", "Ativo", "PF", pageable))
+                    .thenReturn(paginaCliente);
+
+            Page<ClienteListarResponse> resultado = clienteService.pesquisarComFiltros("termo", "Ativo", "PF", pageable);
+
+            assertNotNull(resultado);
+            assertEquals(2, resultado.getTotalElements());
+            assertEquals("João da Silva", resultado.getContent().get(0).nomeRazaoSocial());
+            assertEquals("Empresa ABC", resultado.getContent().get(1).nomeRazaoSocial());
+
+            verify(clientePersistenciaAdapter, times(1)).pesquisarComFiltros("termo", "Ativo", "PF", pageable);
+        }
+
+        @Test
+        @DisplayName("Deve retornar página vazia quando nenhum cliente corresponder aos filtros")
+        void deveRetornarPaginaVaziaSemResultados() {
+            Pageable pageable = PageRequest.of(0, 10);
+            Page<Cliente> paginaVazia = new PageImpl<>(Collections.emptyList(), pageable, 0);
+
+            when(clientePersistenciaAdapter.pesquisarComFiltros("inexistente", "Todos", "Todos", pageable))
+                    .thenReturn(paginaVazia);
+
+            Page<ClienteListarResponse> resultado = clienteService.pesquisarComFiltros("inexistente", "Todos", "Todos", pageable);
+
+            assertNotNull(resultado);
+            assertTrue(resultado.isEmpty());
+            assertEquals(0, resultado.getTotalElements());
+
+            verify(clientePersistenciaAdapter, times(1)).pesquisarComFiltros("inexistente", "Todos", "Todos", pageable);
         }
     }
 

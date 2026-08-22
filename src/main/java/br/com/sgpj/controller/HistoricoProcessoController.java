@@ -6,7 +6,6 @@ import br.com.sgpj.service.HistoricoProcessoService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,11 +14,14 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequiredArgsConstructor
 @Tag(name = "Histórico")
 public class HistoricoProcessoController {
 
-    public final HistoricoProcessoService historicoProcessoService;
+    private final HistoricoProcessoService historicoProcessoService;
+
+    public HistoricoProcessoController(HistoricoProcessoService historicoProcessoService) {
+        this.historicoProcessoService = historicoProcessoService;
+    }
 
     @PostMapping("/historico")
     @SecurityRequirement(name = "Bearer")

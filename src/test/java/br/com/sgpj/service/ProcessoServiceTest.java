@@ -22,6 +22,7 @@ import br.com.sgpj.entity.Processo.SiglaTribunal;
 import br.com.sgpj.entity.Processo.TipoAlteracao;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.entity.documentos.Documento;
+import br.com.sgpj.exception.AcessoNegadoException;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
 import br.com.sgpj.repository.ClienteRepository;
 import br.com.sgpj.repository.DocumentoRepository;
@@ -31,6 +32,7 @@ import br.com.sgpj.repository.PrioridadeRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.ProcessoDocumentoRepository;
 import br.com.sgpj.repository.SiglaTribunalRepository;
+import br.com.sgpj.security.AuthorizationUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -54,8 +56,9 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -75,6 +78,7 @@ class ProcessoServiceTest {
     @Mock private HistoricoProcessoRepository historicoProcessoRepository;
     @Mock private DocumentoRepository documentoRepository;
     @Mock private ProcessoDocumentoRepository processoDocumentoRepository;
+    @Mock private AuthorizationUtil authorizationUtil;
 
     private ProcessoService service;
 
@@ -90,7 +94,8 @@ class ProcessoServiceTest {
                 clienteRepository,
                 historicoProcessoRepository,
                 documentoRepository,
-                processoDocumentoRepository
+                processoDocumentoRepository,
+                authorizationUtil
         );
     }
 
@@ -334,6 +339,7 @@ class ProcessoServiceTest {
         void deveBuscarPorIdComHistorico() {
             ProcessoApp processo = criarProcessoBase(30L, true);
             HistoricoProcesso historico = criarHistoricoProcesso(70L, processo);
+            doNothing().when(authorizationUtil).verificarAcessoProcesso(30L);
             when(processoAppRepository.findById(30L)).thenReturn(Optional.of(processo));
             when(historicoProcessoRepository.findByProcessoApp(processo)).thenReturn(List.of(historico));
 
@@ -348,15 +354,19 @@ class ProcessoServiceTest {
                     () -> assertEquals(1, response.historicoProcessoResponses().size()),
                     () -> assertEquals("Mudanca de fase", response.historicoProcessoResponses().get(0).descricaoAlteracao())
             );
+            
+            verify(authorizationUtil, times(1)).verificarAcessoProcesso(30L);
         }
 
         @Test
         @DisplayName("Deve tratar solicitação pendente como processo não encontrado")
         void deveTratarSolicitacaoPendenteComoProcessoNaoEncontrado() {
             ProcessoApp solicitacaoPendente = criarProcessoSolicitacao(31L, false);
+            doNothing().when(authorizationUtil).verificarAcessoProcesso(31L);
             when(processoAppRepository.findById(31L)).thenReturn(Optional.of(solicitacaoPendente));
 
             assertThrows(ObjetoNaoEncontradoException.class, () -> service.buscarPorId(31L));
+            verify(authorizationUtil, times(1)).verificarAcessoProcesso(31L);
             verifyNoInteractions(historicoProcessoRepository);
         }
 
@@ -364,6 +374,7 @@ class ProcessoServiceTest {
         @DisplayName("Deve permitir buscar solicitação aceita como processo")
         void devePermitirBuscarSolicitacaoAceitaComoProcesso() {
             ProcessoApp solicitacaoAceita = criarProcessoSolicitacao(32L, true);
+            doNothing().when(authorizationUtil).verificarAcessoProcesso(32L);
             when(processoAppRepository.findById(32L)).thenReturn(Optional.of(solicitacaoAceita));
             when(historicoProcessoRepository.findByProcessoApp(solicitacaoAceita)).thenReturn(List.of());
 
@@ -374,6 +385,8 @@ class ProcessoServiceTest {
                     () -> assertEquals(solicitacaoAceita.getCliente().getId(), response.clienteId()),
                     () -> assertEquals("10108901220228260292", response.processoApi().numeroCnj())
             );
+            
+            verify(authorizationUtil, times(1)).verificarAcessoProcesso(32L);
         }
 
         @Test
@@ -381,6 +394,7 @@ class ProcessoServiceTest {
         void deveBuscarPorClienteId() {
             Cliente cliente = criarCliente(2L, "Cliente Teste");
             ProcessoApp processo = criarProcessoBase(40L, true);
+            doNothing().when(authorizationUtil).verificarAcessoCliente(2L);
             when(clienteRepository.findById(2L)).thenReturn(Optional.of(cliente));
             when(processoAppRepository.findByCliente(cliente)).thenReturn(List.of(processo));
 
@@ -391,6 +405,8 @@ class ProcessoServiceTest {
                     () -> assertEquals(cliente.getId(), response.get(0).clienteId()),
                     () -> assertEquals("10108901220228260292", response.get(0).numeroProcesso())
             );
+            
+            verify(authorizationUtil, times(1)).verificarAcessoCliente(2L);
         }
 
         @Test
@@ -399,6 +415,7 @@ class ProcessoServiceTest {
             Cliente cliente = criarCliente(2L, "Cliente Teste");
             ProcessoApp solicitacaoPendente = criarProcessoSolicitacao(41L, false);
             ProcessoApp solicitacaoAceita = criarProcessoSolicitacao(42L, true);
+            doNothing().when(authorizationUtil).verificarAcessoCliente(2L);
             when(clienteRepository.findById(2L)).thenReturn(Optional.of(cliente));
             when(processoAppRepository.findByCliente(cliente)).thenReturn(List.of(solicitacaoPendente, solicitacaoAceita));
 
@@ -408,6 +425,8 @@ class ProcessoServiceTest {
                     () -> assertEquals(1, response.size()),
                     () -> assertEquals(42L, response.get(0).id())
             );
+            
+            verify(authorizationUtil, times(1)).verificarAcessoCliente(2L);
         }
 
         @Test
@@ -528,6 +547,7 @@ class ProcessoServiceTest {
             pd.setAnexadoPorUsuario(usuario);
             pd.setAnexadoEm(LocalDateTime.of(2026, 1, 1, 10, 0));
 
+            doNothing().when(authorizationUtil).verificarAcessoProcesso(10L);
             when(processoDocumentoRepository.findByProcessoAppId(10L)).thenReturn(List.of(pd));
 
             List<ProcessoDocumentoResponse> result = service.listarDocumentosDoProcesso(10L);
@@ -539,16 +559,21 @@ class ProcessoServiceTest {
                     () -> assertEquals(1L, result.get(0).anexadoPorUsuarioId()),
                     () -> assertEquals("Usuario Responsavel", result.get(0).anexadoPorUsuarioNome())
             );
+            
+            verify(authorizationUtil, times(1)).verificarAcessoProcesso(10L);
         }
 
         @Test
         @DisplayName("Deve retornar lista vazia quando processo sem documentos")
         void deveRetornarListaVaziaQuandoSemDocumentos() {
+            doNothing().when(authorizationUtil).verificarAcessoProcesso(10L);
             when(processoDocumentoRepository.findByProcessoAppId(10L)).thenReturn(List.of());
 
             List<ProcessoDocumentoResponse> result = service.listarDocumentosDoProcesso(10L);
 
             assertTrue(result.isEmpty());
+            
+            verify(authorizationUtil, times(1)).verificarAcessoProcesso(10L);
         }
     }
 

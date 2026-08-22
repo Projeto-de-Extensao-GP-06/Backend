@@ -69,8 +69,8 @@ public class ProcessoService {
         return ProcessoApiMapper.toEntity(jsonDataJud);
     }
 
-    public ProcessoAppCreateResponse criarProcesso(ProcessoAppCriacaoRequest novoProcesso) {
-        Usuario usuarioResponsavel = usuarioPersistenciaAdapter.buscarUsuarioPorId(novoProcesso.usuarioResponsavelId());
+    public ProcessoAppCreateResponse criarProcesso(ProcessoAppCriacaoRequest novoProcesso, Usuario usuarioAutenticado) {
+        Usuario usuarioResponsavel = usuarioAutenticado;
         Prioridade prioridade = prioridadeRepository.findById(novoProcesso.prioridadeId())
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Prioridade nao encontrada para o ID: " + novoProcesso.prioridadeId()));
         FaseProcesso faseProcesso = faseProcessoRepository.findById(novoProcesso.faseProcessoId())

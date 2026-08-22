@@ -51,6 +51,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -152,7 +153,6 @@ class ProcessoServiceTest {
             FaseProcesso faseProcesso = new FaseProcesso(4L, "Inicial");
             SiglaTribunal siglaTribunal = new SiglaTribunal(5L, "TJSP");
             ProcessoAppCriacaoRequest request = new ProcessoAppCriacaoRequest(
-                    usuario.getId(),
                     cliente.getId(),
                     "Descricao do caso com tamanho suficiente",
                     "Observacao do processo com tamanho suficiente",
@@ -164,7 +164,6 @@ class ProcessoServiceTest {
                     2500.0
             );
 
-            when(usuarioPersistenciaAdapter.buscarUsuarioPorId(1L)).thenReturn(usuario);
             when(clienteRepository.findById(2L)).thenReturn(Optional.of(cliente));
             when(prioridadeRepository.findById(3L)).thenReturn(Optional.of(prioridade));
             when(faseProcessoRepository.findById(4L)).thenReturn(Optional.of(faseProcesso));
@@ -174,7 +173,7 @@ class ProcessoServiceTest {
             when(processoAppRepository.save(any(ProcessoApp.class)))
                     .thenAnswer(invocation -> invocation.getArgument(0));
 
-            ProcessoAppCreateResponse response = service.criarProcesso(request);
+            ProcessoAppCreateResponse response = service.criarProcesso(request, usuario);
 
             ArgumentCaptor<ProcessoApp> captor = ArgumentCaptor.forClass(ProcessoApp.class);
             verify(processoAppRepository).save(captor.capture());
@@ -201,6 +200,127 @@ class ProcessoServiceTest {
                     () -> assertEquals("10108901220228260292", response.processoApi().numeroCnj()),
                     () -> assertEquals(2, response.processoApi().movimentacoes().size())
             );
+        }
+
+        @Test
+        @DisplayName("Deve usar usuario autenticado como responsavel")
+        void deveUsarUsuarioAutenticadoComoResponsavel() {
+            Usuario usuarioAutenticado = criarUsuario(5L, "Usuario Autenticado");
+            Cliente cliente = criarCliente(2L, "Cliente Teste");
+            Prioridade prioridade = new Prioridade(3L, "Alta");
+            FaseProcesso faseProcesso = new FaseProcesso(4L, "Inicial");
+            SiglaTribunal siglaTribunal = new SiglaTribunal(5L, "TJSP");
+            ProcessoAppCriacaoRequest request = new ProcessoAppCriacaoRequest(
+                    cliente.getId(),
+                    "Descricao do caso com tamanho suficiente",
+                    "Observacao do processo com tamanho suficiente",
+                    prioridade.getId(),
+                    faseProcesso.getId(),
+                    LocalDateTime.of(2026, 5, 28, 10, 0),
+                    siglaTribunal.getId(),
+                    "10108901220228260292",
+                    2500.0
+            );
+
+            when(clienteRepository.findById(2L)).thenReturn(Optional.of(cliente));
+            when(prioridadeRepository.findById(3L)).thenReturn(Optional.of(prioridade));
+            when(faseProcessoRepository.findById(4L)).thenReturn(Optional.of(faseProcesso));
+            when(siglaTribunalRepository.findById(5L)).thenReturn(Optional.of(siglaTribunal));
+            when(dataJudAdapter.buscarPorNumeroDeProcesso("10108901220228260292", "TJSP"))
+                    .thenReturn(jsonDataJud());
+            when(processoAppRepository.save(any(ProcessoApp.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
+
+            ProcessoAppCreateResponse response = service.criarProcesso(request, usuarioAutenticado);
+
+            ArgumentCaptor<ProcessoApp> captor = ArgumentCaptor.forClass(ProcessoApp.class);
+            verify(processoAppRepository).save(captor.capture());
+
+            ProcessoApp salvo = captor.getValue();
+            assertEquals(usuarioAutenticado, salvo.getUsuarioResponsavel());
+            assertEquals(usuarioAutenticado.getId(), response.usuarioResponsavelId());
+        }
+
+        @Test
+        @DisplayName("Deve ignorar tentativa de falsificar usuario responsavel")
+        void deveIgnorarTentativaDeFalsificarUsuarioResponsavel() {
+            Usuario usuarioAutenticado = criarUsuario(5L, "Usuario Autenticado");
+            Usuario usuarioFalsificado = criarUsuario(99L, "Usuario Falsificado");
+            Cliente cliente = criarCliente(2L, "Cliente Teste");
+            Prioridade prioridade = new Prioridade(3L, "Alta");
+            FaseProcesso faseProcesso = new FaseProcesso(4L, "Inicial");
+            SiglaTribunal siglaTribunal = new SiglaTribunal(5L, "TJSP");
+            ProcessoAppCriacaoRequest request = new ProcessoAppCriacaoRequest(
+                    cliente.getId(),
+                    "Descricao do caso com tamanho suficiente",
+                    "Observacao do processo com tamanho suficiente",
+                    prioridade.getId(),
+                    faseProcesso.getId(),
+                    LocalDateTime.of(2026, 5, 28, 10, 0),
+                    siglaTribunal.getId(),
+                    "10108901220228260292",
+                    2500.0
+            );
+
+            when(clienteRepository.findById(2L)).thenReturn(Optional.of(cliente));
+            when(prioridadeRepository.findById(3L)).thenReturn(Optional.of(prioridade));
+            when(faseProcessoRepository.findById(4L)).thenReturn(Optional.of(faseProcesso));
+            when(siglaTribunalRepository.findById(5L)).thenReturn(Optional.of(siglaTribunal));
+            when(dataJudAdapter.buscarPorNumeroDeProcesso("10108901220228260292", "TJSP"))
+                    .thenReturn(jsonDataJud());
+            when(processoAppRepository.save(any(ProcessoApp.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
+
+            ProcessoAppCreateResponse response = service.criarProcesso(request, usuarioAutenticado);
+
+            ArgumentCaptor<ProcessoApp> captor = ArgumentCaptor.forClass(ProcessoApp.class);
+            verify(processoAppRepository).save(captor.capture());
+
+            ProcessoApp salvo = captor.getValue();
+            assertNotEquals(usuarioFalsificado, salvo.getUsuarioResponsavel());
+            assertEquals(usuarioAutenticado, salvo.getUsuarioResponsavel());
+            assertEquals(usuarioAutenticado.getId(), response.usuarioResponsavelId());
+            assertNotEquals(usuarioFalsificado.getId(), response.usuarioResponsavelId());
+            
+            verifyNoInteractions(usuarioPersistenciaAdapter);
+        }
+
+        @Test
+        @DisplayName("Deve criar processo sem numero do processo")
+        void deveCriarProcessoSemNumeroDoProcesso() {
+            Usuario usuarioAutenticado = criarUsuario(5L, "Usuario Autenticado");
+            Cliente cliente = criarCliente(2L, "Cliente Teste");
+            Prioridade prioridade = new Prioridade(3L, "Alta");
+            FaseProcesso faseProcesso = new FaseProcesso(4L, "Inicial");
+            SiglaTribunal siglaTribunal = new SiglaTribunal(5L, "TJSP");
+            ProcessoAppCriacaoRequest request = new ProcessoAppCriacaoRequest(
+                    cliente.getId(),
+                    "Descricao do caso com tamanho suficiente",
+                    "Observacao do processo com tamanho suficiente",
+                    prioridade.getId(),
+                    faseProcesso.getId(),
+                    LocalDateTime.of(2026, 5, 28, 10, 0),
+                    siglaTribunal.getId(),
+                    null,
+                    2500.0
+            );
+
+            when(clienteRepository.findById(2L)).thenReturn(Optional.of(cliente));
+            when(prioridadeRepository.findById(3L)).thenReturn(Optional.of(prioridade));
+            when(faseProcessoRepository.findById(4L)).thenReturn(Optional.of(faseProcesso));
+            when(siglaTribunalRepository.findById(5L)).thenReturn(Optional.of(siglaTribunal));
+            when(processoAppRepository.save(any(ProcessoApp.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
+
+            ProcessoAppCreateResponse response = service.criarProcesso(request, usuarioAutenticado);
+
+            ArgumentCaptor<ProcessoApp> captor = ArgumentCaptor.forClass(ProcessoApp.class);
+            verify(processoAppRepository).save(captor.capture());
+
+            ProcessoApp salvo = captor.getValue();
+            assertEquals(usuarioAutenticado, salvo.getUsuarioResponsavel());
+            assertNull(salvo.getProcessoApi());
+            verifyNoInteractions(dataJudAdapter);
         }
     }
 

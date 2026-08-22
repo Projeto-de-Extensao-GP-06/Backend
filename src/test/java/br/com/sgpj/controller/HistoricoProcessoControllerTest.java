@@ -2,7 +2,9 @@ package br.com.sgpj.controller;
 
 import br.com.sgpj.dto.request.HistoricoProcessoRequest;
 import br.com.sgpj.dto.response.Processos.HistoricoProcessoResponse;
+import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
+import br.com.sgpj.security.AuthorizationUtil;
 import br.com.sgpj.service.HistoricoProcessoService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -28,10 +30,16 @@ class HistoricoProcessoControllerTest {
     private HistoricoProcessoService historicoProcessoService;
 
     @Mock
+    private AuthorizationUtil authorizationUtil;
+
+    @Mock
     private HistoricoProcessoRequest historicoProcessoRequest;
 
     @Mock
     private HistoricoProcessoResponse historicoProcessoResponse;
+
+    @Mock
+    private Usuario usuario;
 
     @InjectMocks
     private HistoricoProcessoController historicoProcessoController;
@@ -49,7 +57,8 @@ class HistoricoProcessoControllerTest {
         @Test
         @DisplayName("Deve registrar interação e retornar status 201 quando escopo é válido")
         void deveRegistrarInteracaoComStatus201QuandoEscopoValido() {
-            when(historicoProcessoService.adicionarRegistro(historicoProcessoRequest)).thenReturn(historicoProcessoResponse);
+            when(authorizationUtil.getUsuarioLogado()).thenReturn(usuario);
+            when(historicoProcessoService.adicionarRegistro(historicoProcessoRequest, usuario)).thenReturn(historicoProcessoResponse);
 
             ResponseEntity<HistoricoProcessoResponse> resposta = historicoProcessoController
                     .interacaoProcesso(historicoProcessoRequest);
@@ -57,7 +66,8 @@ class HistoricoProcessoControllerTest {
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.CREATED);
             assertThat(resposta.getBody()).isEqualTo(historicoProcessoResponse);
 
-            verify(historicoProcessoService).adicionarRegistro(historicoProcessoRequest);
+            verify(authorizationUtil).getUsuarioLogado();
+            verify(historicoProcessoService).adicionarRegistro(historicoProcessoRequest, usuario);
         }
     }
 

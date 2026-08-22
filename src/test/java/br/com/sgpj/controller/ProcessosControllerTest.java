@@ -1,6 +1,8 @@
 package br.com.sgpj.controller;
 
 import br.com.sgpj.dto.response.Processos.ProcessoDocumentoResponse;
+import br.com.sgpj.entity.Usuario;
+import br.com.sgpj.security.AuthorizationUtil;
 import br.com.sgpj.service.ProcessoService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -31,12 +33,14 @@ import static org.mockito.Mockito.*;
 class ProcessosControllerTest {
 
     @Mock private ProcessoService processoService;
+    @Mock private AuthorizationUtil authorizationUtil;
     @Mock private ProcessoAppCriacaoRequest processoAppCriacaoRequest;
     @Mock private ProcessoAppUpdateRequest processoAppUpdateRequest;
     @Mock private ProcessoAppCreateResponse processoAppCreateResponse;
     @Mock private ProcessoAppUpdateResponse processoAppUpdateResponse;
     @Mock private ProcessoAppResponse processoAppResponse;
     @Mock private ProcessoAppMiniResponse processoAppMiniResponse;
+    @Mock private Usuario usuario;
     @InjectMocks private ProcessosController controller;
 
     private ProcessoDocumentoResponse docResponse;
@@ -63,14 +67,16 @@ class ProcessosControllerTest {
         @Test
         @DisplayName("Deve criar processo e retornar status 201 quando escopo é válido")
         void deveCriarProcessoComStatus201QuandoEscopoValido() {
-            when(processoService.criarProcesso(processoAppCriacaoRequest)).thenReturn(processoAppCreateResponse);
+            when(authorizationUtil.getUsuarioLogado()).thenReturn(usuario);
+            when(processoService.criarProcesso(processoAppCriacaoRequest, usuario)).thenReturn(processoAppCreateResponse);
 
             ResponseEntity<ProcessoAppCreateResponse> resposta = controller.novoProcesso(processoAppCriacaoRequest);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.CREATED);
             assertThat(resposta.getBody()).isEqualTo(processoAppCreateResponse);
 
-            verify(processoService).criarProcesso(processoAppCriacaoRequest);
+            verify(authorizationUtil).getUsuarioLogado();
+            verify(processoService).criarProcesso(processoAppCriacaoRequest, usuario);
         }
     }
 

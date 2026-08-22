@@ -1,5 +1,6 @@
 package br.com.sgpj.adapter.api;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -11,11 +12,14 @@ import java.util.Map;
 public class DataJudAdapter {
 
     private final RestClient restClient;
+    private final String dataJudApiKey;
 
-    public DataJudAdapter(RestClient restClient) {
-        this.restClient = RestClient.builder()
-                .baseUrl("https://api-publica.datajud.cnj.jus.br")
-                .build();
+    public DataJudAdapter(
+            RestClient restClient,
+            @Value("${datajud.api-key}") String dataJudApiKey
+    ) {
+        this.restClient = restClient;
+        this.dataJudApiKey = dataJudApiKey;
     }
 
 
@@ -34,7 +38,7 @@ public class DataJudAdapter {
 
             return restClient.post()
                     .uri(endpoint)
-                    .header("Authorization", "APIKey cDZHYzlZa0JadVREZDJCendQbXY6SkJlTzNjLV9TRENyQk1RdnFKZGRQdw==")
+                    .header("Authorization", "APIKey " + dataJudApiKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(body)
                     .retrieve()

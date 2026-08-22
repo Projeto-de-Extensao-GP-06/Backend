@@ -3,6 +3,7 @@ package br.com.sgpj.service;
 import br.com.sgpj.adapter.database.OtpPersistenciaAdapter;
 import br.com.sgpj.entity.Otp;
 import br.com.sgpj.exception.LimiteTentativasExcedidoException;
+import br.com.sgpj.security.OtpHashUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,26 +25,37 @@ class OtpServiceTest {
     @Mock
     private OtpPersistenciaAdapter otpPersistenciaAdapter;
 
+    @Mock
+    private OtpHashUtil otpHashUtil;
+
     @InjectMocks
     private OtpService otpService;
 
     private static final String EMAIL_TESTE = "teste@email.com";
     private static final String OTP_VALIDO = "123456";
+    private static final String HASH_OTP_VALIDO = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
 
     @Test
     @DisplayName("Deve gerar OTP com 6 dígitos")
     void deveGerarOtpComSeisDigitos() {
+        // Given
+        when(otpHashUtil.hashOtp(any(String.class))).thenReturn(HASH_OTP_VALIDO);
+
         // When
         String otp = otpService.generateOtp(EMAIL_TESTE);
 
         // Then
         assertEquals(6, otp.length());
         assertTrue(otp.matches("\\d{6}"));
+        verify(otpHashUtil, times(1)).hashOtp(otp);
     }
 
     @Test
     @DisplayName("Deve salvar OTP ao gerar")
     void deveSalvarOtpAoGerar() {
+        // Given
+        when(otpHashUtil.hashOtp(any(String.class))).thenReturn(HASH_OTP_VALIDO);
+
         // When
         otpService.generateOtp(EMAIL_TESTE);
 
@@ -54,6 +66,9 @@ class OtpServiceTest {
     @Test
     @DisplayName("Deve gerar OTP com tempo de expiração de 15 minutos")
     void deveGerarOtpComTempoExpiracao15Minutos() {
+        // Given
+        when(otpHashUtil.hashOtp(any(String.class))).thenReturn(HASH_OTP_VALIDO);
+
         // When
         otpService.generateOtp(EMAIL_TESTE);
 
@@ -72,14 +87,16 @@ class OtpServiceTest {
         // Given
         Otp otp = mock(Otp.class);
         when(otp.isExpired()).thenReturn(false);
-        when(otp.getOtp()).thenReturn(OTP_VALIDO);
+        when(otp.getOtp()).thenReturn(HASH_OTP_VALIDO);
         when(otpPersistenciaAdapter.findByEmail(EMAIL_TESTE)).thenReturn(otp);
+        when(otpHashUtil.verifyOtp(OTP_VALIDO, HASH_OTP_VALIDO)).thenReturn(true);
 
         // When
         boolean resultado = otpService.isOtpValid(EMAIL_TESTE, OTP_VALIDO);
 
         // Then
         assertTrue(resultado);
+        verify(otpHashUtil, times(1)).verifyOtp(OTP_VALIDO, HASH_OTP_VALIDO);
         verify(otpPersistenciaAdapter, times(1)).deleteByEmail(EMAIL_TESTE);
     }
 
@@ -97,6 +114,7 @@ class OtpServiceTest {
         // Then
         assertFalse(resultado);
         verify(otpPersistenciaAdapter, times(1)).deleteByEmail(EMAIL_TESTE);
+        verifyNoInteractions(otpHashUtil);
     }
 
     @Test
@@ -105,15 +123,17 @@ class OtpServiceTest {
         // Given
         Otp otp = mock(Otp.class);
         when(otp.isExpired()).thenReturn(false);
-        when(otp.getOtp()).thenReturn(OTP_VALIDO);
+        when(otp.getOtp()).thenReturn(HASH_OTP_VALIDO);
         when(otp.excedeuLimiteDeTentativas(3)).thenReturn(false);
         when(otpPersistenciaAdapter.findByEmail(EMAIL_TESTE)).thenReturn(otp);
+        when(otpHashUtil.verifyOtp("999999", HASH_OTP_VALIDO)).thenReturn(false);
 
         // When
         boolean resultado = otpService.isOtpValid(EMAIL_TESTE, "999999");
 
         // Then
         assertFalse(resultado);
+        verify(otpHashUtil, times(1)).verifyOtp("999999", HASH_OTP_VALIDO);
         verify(otp, times(1)).registrarTentativaIncorreta();
         verify(otpPersistenciaAdapter, times(1)).save(otp);
         verify(otpPersistenciaAdapter, never()).deleteByEmail(EMAIL_TESTE);
@@ -125,9 +145,10 @@ class OtpServiceTest {
         // Given
         Otp otp = mock(Otp.class);
         when(otp.isExpired()).thenReturn(false);
-        when(otp.getOtp()).thenReturn(OTP_VALIDO);
+        when(otp.getOtp()).thenReturn(HASH_OTP_VALIDO);
         when(otp.excedeuLimiteDeTentativas(3)).thenReturn(false);
         when(otpPersistenciaAdapter.findByEmail(EMAIL_TESTE)).thenReturn(otp);
+        when(otpHashUtil.verifyOtp("999999", HASH_OTP_VALIDO)).thenReturn(false);
 
         // When
         otpService.isOtpValid(EMAIL_TESTE, "999999");
@@ -142,9 +163,10 @@ class OtpServiceTest {
         // Given
         Otp otp = mock(Otp.class);
         when(otp.isExpired()).thenReturn(false);
-        when(otp.getOtp()).thenReturn(OTP_VALIDO);
+        when(otp.getOtp()).thenReturn(HASH_OTP_VALIDO);
         when(otp.excedeuLimiteDeTentativas(3)).thenReturn(true);
         when(otpPersistenciaAdapter.findByEmail(EMAIL_TESTE)).thenReturn(otp);
+        when(otpHashUtil.verifyOtp("999999", HASH_OTP_VALIDO)).thenReturn(false);
 
         // When/Then
         LimiteTentativasExcedidoException exception = assertThrows(
@@ -163,9 +185,10 @@ class OtpServiceTest {
         // Given
         Otp otp = mock(Otp.class);
         when(otp.isExpired()).thenReturn(false);
-        when(otp.getOtp()).thenReturn(OTP_VALIDO);
+        when(otp.getOtp()).thenReturn(HASH_OTP_VALIDO);
         when(otp.excedeuLimiteDeTentativas(3)).thenReturn(true);
         when(otpPersistenciaAdapter.findByEmail(EMAIL_TESTE)).thenReturn(otp);
+        when(otpHashUtil.verifyOtp("999999", HASH_OTP_VALIDO)).thenReturn(false);
 
         // When/Then
         assertThrows(
@@ -182,14 +205,16 @@ class OtpServiceTest {
         // Given
         Otp otp = mock(Otp.class);
         when(otp.isExpired()).thenReturn(false);
-        when(otp.getOtp()).thenReturn(OTP_VALIDO);
+        when(otp.getOtp()).thenReturn(HASH_OTP_VALIDO);
         when(otpPersistenciaAdapter.findByEmail(EMAIL_TESTE)).thenReturn(otp);
+        when(otpHashUtil.verifyOtp(OTP_VALIDO, HASH_OTP_VALIDO)).thenReturn(true);
 
         // When
         boolean resultado = otpService.isOtpValid(EMAIL_TESTE, "  " + OTP_VALIDO + "  ");
 
         // Then
         assertTrue(resultado);
+        verify(otpHashUtil, times(1)).verifyOtp(OTP_VALIDO, HASH_OTP_VALIDO);
         verify(otpPersistenciaAdapter, times(1)).deleteByEmail(EMAIL_TESTE);
     }
 
@@ -199,15 +224,17 @@ class OtpServiceTest {
         // Given
         Otp otp = mock(Otp.class);
         when(otp.isExpired()).thenReturn(false);
-        when(otp.getOtp()).thenReturn(OTP_VALIDO);
+        when(otp.getOtp()).thenReturn(HASH_OTP_VALIDO);
         when(otp.excedeuLimiteDeTentativas(3)).thenReturn(false);
         when(otpPersistenciaAdapter.findByEmail(EMAIL_TESTE)).thenReturn(otp);
+        when(otpHashUtil.verifyOtp(null, HASH_OTP_VALIDO)).thenReturn(false);
 
         // When
         boolean resultado = otpService.isOtpValid(EMAIL_TESTE, null);
 
         // Then
         assertFalse(resultado);
+        verify(otpHashUtil, times(1)).verifyOtp(null, HASH_OTP_VALIDO);
         verify(otp, times(1)).registrarTentativaIncorreta();
     }
 

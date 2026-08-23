@@ -92,6 +92,8 @@ public class SecurityConfiguracao {
             "/usuarios/enviar-redefinir-senha-otp/**",
             "/usuarios/enviar-definir-senha-otp/**",
             "/usuarios/validar-otp/**",
+            "/api-onedrive/auth/callback",
+            "/login/oauth2/code/azure",
             "/error/**"
     };
 

@@ -5,11 +5,14 @@ import br.com.sgpj.dto.response.UsuarioListarResponse;
 import br.com.sgpj.dto.response.UsuarioSessaoResponse;
 import br.com.sgpj.dto.response.UsuarioTokenResponse;
 import br.com.sgpj.exception.UsuarioAutoExclusaoException;
+import br.com.sgpj.security.IpAddressUtil;
+import br.com.sgpj.security.RateLimiter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.mapper.UsuarioMapper;
 import br.com.sgpj.service.UsuarioService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,9 +37,11 @@ public class UsuarioController {
     private long jwtValidity;
 
     private final UsuarioService usuarioService;
+    private final RateLimiter rateLimiter;
 
-    public UsuarioController(UsuarioService usuarioService) {
+    public UsuarioController(UsuarioService usuarioService, RateLimiter rateLimiter) {
         this.usuarioService = usuarioService;
+        this.rateLimiter = rateLimiter;
     }
 
     @PostMapping
@@ -53,7 +58,11 @@ public class UsuarioController {
     @PostMapping("/login")
     public ResponseEntity<UsuarioSessaoResponse> login(
             @RequestBody @Valid UsuarioLoginRequest usuarioLoginRequestDto,
-            HttpServletResponse response) {
+            HttpServletResponse response,
+            HttpServletRequest httpRequest) {
+
+        String identifier = IpAddressUtil.createRateLimitIdentifier(httpRequest, usuarioLoginRequestDto.email());
+        rateLimiter.checkLoginRateLimit(identifier);
 
         final Usuario usuario = UsuarioMapper.toEntity(usuarioLoginRequestDto);
         UsuarioTokenResponse autenticado = usuarioService.autenticar(usuario);
@@ -158,14 +167,22 @@ public class UsuarioController {
 
     @PostMapping("/enviar-redefinir-senha-otp")
     @PreAuthorize("permitAll()")
-    public ResponseEntity<String> enviarRedefinirSenhaOtp(@RequestBody EnviarOtpRequest request) {
+    public ResponseEntity<String> enviarRedefinirSenhaOtp(@RequestBody EnviarOtpRequest request,
+                                                          HttpServletRequest httpRequest) {
+        String identifier = IpAddressUtil.createRateLimitIdentifier(httpRequest, request.email());
+        rateLimiter.checkOtpRateLimit(identifier);
+        
         usuarioService.enviarRedefinirSenhaOtp(request.email());
         return ResponseEntity.ok("Se o e-mail estiver cadastrado, um código será enviado em instantes.");
     }
 
     @PostMapping("/enviar-definir-senha-otp")
     @PreAuthorize("permitAll()")
-    public ResponseEntity<String> enviarDefinirSenhaOtp(@RequestBody EnviarOtpRequest request) {
+    public ResponseEntity<String> enviarDefinirSenhaOtp(@RequestBody EnviarOtpRequest request,
+                                                        HttpServletRequest httpRequest) {
+        String identifier = IpAddressUtil.createRateLimitIdentifier(httpRequest, request.email());
+        rateLimiter.checkOtpRateLimit(identifier);
+        
         usuarioService.enviarDefinirSenhaOtp(request.email());
         return ResponseEntity.ok("Se o e-mail estiver cadastrado, um código será enviado em instantes.");
     }
@@ -173,7 +190,11 @@ public class UsuarioController {
     @PostMapping("/validar-otp")
     @PreAuthorize("permitAll()")
     public ResponseEntity<String> validateOtp(@RequestBody ValidarOtpRequest request,
-                                              HttpServletResponse response) {
+                                              HttpServletResponse response,
+                                              HttpServletRequest httpRequest) {
+        String identifier = IpAddressUtil.createRateLimitIdentifier(httpRequest, request.email());
+        rateLimiter.checkOtpRateLimit(identifier);
+        
         if (usuarioService.validarOtp(request)) {
             UsuarioTokenResponse autenticado = usuarioService.autenticarOtp(request);
             adicionarCookie(response, autenticado.token(), Duration.ofSeconds(900));

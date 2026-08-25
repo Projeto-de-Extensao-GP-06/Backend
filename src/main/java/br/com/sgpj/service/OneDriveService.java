@@ -11,10 +11,7 @@ import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.documentos.Documento;
 import br.com.sgpj.entity.documentos.TipoDocumento;
 import br.com.sgpj.entity.Usuario;
-import br.com.sgpj.exception.CaminhoJaExisteException;
-import br.com.sgpj.exception.ClienteNaoEncontradoException;
-import br.com.sgpj.exception.ObjetoNaoEncontradoException;
-import br.com.sgpj.exception.OneDriveErroException;
+import br.com.sgpj.exception.*;
 import br.com.sgpj.mapper.OneDriveMapper;
 import br.com.sgpj.repository.*;
 import com.microsoft.graph.core.models.UploadResult;
@@ -26,6 +23,7 @@ import com.microsoft.graph.serviceclient.GraphServiceClient;
 import com.microsoft.kiota.authentication.AccessTokenProvider;
 import com.microsoft.kiota.authentication.AllowedHostsValidator;
 import com.microsoft.kiota.authentication.BaseBearerTokenAuthenticationProvider;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
@@ -69,19 +67,19 @@ public class OneDriveService {
     private Usuario obterUsuarioLogado() {
         String email = usuarioAutenticacaoAdapter.obterEmailUsuarioLogado();
         return usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new OneDriveErroException("Usuário logado não encontrado: " + email));
+                .orElseThrow(() -> new OneDriveNotFoundException("Usuário logado não encontrado: " + email));
     }
 
     private CaminhoPadraoDeArmazenamento obterCaminho(Long caminhoDeArmazenamentoId) {
         return caminhoPadraoDeArmazenamentoRepository.findById(caminhoDeArmazenamentoId)
-                .orElseThrow(() -> new OneDriveErroException("Caminho de armazenamento não encontrado com ID: " + caminhoDeArmazenamentoId));
+                .orElseThrow(() -> new OneDriveNotFoundException("Caminho de armazenamento não encontrado com ID: " + caminhoDeArmazenamentoId));
     }
 
     private Documento registrarDocumento(OneDriveItemResponse item, Long tipoDocumentoId, CaminhoPadraoDeArmazenamento caminhoDeArmazenamento, Long processoAppId) {
         Usuario usuario = obterUsuarioLogado();
 
         TipoDocumento tipo = tipoDocumentoRepository.findById(tipoDocumentoId)
-                .orElseThrow(() -> new OneDriveErroException("Tipo de documento não encontrado com ID: " + tipoDocumentoId));
+                .orElseThrow(() -> new OneDriveNotFoundException("Tipo de documento não encontrado com ID: " + tipoDocumentoId));
 
         Documento documento = documentoRepository.findByOnedriveItemId(item.id())
                 .orElse(new Documento());
@@ -108,7 +106,7 @@ public class OneDriveService {
 
         if (processoAppId != null) {
             ProcessoApp processo = processoAppRepository.findById(processoAppId)
-                    .orElseThrow(() -> new ObjetoNaoEncontradoException("Processo não encontrado: " + processoAppId));
+                    .orElseThrow(() -> new OneDriveNotFoundException("Processo não encontrado: " + processoAppId));
 
             ProcessoDocumentoId pdId = new ProcessoDocumentoId(documentoSalvo.getId(), processoAppId);
             ProcessoDocumento pd = new ProcessoDocumento();

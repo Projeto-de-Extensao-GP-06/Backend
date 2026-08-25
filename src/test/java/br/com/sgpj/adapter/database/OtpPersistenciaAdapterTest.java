@@ -100,13 +100,13 @@ class OtpPersistenciaAdapterTest {
         );
 
         assertTrue(exception.getMessage().contains("Usuário não encontrado"));
-        assertTrue(exception.getMessage().contains(EMAIL_TESTE));
+        assertFalse(exception.getMessage().contains(EMAIL_TESTE), "Email não deve estar exposto na mensagem de erro");
         verify(repository).findById(EMAIL_TESTE);
     }
 
     @Test
-    @DisplayName("Deve incluir email na mensagem de exceção quando não encontrado")
-    void deveIncluirEmailNaMensagemExcecaoQuandoNaoEncontrado() {
+    @DisplayName("Deve não incluir email na mensagem de exceção quando não encontrado - segurança")
+    void deveNaoIncluirEmailNaMensagemExcecaoQuandoNaoEncontrado() {
         // Given
         String emailEspecifico = "usuario@especifico.com";
         when(repository.findById(emailEspecifico)).thenReturn(Optional.empty());
@@ -117,7 +117,8 @@ class OtpPersistenciaAdapterTest {
                 () -> adapter.findByEmail(emailEspecifico)
         );
 
-        assertTrue(exception.getMessage().contains(emailEspecifico));
+        assertFalse(exception.getMessage().contains(emailEspecifico), "Email não deve estar exposto na mensagem de erro");
+        assertFalse(exception.getMessage().contains("@"), "Email não deve estar exposto na mensagem de erro");
     }
 
     @Test

@@ -4,6 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.util.Map;
 
@@ -36,7 +37,19 @@ class GlobalExceptionHandlerOneDriveTest {
         ResponseEntity<Map<String, Object>> resposta = handler.handleUsuarioNaoEncontrado(ex);
 
         assertEquals(HttpStatus.NOT_FOUND.value(), resposta.getStatusCode().value());
-        assertNotNull(resposta.getBody().get("message"));
+        assertEquals("Usuário não encontrado", resposta.getBody().get("message"));
+    }
+
+    @Test
+    @DisplayName("Deve não expor email em UsuarioNaoEncontradoException - segurança")
+    void deveNaoExporEmailEmUsuarioNaoEncontrado() {
+        UsuarioNaoEncontradoException ex = new UsuarioNaoEncontradoException("admin@email.com");
+
+        ResponseEntity<Map<String, Object>> resposta = handler.handleUsuarioNaoEncontrado(ex);
+
+        String mensagem = (String) resposta.getBody().get("message");
+        assertFalse(mensagem.contains("admin@email.com"), "Email não deve estar exposto na mensagem de erro");
+        assertFalse(mensagem.contains("@"), "Email não deve estar exposto na mensagem de erro");
     }
 
     @Test
@@ -48,6 +61,19 @@ class GlobalExceptionHandlerOneDriveTest {
 
         assertEquals(HttpStatus.CONFLICT.value(), resposta.getStatusCode().value());
         assertNotNull(resposta.getBody().get("message"));
+    }
+
+    @Test
+    @DisplayName("Deve não expor email em UsernameNotFoundException - segurança")
+    void deveNaoExporEmailEmUsernameNotFound() {
+        UsernameNotFoundException ex = new UsernameNotFoundException("Usuário admin@email.com não encontrado");
+
+        ResponseEntity<Map<String, Object>> resposta = handler.handleUsernameNotFound(ex);
+
+        String mensagem = (String) resposta.getBody().get("message");
+        assertEquals("Usuário não encontrado", mensagem);
+        assertFalse(mensagem.contains("admin@email.com"), "Email não deve estar exposto na mensagem de erro");
+        assertFalse(mensagem.contains("@"), "Email não deve estar exposto na mensagem de erro");
     }
 }
 

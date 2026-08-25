@@ -7,12 +7,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
@@ -31,15 +34,15 @@ class OneDriveTokenAdapterTest {
     @Mock
     private RestTemplate restTemplate;
 
-    @InjectMocks
     private OneDriveTokenAdapter adapter;
 
     @BeforeEach
     void setup() {
+        adapter = new OneDriveTokenAdapter(tokenRepository, restTemplate);
         ReflectionTestUtils.setField(adapter, "clientId", "fake-client-id");
         ReflectionTestUtils.setField(adapter, "clientSecret", "fake-secret");
         ReflectionTestUtils.setField(adapter, "tenantId", "fake-tenant");
-        ReflectionTestUtils.setField(adapter, "restTemplate", restTemplate);
+        ReflectionTestUtils.setField(adapter, "redirectUri", "http://localhost:8080/login/oauth2/code/azure");
     }
 
     @Test
@@ -114,7 +117,62 @@ class OneDriveTokenAdapterTest {
         when(tokenRepository.findById(1L)).thenReturn(Optional.of(config));
         when(restTemplate.postForObject(anyString(), any(), eq(Map.class))).thenReturn(null);
 
-        assertThrows(OneDriveErroException.class, () -> adapter.getAccessToken());
+        OneDriveErroException ex = assertThrows(OneDriveErroException.class, () -> adapter.getAccessToken());
+        assertTrue(ex.getMessage().contains("Resposta nula"));
+    }
+
+    @Test
+    @DisplayName("Deve trocar authorization code por refresh token e persistir registro")
+    void deveTrocarCodigoPorToken() {
+        when(tokenRepository.findById(1L)).thenReturn(Optional.empty());
+        Map<String, Object> resposta = Map.of(
+                "access_token", "access-token-novo",
+                "refresh_token", "refresh-token-novo",
+                "expires_in", "3600"
+        );
+        when(restTemplate.postForObject(anyString(), any(), eq(Map.class))).thenReturn(resposta);
+
+        adapter.trocarCodigoPorToken("authorization-code");
+
+        verify(tokenRepository).save(argThat(config ->
+                config.getId().equals(1L)
+                        && "refresh-token-novo".equals(config.getRefreshToken())
+                        && config.getDataCriacao() != null
+        ));
+    }
+
+    @Test
+    @DisplayName("Deve orientar reconexao quando refresh token estiver invalido")
+    void deveOrientarReconexaoQuandoRefreshTokenInvalido() {
+        MicrosoftTokenConfig config = new MicrosoftTokenConfig(1L, "refresh-expirado", LocalDateTime.now());
+        when(tokenRepository.findById(1L)).thenReturn(Optional.of(config));
+        when(restTemplate.postForObject(anyString(), any(), eq(Map.class))).thenThrow(httpClientErrorInvalidGrant());
+
+        OneDriveErroException ex = assertThrows(OneDriveErroException.class, () -> adapter.getAccessToken());
+
+        assertTrue(ex.getMessage().contains("Reconecte o OneDrive"));
+    }
+
+    @Test
+    @DisplayName("Deve pedir novo login quando authorization code estiver invalido")
+    void devePedirNovoLoginQuandoAuthorizationCodeInvalido() {
+        when(tokenRepository.findById(1L)).thenReturn(Optional.empty());
+        when(restTemplate.postForObject(anyString(), any(), eq(Map.class))).thenThrow(httpClientErrorInvalidGrant());
+
+        OneDriveErroException ex = assertThrows(OneDriveErroException.class,
+                () -> adapter.trocarCodigoPorToken("authorization-code"));
+
+        assertTrue(ex.getMessage().contains("Inicie o login novamente"));
+    }
+
+    private HttpClientErrorException httpClientErrorInvalidGrant() {
+        String body = "{\"error\":\"invalid_grant\",\"error_description\":\"simulado\"}";
+        return HttpClientErrorException.create(
+                HttpStatus.BAD_REQUEST,
+                "Bad Request",
+                HttpHeaders.EMPTY,
+                body.getBytes(StandardCharsets.UTF_8),
+                StandardCharsets.UTF_8
+        );
     }
 }
-

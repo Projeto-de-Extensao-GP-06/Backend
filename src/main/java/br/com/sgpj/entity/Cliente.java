@@ -20,6 +20,9 @@ public class Cliente {
     @Column(name = "cpf_cnpj", length = 14)
     private String cpfCnpj;
 
+    @Column(name = "is_pf", nullable = false)
+    private Boolean isPF;
+
     @Column(length = 15)
     private String rg;
 
@@ -125,5 +128,8 @@ public class Cliente {
         this.caminhos = caminhos;
     }
 
+    public Boolean getPF() { return isPF; }
+
+    public void setPF(Boolean PF) { isPF = PF; }
 }
 

@@ -71,6 +71,7 @@ class ClienteServiceTest {
         cliente.setId(id);
         cliente.setNomeRazaoSocial(nome);
         cliente.setCpfCnpj(cpfCnpj);
+        cliente.setPF(true);
         cliente.setDataHoraEnvioFormulario(LocalDateTime.of(2026, 5, 16, 10, 30));
         cliente.setDataHoraTransformacaoEmCliente(LocalDateTime.of(2026, 5, 16, 14, 0));
 
@@ -399,7 +400,7 @@ class ClienteServiceTest {
         @DisplayName("Deve criar cliente com sucesso")
         void deveCriarClienteComSucesso() {
             ClienteCriacaoRequest request = new ClienteCriacaoRequest(
-                    "João da Silva", "12345678901", "123456789", 1L, null, null
+                    "João da Silva", "12345678901", true, "123456789", 1L, null, null
             );
 
             StatusCliente statusCliente = new StatusCliente(1L, "Ativo");
@@ -420,7 +421,7 @@ class ClienteServiceTest {
         @DisplayName("Deve lançar exceção quando CPF/CNPJ já existir")
         void deveLancarExcecaoQuandoCpfCnpjJaExistir() {
             ClienteCriacaoRequest request = new ClienteCriacaoRequest(
-                    "João da Silva", "12345678901", "123456789", 1L, null, null
+                    "João da Silva", "12345678901", true, "123456789", 1L, null, null
             );
 
             when(clienteRepository.existsByCpfCnpj("12345678901")).thenReturn(true);
@@ -438,7 +439,7 @@ class ClienteServiceTest {
                     "01001000", "Praça da Sé", "100", "Sé", "São Paulo", "SP", "Sala 101"
             );
             ClienteCriacaoRequest request = new ClienteCriacaoRequest(
-                    "Maria Santos", "98765432100", null, 1L, enderecoReq, null
+                    "Maria Santos", "98765432100", true, null, 1L, enderecoReq, null
             );
 
             StatusCliente statusCliente = new StatusCliente(1L, "Ativo");
@@ -463,7 +464,7 @@ class ClienteServiceTest {
                     "Maria", "maria@email.com", "(11) 99999-9999", "Advogada", true
             );
             ClienteCriacaoRequest request = new ClienteCriacaoRequest(
-                    "Empresa XYZ", "12345678000199", null, 1L, null, List.of(contatoReq)
+                    "Empresa XYZ", "12345678000199", false, null, 1L, null, List.of(contatoReq)
             );
 
             StatusCliente statusCliente = new StatusCliente(1L, "Ativo");
@@ -485,7 +486,7 @@ class ClienteServiceTest {
         @DisplayName("Deve lançar exceção quando status não for encontrado")
         void deveLancarExcecaoQuandoStatusNaoEncontrado() {
             ClienteCriacaoRequest request = new ClienteCriacaoRequest(
-                    "João", "12345678901", null, 999L, null, null
+                    "João", "12345678901", true, null, 999L, null, null
             );
 
             when(clienteRepository.existsByCpfCnpj("12345678901")).thenReturn(false);

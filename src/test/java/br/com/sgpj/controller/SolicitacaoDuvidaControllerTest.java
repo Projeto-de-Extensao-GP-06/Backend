@@ -115,6 +115,7 @@ class SolicitacaoDuvidaControllerTest {
         return new SolicitacaoDuvidaCriacaoRequest(
                 "Maria Silva",
                 "maria@email.com",
+                true,
                 "11999999999",
                 "SP",
                 "10108901220228260292",

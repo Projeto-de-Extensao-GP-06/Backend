@@ -16,6 +16,9 @@ public record ClienteDetalhesResponse(
         @Schema(description = "CPF ou CNPJ do cliente", example = "12345678901")
         String cpfCnpj,
 
+        @Schema(description = "Indica se o cliente é pessoa física (true) ou jurídica (false)", example = "true")
+        Boolean isPF,
+
         @Schema(description = "RG do cliente", example = "123456789")
         String rg,
 

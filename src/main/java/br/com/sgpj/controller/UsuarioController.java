@@ -1,15 +1,18 @@
 package br.com.sgpj.controller;
 
 import br.com.sgpj.dto.request.*;
+import br.com.sgpj.dto.response.RefreshTokenResponse;
 import br.com.sgpj.dto.response.UsuarioListarResponse;
 import br.com.sgpj.dto.response.UsuarioSessaoResponse;
 import br.com.sgpj.dto.response.UsuarioTokenResponse;
 import br.com.sgpj.exception.UsuarioAutoExclusaoException;
+import br.com.sgpj.service.RefreshTokenService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.mapper.UsuarioMapper;
 import br.com.sgpj.service.UsuarioService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,15 +31,21 @@ import java.util.List;
 @Tag(name = "Usuários")
 public class UsuarioController {
 
-    public static final String COOKIE_NOME = "authToken";
+    public static final String ACCESS_TOKEN_COOKIE = "authToken";
+    public static final String REFRESH_TOKEN_COOKIE = "refreshToken";
 
     @Value("${jwt.validity}")
     private long jwtValidity;
 
-    private final UsuarioService usuarioService;
+    @Value("${jwt.refresh.validity}")
+    private long refreshValidity;
 
-    public UsuarioController(UsuarioService usuarioService) {
+    private final UsuarioService usuarioService;
+    private final RefreshTokenService refreshTokenService;
+
+    public UsuarioController(UsuarioService usuarioService, RefreshTokenService refreshTokenService) {
         this.usuarioService = usuarioService;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @PostMapping
@@ -58,7 +67,8 @@ public class UsuarioController {
         final Usuario usuario = UsuarioMapper.toEntity(usuarioLoginRequestDto);
         UsuarioTokenResponse autenticado = usuarioService.autenticar(usuario);
 
-        adicionarCookie(response, autenticado.token(), Duration.ofSeconds(jwtValidity));
+        adicionarCookie(response, ACCESS_TOKEN_COOKIE, autenticado.token(), "/", Duration.ofSeconds(jwtValidity));
+        adicionarCookie(response, REFRESH_TOKEN_COOKIE, autenticado.refreshToken(), "/usuarios/refresh-token", Duration.ofSeconds(refreshValidity));
 
         // Busca o usuário novamente para obter cargo e permissões
         Usuario usuarioComPermissoes = usuarioService.obterPorId(autenticado.id());
@@ -72,8 +82,13 @@ public class UsuarioController {
      * Invalida a sessão do usuário limpando o cookie de autenticação.
      */
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(HttpServletResponse response) {
-        adicionarCookie(response, "", Duration.ZERO);   // expira o token JWT de imediato
+    public ResponseEntity<Void> logout(@CookieValue(name = REFRESH_TOKEN_COOKIE, required = false) String refreshToken,
+            HttpServletResponse response) {
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            refreshTokenService.revogarToken(refreshToken);
+        }
+        adicionarCookie(response, ACCESS_TOKEN_COOKIE, "", "", Duration.ZERO);   // expira o token JWT de imediato
+        adicionarCookie(response, REFRESH_TOKEN_COOKIE, "", "", Duration.ZERO);   // expira o token de refresh de imediato
         return ResponseEntity.noContent().build();
     }
 
@@ -110,7 +125,6 @@ public class UsuarioController {
         return ResponseEntity.ok(usuariosEncontrados);
     }
 
-
     @PutMapping("/{id}")
     @SecurityRequirement(name = "Bearer")
     @PreAuthorize("hasAuthority('EDITAR USUÁRIO') || hasAuthority('TODAS AS PERMISSÕES')")
@@ -119,8 +133,6 @@ public class UsuarioController {
         UsuarioListarResponse usuarioEditado = usuarioService.atualizarUsuario(atualizacao, id);
         return ResponseEntity.status(HttpStatus.OK).body(usuarioEditado);
     }
-
-
 
     /**
      * Cria e adiciona o cookie de autenticação na resposta HTTP.
@@ -133,12 +145,12 @@ public class UsuarioController {
      * @param valor    valor do cookie (token JWT ou vazio para logout)
      * @param duracao  tempo de vida do cookie ({@code Duration.ZERO} para deletar)
      */
-    private void adicionarCookie(HttpServletResponse response, String valor, Duration duracao) {
-        ResponseCookie cookie = ResponseCookie.from(COOKIE_NOME, valor)
+    private void adicionarCookie(HttpServletResponse response, String nome, String valor, String path, Duration duracao) {
+        ResponseCookie cookie = ResponseCookie.from(nome, valor)
                 .httpOnly(true)             // inacessível ao JavaScript
                 .secure(false)              // true em produção (exige HTTPS)
                 .sameSite("Strict")         // bloqueia envio cross-site (mitiga CSRF)
-                .path("/")                  // válido para toda a aplicação
+                .path(path)                  // válido para toda a aplicação
                 .maxAge(duracao)            // expira junto com o token JWT
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
@@ -176,7 +188,7 @@ public class UsuarioController {
                                               HttpServletResponse response) {
         if (usuarioService.validarOtp(request)) {
             UsuarioTokenResponse autenticado = usuarioService.autenticarOtp(request);
-            adicionarCookie(response, autenticado.token(), Duration.ofSeconds(900));
+            adicionarCookie(response, ACCESS_TOKEN_COOKIE, autenticado.token(), "/", Duration.ofSeconds(900));
 
             return ResponseEntity.ok("Código validado com sucesso!");
         } else {
@@ -190,7 +202,7 @@ public class UsuarioController {
     public ResponseEntity<String> definirNovaSenha(@RequestBody DefinirNovaSenhaRequest request,
                                                    HttpServletResponse response) {
         usuarioService.definirNovaSenha(request.senha());
-        adicionarCookie(response, COOKIE_NOME, Duration.ZERO);
+        adicionarCookie(response, ACCESS_TOKEN_COOKIE, "", "", Duration.ZERO);
         return ResponseEntity.ok("Nova senha definida com sucesso!");
     }
 
@@ -199,5 +211,21 @@ public class UsuarioController {
     @SecurityRequirement(name = "Bearer")
     public ResponseEntity<UsuarioListarResponse> reativarUsuario(@PathVariable Long id) {
         return ResponseEntity.ok().body(usuarioService.reativarUsuario(id));
+    }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<Void> refreshToken(@CookieValue(name = REFRESH_TOKEN_COOKIE, required = false) String refreshToken,
+                                             HttpServletResponse response) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        RefreshTokenResponse novosTokens = refreshTokenService.validarERotacionar(refreshToken);
+
+        // Atualiza os dois cookies HttpOnly na resposta
+        adicionarCookie(response, ACCESS_TOKEN_COOKIE, novosTokens.accessToken(), "/", Duration.ofSeconds(jwtValidity));
+        adicionarCookie(response, REFRESH_TOKEN_COOKIE, novosTokens.refreshToken(), "/usuarios/refresh-token", Duration.ofSeconds(refreshValidity));
+
+        return ResponseEntity.ok().build();
     }
 }

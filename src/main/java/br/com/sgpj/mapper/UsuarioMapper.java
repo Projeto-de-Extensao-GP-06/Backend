@@ -43,12 +43,13 @@ public class UsuarioMapper {
     return usuario;
   }
 
-  public static UsuarioTokenResponse toTokenDto(Usuario usuario, String token) {
+  public static UsuarioTokenResponse toTokenDto(Usuario usuario, String token, String refreshToken) {
     return new UsuarioTokenResponse(
             usuario.getId(),
             usuario.getNome(),
             usuario.getEmail(),
-            token);
+            token,
+            refreshToken);
   }
 
   /**

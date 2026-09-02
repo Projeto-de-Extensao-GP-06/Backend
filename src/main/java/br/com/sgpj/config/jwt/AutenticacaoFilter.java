@@ -118,7 +118,7 @@ public class AutenticacaoFilter extends OncePerRequestFilter {
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
             String tokenDoCookie = Arrays.stream(cookies)
-                    .filter(c -> UsuarioController.COOKIE_NOME.equals(c.getName()))
+                    .filter(c -> UsuarioController.ACCESS_TOKEN_COOKIE.equals(c.getName()))
                     .map(Cookie::getValue)
                     .findFirst()
                     .orElse(null);

@@ -4,5 +4,6 @@ public record UsuarioTokenResponse(
         Long id,
         String nome,
         String email,
-        String token
+        String token,
+        String refreshToken
 ) {}

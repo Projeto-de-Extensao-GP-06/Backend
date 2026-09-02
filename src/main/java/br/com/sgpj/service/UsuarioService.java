@@ -16,7 +16,6 @@ import br.com.sgpj.exception.UsuarioInativoException;
 import br.com.sgpj.exception.UsuarioJaAtivoException;
 import br.com.sgpj.mapper.UsuarioMapper;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.User;
@@ -30,13 +29,14 @@ import java.util.List;
 @Service
 public class UsuarioService {
 
-  public UsuarioService(PasswordEncoder passwordEncoder, UsuarioPersistenciaAdapter usuarioPersistenciaAdapter, UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter, OtpService otpService, EmailService emailService, CargoPersistenciaAdapter cargoPersistenciaAdapter) {
+  public UsuarioService(PasswordEncoder passwordEncoder, UsuarioPersistenciaAdapter usuarioPersistenciaAdapter, UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter, OtpService otpService, EmailService emailService, CargoPersistenciaAdapter cargoPersistenciaAdapter, RefreshTokenService refreshTokenService) {
     this.passwordEncoder = passwordEncoder;
     this.usuarioPersistenciaAdapter = usuarioPersistenciaAdapter;
     this.usuarioAutenticacaoAdapter = usuarioAutenticacaoAdapter;
     this.otpService = otpService;
     this.emailService = emailService;
     this.cargoPersistenciaAdapter = cargoPersistenciaAdapter;
+    this.refreshTokenService = refreshTokenService;
   }
 
   private final PasswordEncoder passwordEncoder;
@@ -45,6 +45,7 @@ public class UsuarioService {
   private final OtpService otpService;
   private final EmailService emailService;
   private final CargoPersistenciaAdapter cargoPersistenciaAdapter;
+  private final RefreshTokenService refreshTokenService;
 
   public void criar(UsuarioCriacaoRequest request) {
     if (usuarioPersistenciaAdapter.existeEmail(request.email())) {
@@ -83,8 +84,9 @@ public class UsuarioService {
     usuarioAutenticacaoAdapter.definirContexto(authentication);
 
     final String token = usuarioAutenticacaoAdapter.gerarToken(authentication);
+    final String refreshToken = refreshTokenService.criarRefreshToken(usuarioAutenticado);
 
-    return UsuarioMapper.toTokenDto(usuarioAutenticado, token);
+    return UsuarioMapper.toTokenDto(usuarioAutenticado, token, refreshToken);
   }
 
   public List<UsuarioListarResponse> listarTodos() {
@@ -209,7 +211,7 @@ public class UsuarioService {
     usuarioAutenticacaoAdapter.definirContexto(authentication);
     final String token = usuarioAutenticacaoAdapter.gerarTokenOtp(authentication);
 
-    return UsuarioMapper.toTokenDto(usuarioAutenticado, token);
+    return UsuarioMapper.toTokenDto(usuarioAutenticado, token, "");
   }
 
   public UsuarioListarResponse reativarUsuario(Long id) {

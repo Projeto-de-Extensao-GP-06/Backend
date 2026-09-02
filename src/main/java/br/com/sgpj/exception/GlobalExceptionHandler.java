@@ -111,6 +111,11 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage());
     }
 
+    @ExceptionHandler(TokenInvalidoException.class)
+    public ResponseEntity<Map<String, Object>> handleTokenInvalidoException(TokenInvalidoException ex) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage());
+    }
+
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<Map<String, Object>> handleAuthenticationException(AuthenticationException ex) {
         return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage());

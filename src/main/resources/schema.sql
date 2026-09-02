@@ -91,6 +91,17 @@ CREATE TABLE usuario (
     FOREIGN KEY (cargo_id) REFERENCES cargo(id)
 );
 
+CREATE TABLE usuario_refresh_token (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    usuario_id BIGINT NOT NULL,
+    expira_em DATETIME NOT NULL,
+    revogado TINYINT NOT NULL DEFAULT 0,
+    criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE CASCADE
+);
+
 ALTER TABLE cargo
 ADD CONSTRAINT fk_cargo_usuario
 FOREIGN KEY (criado_por) REFERENCES usuario(id);
@@ -358,6 +369,12 @@ ON usuario(cargo_id);
 
 CREATE INDEX idx_usuario_ativo
 ON usuario(ativo);
+
+CREATE INDEX idx_refresh_token_usuario
+ON usuario_refresh_token(usuario_id);
+
+CREATE INDEX idx_refresh_token_valor
+ON usuario_refresh_token(token);
 
 CREATE INDEX idx_cliente_status
 ON cliente(status_cliente_id);

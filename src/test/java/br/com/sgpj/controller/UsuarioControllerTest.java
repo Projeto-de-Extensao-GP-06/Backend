@@ -38,6 +38,9 @@ class UsuarioControllerTest {
     private UsuarioService usuarioService;
 
     @Mock
+    private RefreshTokenService refreshTokenService;
+
+    @Mock
     private HttpServletResponse httpResponse;
 
     @Mock
@@ -69,9 +72,6 @@ class UsuarioControllerTest {
 
     @Mock
     private Usuario usuario;
-
-    @Mock
-    private RefreshTokenService refreshTokenService;
 
     @InjectMocks
     private UsuarioController usuarioController;
@@ -453,7 +453,7 @@ class UsuarioControllerTest {
             assertThat(resposta.getBody()).contains("sucesso");
 
             verify(usuarioService).definirNovaSenha(NOVA_SENHA);
-            verify(httpResponse).addHeader(eq(HttpHeaders.SET_COOKIE), contains("Max-Age=0"));
+            verify(httpResponse, times(2)).addHeader(eq(HttpHeaders.SET_COOKIE), contains("Max-Age=0"));
         }
     }
 

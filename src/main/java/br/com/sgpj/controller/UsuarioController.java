@@ -12,7 +12,6 @@ import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.mapper.UsuarioMapper;
 import br.com.sgpj.service.UsuarioService;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,7 +42,8 @@ public class UsuarioController {
     private final UsuarioService usuarioService;
     private final RefreshTokenService refreshTokenService;
 
-    public UsuarioController(UsuarioService usuarioService, RefreshTokenService refreshTokenService) {
+    public UsuarioController(UsuarioService usuarioService,
+                             RefreshTokenService refreshTokenService) {
         this.usuarioService = usuarioService;
         this.refreshTokenService = refreshTokenService;
     }
@@ -87,8 +87,8 @@ public class UsuarioController {
         if (refreshToken != null && !refreshToken.isBlank()) {
             refreshTokenService.revogarToken(refreshToken);
         }
-        adicionarCookie(response, ACCESS_TOKEN_COOKIE, "", "", Duration.ZERO);   // expira o token JWT de imediato
-        adicionarCookie(response, REFRESH_TOKEN_COOKIE, "", "", Duration.ZERO);   // expira o token de refresh de imediato
+        adicionarCookie(response, ACCESS_TOKEN_COOKIE, "", "/", Duration.ZERO);   // expira o token JWT de imediato
+        adicionarCookie(response, REFRESH_TOKEN_COOKIE, "", "/usuarios/refresh-token", Duration.ZERO);   // expira o token de refresh de imediato
         return ResponseEntity.noContent().build();
     }
 
@@ -202,7 +202,9 @@ public class UsuarioController {
     public ResponseEntity<String> definirNovaSenha(@RequestBody DefinirNovaSenhaRequest request,
                                                    HttpServletResponse response) {
         usuarioService.definirNovaSenha(request.senha());
-        adicionarCookie(response, ACCESS_TOKEN_COOKIE, "", "", Duration.ZERO);
+        refreshTokenService.revogarRefreshTokensDoUsuario();
+        adicionarCookie(response, ACCESS_TOKEN_COOKIE, "", "/", Duration.ZERO);
+        adicionarCookie(response, REFRESH_TOKEN_COOKIE, "", "/usuarios/refresh-token", Duration.ZERO);
         return ResponseEntity.ok("Nova senha definida com sucesso!");
     }
 

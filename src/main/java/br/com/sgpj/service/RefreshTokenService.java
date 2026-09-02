@@ -1,5 +1,7 @@
 package br.com.sgpj.service;
 
+import br.com.sgpj.adapter.database.UsuarioPersistenciaAdapter;
+import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
 import br.com.sgpj.config.jwt.GerenciadorTokenJwt;
 import br.com.sgpj.dto.response.RefreshTokenResponse;
 import br.com.sgpj.entity.Usuario;
@@ -32,6 +34,8 @@ public class RefreshTokenService {
     private final UsuarioRefreshTokenRepository usuarioRefreshTokenRepository;
     private final GerenciadorTokenJwt gerenciadorTokenJwt;
     private final AutenticacaoService autenticacaoService;
+    private final UsuarioPersistenciaAdapter usuarioPersistenciaAdapter;
+    private final UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter;
 
     @Transactional
     public String criarRefreshToken(Usuario usuario) {
@@ -96,6 +100,13 @@ public class RefreshTokenService {
                     token.setRevogado(true);
                     usuarioRefreshTokenRepository.save(token);
                 });
+    }
+
+    @Transactional
+    public void revogarRefreshTokensDoUsuario() {
+        String email = usuarioAutenticacaoAdapter.obterEmailUsuarioLogado();
+        Usuario usuario = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(email);
+        usuarioRefreshTokenRepository.deleteByUsuario(usuario);
     }
 
     @Scheduled(cron = "0 0 3 * * *")

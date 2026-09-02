@@ -41,6 +41,12 @@ class RefreshTokenServiceTest {
     @Mock
     private AutenticacaoService autenticacaoService;
 
+    @Mock
+    private br.com.sgpj.adapter.database.UsuarioPersistenciaAdapter usuarioPersistenciaAdapter;
+
+    @Mock
+    private br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter;
+
     @InjectMocks
     private RefreshTokenService refreshTokenService;
 
@@ -271,6 +277,29 @@ class RefreshTokenServiceTest {
 
             // Then
             verify(usuarioRefreshTokenRepository, never()).save(any());
+        }
+    }
+
+    // =========================================================================
+    // revogarRefreshTokensDoUsuario
+    // =========================================================================
+
+    @Nested
+    @DisplayName("revogarRefreshTokensDoUsuario()")
+    class RevogarRefreshTokensDoUsuario {
+
+        @Test
+        @DisplayName("Deve deletar todos os refresh tokens do usuário autenticado")
+        void deveDeletarTokensDoUsuarioAutenticado() {
+            // Given
+            when(usuarioAutenticacaoAdapter.obterEmailUsuarioLogado()).thenReturn("teste@email.com");
+            when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail("teste@email.com")).thenReturn(usuario);
+
+            // When
+            refreshTokenService.revogarRefreshTokensDoUsuario();
+
+            // Then
+            verify(usuarioRefreshTokenRepository, times(1)).deleteByUsuario(usuario);
         }
     }
 }

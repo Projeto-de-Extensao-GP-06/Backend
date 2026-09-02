@@ -1,12 +1,14 @@
 package br.com.sgpj.controller;
 
 import br.com.sgpj.dto.request.*;
+import br.com.sgpj.dto.response.RefreshTokenResponse;
 import br.com.sgpj.dto.response.UsuarioListarResponse;
 import br.com.sgpj.dto.response.UsuarioSessaoResponse;
 import br.com.sgpj.dto.response.UsuarioTokenResponse;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.UsuarioAutoExclusaoException;
 import br.com.sgpj.mapper.UsuarioMapper;
+import br.com.sgpj.service.RefreshTokenService;
 import br.com.sgpj.service.UsuarioService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.DisplayName;
@@ -68,6 +70,9 @@ class UsuarioControllerTest {
     @Mock
     private Usuario usuario;
 
+    @Mock
+    private RefreshTokenService refreshTokenService;
+
     @InjectMocks
     private UsuarioController usuarioController;
 
@@ -107,8 +112,10 @@ class UsuarioControllerTest {
         @DisplayName("Deve autenticar usuário, adicionar cookie e retornar sessão com status 200")
         void deveAutenticarERetornarSessaoComStatus200() {
             ReflectionTestUtils.setField(usuarioController, "jwtValidity", 3600L);
+            ReflectionTestUtils.setField(usuarioController, "refreshValidity", 86400L);
 
             when(usuarioTokenResponse.token()).thenReturn(TOKEN);
+            when(usuarioTokenResponse.refreshToken()).thenReturn("refresh-token-mock");
             when(usuarioTokenResponse.id()).thenReturn(USUARIO_ID);
 
             try (MockedStatic<UsuarioMapper> mapperMock = mockStatic(UsuarioMapper.class)) {
@@ -125,7 +132,7 @@ class UsuarioControllerTest {
 
                 verify(usuarioService).autenticar(usuario);
                 verify(usuarioService).obterPorId(USUARIO_ID);
-                verify(httpResponse).addHeader(eq(HttpHeaders.SET_COOKIE), anyString());
+                verify(httpResponse, times(2)).addHeader(eq(HttpHeaders.SET_COOKIE), anyString());
             }
         }
 
@@ -133,8 +140,10 @@ class UsuarioControllerTest {
         @DisplayName("Deve adicionar cookie com o token JWT retornado na autenticação")
         void deveAdicionarCookieComTokenJwt() {
             ReflectionTestUtils.setField(usuarioController, "jwtValidity", 3600L);
+            ReflectionTestUtils.setField(usuarioController, "refreshValidity", 86400L);
 
             when(usuarioTokenResponse.token()).thenReturn(TOKEN);
+            when(usuarioTokenResponse.refreshToken()).thenReturn("refresh-token-mock");
             when(usuarioTokenResponse.id()).thenReturn(USUARIO_ID);
 
             try (MockedStatic<UsuarioMapper> mapperMock = mockStatic(UsuarioMapper.class)) {
@@ -147,6 +156,7 @@ class UsuarioControllerTest {
                 usuarioController.login(usuarioLoginRequest, httpResponse);
 
                 verify(httpResponse).addHeader(eq(HttpHeaders.SET_COOKIE), contains(TOKEN));
+                verify(httpResponse).addHeader(eq(HttpHeaders.SET_COOKIE), contains("refresh-token-mock"));
             }
         }
     }
@@ -160,14 +170,27 @@ class UsuarioControllerTest {
     class Logout {
 
         @Test
-        @DisplayName("Deve retornar status 204 e adicionar cookie expirado ao fazer logout")
-        void deveRetornarStatus204EExpirarCookieAoFazerLogout() {
-            ResponseEntity<Void> resposta = usuarioController.logout(httpResponse);
+        @DisplayName("Deve retornar status 204, revogar token e expirar cookies ao fazer logout com refresh token")
+        void deveRetornarStatus204ERevogarTokenAoFazerLogout() {
+            ResponseEntity<Void> resposta = usuarioController.logout("refresh-token-123", httpResponse);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
             assertThat(resposta.getBody()).isNull();
 
-            verify(httpResponse).addHeader(eq(HttpHeaders.SET_COOKIE), contains("Max-Age=0"));
+            verify(refreshTokenService).revogarToken("refresh-token-123");
+            verify(httpResponse, times(2)).addHeader(eq(HttpHeaders.SET_COOKIE), contains("Max-Age=0"));
+        }
+
+        @Test
+        @DisplayName("Deve retornar status 204 e expirar cookies ao fazer logout sem refresh token")
+        void deveRetornarStatus204SemRefreshToken() {
+            ResponseEntity<Void> resposta = usuarioController.logout(null, httpResponse);
+
+            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+            assertThat(resposta.getBody()).isNull();
+
+            verify(refreshTokenService, never()).revogarToken(anyString());
+            verify(httpResponse, times(2)).addHeader(eq(HttpHeaders.SET_COOKIE), contains("Max-Age=0"));
         }
     }
 
@@ -453,6 +476,62 @@ class UsuarioControllerTest {
             assertThat(resposta.getBody()).isEqualTo(usuarioListarResponse);
 
             verify(usuarioService).reativarUsuario(USUARIO_ID);
+        }
+    }
+
+    // =========================================================================
+    // refreshToken
+    // =========================================================================
+
+    @Nested
+    @DisplayName("POST /usuarios/refresh-token - refreshToken")
+    class RefreshToken {
+
+        private static final String REFRESH_TOKEN = "refresh-token-valido";
+        private static final String NOVO_ACCESS_TOKEN = "novo-access-token";
+        private static final String NOVO_REFRESH_TOKEN = "novo-refresh-token";
+
+        @Test
+        @DisplayName("Deve rotacionar tokens, atualizar cookies e retornar status 200 quando token é válido")
+        void deveRotacionarTokensComSucesso() {
+            ReflectionTestUtils.setField(usuarioController, "jwtValidity", 3600L);
+            ReflectionTestUtils.setField(usuarioController, "refreshValidity", 86400L);
+
+            RefreshTokenResponse responseDto = new RefreshTokenResponse(NOVO_ACCESS_TOKEN, NOVO_REFRESH_TOKEN);
+            when(refreshTokenService.validarERotacionar(REFRESH_TOKEN)).thenReturn(responseDto);
+
+            ResponseEntity<Void> resposta = usuarioController.refreshToken(REFRESH_TOKEN, httpResponse);
+
+            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(resposta.getBody()).isNull();
+
+            verify(refreshTokenService).validarERotacionar(REFRESH_TOKEN);
+            verify(httpResponse).addHeader(eq(HttpHeaders.SET_COOKIE), contains(NOVO_ACCESS_TOKEN));
+            verify(httpResponse).addHeader(eq(HttpHeaders.SET_COOKIE), contains(NOVO_REFRESH_TOKEN));
+        }
+
+        @Test
+        @DisplayName("Deve retornar status 401 quando refreshToken é nulo")
+        void deveRetornar401QuandoRefreshTokenNulo() {
+            ResponseEntity<Void> resposta = usuarioController.refreshToken(null, httpResponse);
+
+            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+            assertThat(resposta.getBody()).isNull();
+
+            verify(refreshTokenService, never()).validarERotacionar(anyString());
+            verify(httpResponse, never()).addHeader(any(), any());
+        }
+
+        @Test
+        @DisplayName("Deve retornar status 401 quando refreshToken é vazio")
+        void deveRetornar401QuandoRefreshTokenVazio() {
+            ResponseEntity<Void> resposta = usuarioController.refreshToken("   ", httpResponse);
+
+            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+            assertThat(resposta.getBody()).isNull();
+
+            verify(refreshTokenService, never()).validarERotacionar(anyString());
+            verify(httpResponse, never()).addHeader(any(), any());
         }
     }
 }

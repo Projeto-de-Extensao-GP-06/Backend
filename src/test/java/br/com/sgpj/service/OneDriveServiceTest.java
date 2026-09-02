@@ -9,10 +9,7 @@ import br.com.sgpj.entity.documentos.Documento;
 import br.com.sgpj.entity.documentos.TipoDocumento;
 import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Usuario;
-import br.com.sgpj.exception.ClienteNaoEncontradoException;
-import br.com.sgpj.exception.ObjetoNaoEncontradoException;
-import br.com.sgpj.exception.OneDriveErroException;
-import br.com.sgpj.exception.CaminhoJaExisteException;
+import br.com.sgpj.exception.*;
 import br.com.sgpj.repository.CaminhoPadraoDeArmazenamentoRepository;
 import br.com.sgpj.repository.ClienteRepository;
 import br.com.sgpj.repository.DocumentoRepository;
@@ -122,7 +119,7 @@ class OneDriveServiceTest {
         @DisplayName("Deve lançar exceção quando caminho não existe")
         void deveLancarExcecaoQuandoCaminhoNaoExiste() {
             when(caminhoPadraoDeArmazenamentoRepository.findById(99L)).thenReturn(Optional.empty());
-            assertThrows(OneDriveErroException.class,
+            assertThrows(OneDriveNotFoundException.class,
                     () -> service.uploadDocumento("arquivo.pdf", new byte[100], 1L, 99L, null));
         }
     }
@@ -153,7 +150,7 @@ class OneDriveServiceTest {
         @DisplayName("Deve lançar exceção quando caminho não existe")
         void deveLancarExcecaoQuandoCaminhoNaoExiste() {
             when(caminhoPadraoDeArmazenamentoRepository.findById(99L)).thenReturn(Optional.empty());
-            assertThrows(OneDriveErroException.class, () -> service.listarArquivos(99L));
+            assertThrows(OneDriveNotFoundException.class, () -> service.listarArquivos(99L));
         }
     }
 
@@ -750,7 +747,7 @@ class OneDriveServiceTest {
                     withSettings().defaultAnswer(Answers.RETURNS_DEEP_STUBS),
                     previewStub())) {
 
-                assertThrows(ObjetoNaoEncontradoException.class,
+                assertThrows(OneDriveNotFoundException.class,
                         () -> service.uploadDocumento("arquivo.pdf", conteudo, 1L, 1L, 99L));
             }
         }
@@ -774,7 +771,7 @@ class OneDriveServiceTest {
                     withSettings().defaultAnswer(Answers.RETURNS_DEEP_STUBS),
                     previewStub())) {
 
-                OneDriveErroException ex = assertThrows(OneDriveErroException.class,
+                OneDriveNotFoundException ex = assertThrows(OneDriveNotFoundException.class,
                         () -> service.uploadDocumento("arquivo.pdf", conteudo, 99L, 1L, null));
                 assertTrue(ex.getMessage().contains("Tipo de documento não encontrado"));
             }

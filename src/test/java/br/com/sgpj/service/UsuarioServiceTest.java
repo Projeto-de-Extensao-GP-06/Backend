@@ -54,6 +54,9 @@ class UsuarioServiceTest {
     @Mock
     private EmailService emailService;
 
+    @Mock
+    private RefreshTokenService refreshTokenService;
+
     @InjectMocks
     private UsuarioService usuarioService;
 
@@ -171,9 +174,11 @@ class UsuarioServiceTest {
         Usuario usuario = criarUsuarioAtivoComSenha(); // <- Usar usuário com senha
         Authentication authentication = mock(Authentication.class);
         String token = "token-jwt";
+        String refreshToken = "refresh-token-uuid";
         when(usuarioPersistenciaAdapter.buscarUsuarioPorEmail(EMAIL_TESTE)).thenReturn(usuario);
         when(usuarioAutenticacaoAdapter.autenticar(EMAIL_TESTE, SENHA_TESTE)).thenReturn(authentication);
         when(usuarioAutenticacaoAdapter.gerarToken(authentication)).thenReturn(token);
+        when(refreshTokenService.criarRefreshToken(usuario)).thenReturn(refreshToken);
 
         // When
         UsuarioTokenResponse resultado = usuarioService.autenticar(usuario);
@@ -181,11 +186,13 @@ class UsuarioServiceTest {
         // Then
         assertNotNull(resultado);
         assertEquals(token, resultado.token());
+        assertEquals(refreshToken, resultado.refreshToken());
         assertEquals(usuario.getId(), resultado.id());
         assertEquals(EMAIL_TESTE, resultado.email());
         verify(usuarioAutenticacaoAdapter).autenticar(EMAIL_TESTE, SENHA_TESTE);
         verify(usuarioAutenticacaoAdapter).definirContexto(authentication);
         verify(usuarioAutenticacaoAdapter).gerarToken(authentication);
+        verify(refreshTokenService).criarRefreshToken(usuario);
     }
 
     @Test

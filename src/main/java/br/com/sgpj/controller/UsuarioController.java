@@ -68,7 +68,7 @@ public class UsuarioController {
         UsuarioTokenResponse autenticado = usuarioService.autenticar(usuario);
 
         adicionarCookie(response, ACCESS_TOKEN_COOKIE, autenticado.token(), "/", Duration.ofSeconds(jwtValidity));
-        adicionarCookie(response, REFRESH_TOKEN_COOKIE, autenticado.refreshToken(), "/usuarios/refresh-token", Duration.ofSeconds(refreshValidity));
+        adicionarCookie(response, REFRESH_TOKEN_COOKIE, autenticado.refreshToken(), "/usuarios", Duration.ofSeconds(refreshValidity));
 
         // Busca o usuário novamente para obter cargo e permissões
         Usuario usuarioComPermissoes = usuarioService.obterPorId(autenticado.id());
@@ -88,7 +88,7 @@ public class UsuarioController {
             refreshTokenService.revogarToken(refreshToken);
         }
         adicionarCookie(response, ACCESS_TOKEN_COOKIE, "", "/", Duration.ZERO);   // expira o token JWT de imediato
-        adicionarCookie(response, REFRESH_TOKEN_COOKIE, "", "/usuarios/refresh-token", Duration.ZERO);   // expira o token de refresh de imediato
+        adicionarCookie(response, REFRESH_TOKEN_COOKIE, "", "/usuarios", Duration.ZERO);   // expira o token de refresh de imediato
         return ResponseEntity.noContent().build();
     }
 
@@ -204,7 +204,7 @@ public class UsuarioController {
         usuarioService.definirNovaSenha(request.senha());
         refreshTokenService.revogarRefreshTokensDoUsuario();
         adicionarCookie(response, ACCESS_TOKEN_COOKIE, "", "/", Duration.ZERO);
-        adicionarCookie(response, REFRESH_TOKEN_COOKIE, "", "/usuarios/refresh-token", Duration.ZERO);
+        adicionarCookie(response, REFRESH_TOKEN_COOKIE, "", "/usuarios", Duration.ZERO);
         return ResponseEntity.ok("Nova senha definida com sucesso!");
     }
 
@@ -226,7 +226,7 @@ public class UsuarioController {
 
         // Atualiza os dois cookies HttpOnly na resposta
         adicionarCookie(response, ACCESS_TOKEN_COOKIE, novosTokens.accessToken(), "/", Duration.ofSeconds(jwtValidity));
-        adicionarCookie(response, REFRESH_TOKEN_COOKIE, novosTokens.refreshToken(), "/usuarios/refresh-token", Duration.ofSeconds(refreshValidity));
+        adicionarCookie(response, REFRESH_TOKEN_COOKIE, novosTokens.refreshToken(), "/usuarios", Duration.ofSeconds(refreshValidity));
 
         return ResponseEntity.ok().build();
     }

@@ -50,7 +50,7 @@ Para rodar **todos** os testes do projeto:
   * Status de resposta: `200 OK`.
   * Headers de resposta:
     * `Set-Cookie: authToken=<JWT>; Path=/; HttpOnly; SameSite=Strict`
-    * `Set-Cookie: refreshToken=<UUID>; Path=/usuarios/refresh-token; HttpOnly; SameSite=Strict`
+    * `Set-Cookie: refreshToken=<UUID>; Path=/usuarios; HttpOnly; SameSite=Strict`
   * No banco de dados (`usuario_refresh_token`):
     * Nova linha criada com `revogado = 0`, `expira_em` futura e `token` armazenando o **hash SHA-256** (64 caracteres hexadecimais).
 
@@ -108,7 +108,7 @@ Para rodar **todos** os testes do projeto:
   * Status de resposta: `204 No Content`.
   * Headers de resposta:
     * `Set-Cookie: authToken=; Max-Age=0; Path=/`
-    * `Set-Cookie: refreshToken=; Max-Age=0; Path=/usuarios/refresh-token`
+    * `Set-Cookie: refreshToken=; Max-Age=0; Path=/usuarios`
   * No banco de dados: o token é marcado como `revogado = 1`.
 
 ---
@@ -135,4 +135,4 @@ Para rodar **todos** os testes do projeto:
 Ao inspecionar o tráfego de rede (DevTools / Network Tab):
 1. **Proteção XSS:** Verifique se ambos os cookies possuem a flag **`HttpOnly`** assinalada.
 2. **Proteção CSRF:** Verifique se o atributo **`SameSite`** está configurado como **`Strict`**.
-3. **Escopo do Path:** Verifique se o `refreshToken` está restrito a **`Path=/usuarios/refresh-token`**.
+3. **Escopo do Path:** Verifique se o `refreshToken` está restrito a **`Path=/usuarios`**.

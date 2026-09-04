@@ -140,6 +140,7 @@ public class ClienteService {
         Cliente cliente = new Cliente();
         cliente.setNomeRazaoSocial(request.nomeRazaoSocial());
         cliente.setCpfCnpj(request.cpfCnpj());
+        cliente.setPF(request.isPF());
         cliente.setRg(request.rg());
         cliente.setStatusCliente(statusCliente);
         cliente.setEndereco(endereco);

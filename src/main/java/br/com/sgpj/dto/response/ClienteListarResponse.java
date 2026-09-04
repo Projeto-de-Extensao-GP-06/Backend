@@ -15,6 +15,9 @@ public record ClienteListarResponse(
         @Schema(description = "CPF ou CNPJ do cliente", example = "12345678901")
         String cpfCnpj,
 
+        @Schema(description = "Indica se o cliente é pessoa física (true) ou jurídica (false)", example = "true")
+        Boolean isPF,
+
         @Schema(description = "Email do contato principal", example = "joao@email.com")
         String email,
 

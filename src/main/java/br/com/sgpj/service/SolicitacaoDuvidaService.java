@@ -57,6 +57,7 @@ public class SolicitacaoDuvidaService {
 
         Cliente cliente = new Cliente();
         cliente.setNomeRazaoSocial(request.nomeCompleto().trim());
+        cliente.setPF(request.isPF());
         cliente.setStatusCliente(buscarStatus(STATUS_LEAD));
         cliente.setDataHoraEnvioFormulario(LocalDateTime.now());
         cliente = clienteRepository.save(cliente);

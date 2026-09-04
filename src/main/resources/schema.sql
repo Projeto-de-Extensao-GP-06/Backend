@@ -103,6 +103,7 @@ CREATE TABLE cliente (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     nome_razao_social VARCHAR(150) NOT NULL,
     cpf_cnpj VARCHAR(14) UNIQUE,
+    is_pf TINYINT NOT NULL,
     rg VARCHAR(15),
     status_cliente_id INT NOT NULL,
     endereco_id BIGINT,

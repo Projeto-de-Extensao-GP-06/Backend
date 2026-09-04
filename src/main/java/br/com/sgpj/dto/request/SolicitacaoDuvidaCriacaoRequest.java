@@ -19,6 +19,10 @@ public record SolicitacaoDuvidaCriacaoRequest(
         @Size(max = 255, message = "Email deve ter no máximo 255 caracteres")
         String email,
 
+        @Schema(description = "Indica se o solicitante é pessoa física (true) ou jurídica (false)", example = "true")
+        @NotNull(message = "Indicador de pessoa física é obrigatório")
+        Boolean isPF,
+
         @Schema(description = "Telefone do solicitante", example = "(11) 99999-9999")
         @NotBlank(message = "Telefone é obrigatório")
         @Size(max = 20, message = "Telefone deve ter no máximo 20 caracteres")

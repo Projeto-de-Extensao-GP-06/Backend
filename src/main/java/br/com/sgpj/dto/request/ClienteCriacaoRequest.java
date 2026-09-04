@@ -23,6 +23,10 @@ public record ClienteCriacaoRequest(
         @Size(max = 14, message = "CPF/CNPJ deve ter no máximo 14 caracteres")
         String cpfCnpj,
 
+        @Schema(description = "Indica se o solicitante é pessoa física (true) ou jurídica (false)", example = "true")
+        @NotNull(message = "Indicador de pessoa física é obrigatório")
+        Boolean isPF,
+
         @Schema(description = "RG do cliente", example = "123456789")
         @Size(max = 15, message = "RG deve ter no máximo 15 caracteres")
         String rg,

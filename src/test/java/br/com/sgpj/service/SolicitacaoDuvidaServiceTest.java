@@ -243,6 +243,7 @@ class SolicitacaoDuvidaServiceTest {
         return new SolicitacaoDuvidaCriacaoRequest(
                 " Maria Silva ",
                 " maria@email.com ",
+                true,
                 " 11999999999 ",
                 " sp ",
                 numeroProcesso,

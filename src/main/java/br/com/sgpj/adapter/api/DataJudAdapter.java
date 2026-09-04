@@ -36,12 +36,17 @@ public class DataJudAdapter {
                     )
             );
 
-            return restClient.post()
-                    .uri(endpoint)
-                    .header("Authorization", "APIKey " + dataJudApiKey)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(body)
-                    .retrieve()
-                    .body(String.class);
+            try {
+                return restClient.post()
+                        .uri(endpoint)
+                        .header("Authorization", "APIKey " + dataJudApiKey)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(body)
+                        .retrieve()
+                        .body(String.class);
+            } catch (org.springframework.web.client.ResourceAccessException ex) {
+                // Logar o erro e tratar (ex: retornar null ou lançar exceção de negócio)
+                throw new RuntimeException("Não foi possível conectar à API do DataJud: " + ex.getMessage(), ex);
+            }
     }
 }

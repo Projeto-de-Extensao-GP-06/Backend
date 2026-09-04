@@ -3,6 +3,8 @@ package br.com.sgpj.controller;
 import br.com.sgpj.dto.request.ProcessoAppCriacaoRequest;
 import br.com.sgpj.dto.request.ProcessoAppUpdateRequest;
 import br.com.sgpj.dto.response.Processos.*;
+import br.com.sgpj.entity.Usuario;
+import br.com.sgpj.security.AuthorizationUtil;
 import br.com.sgpj.service.ProcessoService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -18,15 +20,20 @@ import java.util.List;
 @Tag(name = "Processos")
 public class ProcessosController {
 
-    public final ProcessoService processoService;
+    private final ProcessoService processoService;
+    private final AuthorizationUtil authorizationUtil;
 
-    public ProcessosController(ProcessoService processoService) { this.processoService = processoService; }
+    public ProcessosController(ProcessoService processoService, AuthorizationUtil authorizationUtil) {
+        this.processoService = processoService;
+        this.authorizationUtil = authorizationUtil;
+    }
 
     @PostMapping("/processos")
     @PreAuthorize("hasAuthority('CRIAR PROCESSO') || hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
     public ResponseEntity<ProcessoAppCreateResponse> novoProcesso(@Valid @RequestBody ProcessoAppCriacaoRequest novoProcesso){
-        ProcessoAppCreateResponse processoCriado = processoService.criarProcesso(novoProcesso);
+        Usuario usuarioAutenticado = authorizationUtil.getUsuarioLogado();
+        ProcessoAppCreateResponse processoCriado = processoService.criarProcesso(novoProcesso, usuarioAutenticado);
         return ResponseEntity.status(HttpStatus.CREATED).body(processoCriado);
     }
 

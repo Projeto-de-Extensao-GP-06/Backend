@@ -13,8 +13,10 @@ import br.com.sgpj.entity.Processo.ProcessoDocumento;
 import br.com.sgpj.entity.StatusCliente;
 import br.com.sgpj.entity.documentos.CaminhoPadraoDeArmazenamento;
 import br.com.sgpj.entity.documentos.Documento;
+import br.com.sgpj.exception.AcessoNegadoException;
 import br.com.sgpj.exception.ClienteJaExistenteException;
 import br.com.sgpj.mapper.ClienteMapper;
+import br.com.sgpj.security.AuthorizationUtil;
 import br.com.sgpj.repository.CaminhoPadraoDeArmazenamentoRepository;
 import br.com.sgpj.repository.ClienteRepository;
 import br.com.sgpj.repository.ContatoRepository;
@@ -50,6 +52,7 @@ public class ClienteService {
     private final HistoricoProcessoRepository historicoProcessoRepository;
     private final ProcessoDocumentoRepository processoDocumentoRepository;
     private final OneDriveService oneDriveService;
+    private final AuthorizationUtil authorizationUtil;
 
     public ClienteService(ClientePersistenciaAdapter clientePersistenciaAdapter,
                           ClienteRepository clienteRepository,
@@ -61,7 +64,8 @@ public class ClienteService {
                           ProcessoAppRepository processoAppRepository,
                           HistoricoProcessoRepository historicoProcessoRepository,
                           ProcessoDocumentoRepository processoDocumentoRepository,
-                          OneDriveService oneDriveService) {
+                          OneDriveService oneDriveService,
+                          AuthorizationUtil authorizationUtil) {
         this.clientePersistenciaAdapter = clientePersistenciaAdapter;
         this.clienteRepository = clienteRepository;
         this.statusClienteRepository = statusClienteRepository;
@@ -73,6 +77,7 @@ public class ClienteService {
         this.historicoProcessoRepository = historicoProcessoRepository;
         this.processoDocumentoRepository = processoDocumentoRepository;
         this.oneDriveService = oneDriveService;
+        this.authorizationUtil = authorizationUtil;
     }
 
     public List<ClienteListarResponse> listarTodos() {
@@ -83,6 +88,7 @@ public class ClienteService {
     }
 
     public ClienteDetalhesResponse buscarPorId(Long id) {
+        authorizationUtil.verificarAcessoCliente(id);
         return ClienteMapper.toDetalhesDto(clientePersistenciaAdapter.buscarPorId(id));
     }
 

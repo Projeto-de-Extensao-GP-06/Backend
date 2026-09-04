@@ -19,6 +19,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 import br.com.sgpj.controller.UsuarioController;
+import br.com.sgpj.exception.TokenBlacklistedException;
+import br.com.sgpj.security.TokenBlacklistService;
 import br.com.sgpj.service.AutenticacaoService;
 
 import java.io.IOException;
@@ -58,10 +60,12 @@ public class AutenticacaoFilter extends OncePerRequestFilter {
 
     private final AutenticacaoService autenticacaoService;
     private final GerenciadorTokenJwt jwtTokenManager;
+    private final TokenBlacklistService tokenBlacklistService;
 
-    public AutenticacaoFilter(AutenticacaoService autenticacaoService, GerenciadorTokenJwt jwtTokenManager) {
+    public AutenticacaoFilter(AutenticacaoService autenticacaoService, GerenciadorTokenJwt jwtTokenManager, TokenBlacklistService tokenBlacklistService) {
         this.autenticacaoService = autenticacaoService;
         this.jwtTokenManager = jwtTokenManager;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     @Override
@@ -73,8 +77,17 @@ public class AutenticacaoFilter extends OncePerRequestFilter {
 
         if (jwtToken != null) {
             try {
+                // Check if token is blacklisted before processing
+                if (tokenBlacklistService.isTokenBlacklisted(jwtToken)) {
+                    LOGGER.warn("[AUTENTICACAO] Token está na blacklist (revogado pelo servidor)");
+                    throw new TokenBlacklistedException("Token foi revogado pelo servidor. Por favor, faça login novamente.");
+                }
+                
                 username = jwtTokenManager.getUsernameFromToken(jwtToken);
 
+            } catch (TokenBlacklistedException e) {
+                LOGGER.warn("[AUTENTICACAO] Token revogado: {}", e.getMessage());
+                throw e;
             } catch (ExpiredJwtException e) {
                 LOGGER.warn("[AUTENTICACAO] Token expirado para o usuário '{}': {}",
                         e.getClaims().getSubject(), e.getMessage());

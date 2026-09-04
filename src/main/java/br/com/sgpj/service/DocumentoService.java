@@ -7,8 +7,11 @@ import br.com.sgpj.dto.response.TipoDocumentoResponse;
 import br.com.sgpj.entity.documentos.CaminhoPadraoDeArmazenamento;
 import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.documentos.Documento;
+import br.com.sgpj.exception.AcessoNegadoException;
 import br.com.sgpj.exception.ClienteNaoEncontradoException;
+import br.com.sgpj.exception.ObjetoNaoEncontradoException;
 import br.com.sgpj.mapper.DocumentoMapper;
+import br.com.sgpj.security.AuthorizationUtil;
 import br.com.sgpj.repository.CaminhoPadraoDeArmazenamentoRepository;
 import br.com.sgpj.repository.ClienteRepository;
 import br.com.sgpj.repository.DocumentoRepository;
@@ -24,15 +27,18 @@ public class DocumentoService {
     private final CaminhoPadraoDeArmazenamentoRepository caminhoRepository;
     private final DocumentoRepository documentoRepository;
     private final ClienteRepository clienteRepository;
+    private final AuthorizationUtil authorizationUtil;
 
     public DocumentoService(TipoDocumentoRepository tipoDocumentoRepository,
                             CaminhoPadraoDeArmazenamentoRepository caminhoRepository,
                             DocumentoRepository documentoRepository,
-                            ClienteRepository clienteRepository) {
+                            ClienteRepository clienteRepository,
+                            AuthorizationUtil authorizationUtil) {
         this.tipoDocumentoRepository = tipoDocumentoRepository;
         this.caminhoRepository = caminhoRepository;
         this.documentoRepository = documentoRepository;
         this.clienteRepository = clienteRepository;
+        this.authorizationUtil = authorizationUtil;
     }
 
     public List<TipoDocumentoResponse> listarTiposDocumento() {
@@ -44,6 +50,13 @@ public class DocumentoService {
     }
 
     public List<DocumentoResponse> listarDocumentosPorCaminho(Long caminhoDeArmazenamentoId) {
+        CaminhoPadraoDeArmazenamento caminho = caminhoRepository.findById(caminhoDeArmazenamentoId)
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Caminho de armazenamento não encontrado para o ID: " + caminhoDeArmazenamentoId));
+        
+        if (caminho.getCliente() != null) {
+            authorizationUtil.verificarAcessoCliente(caminho.getCliente().getId());
+        }
+        
         List<Documento> documentos = documentoRepository.findByPadraoArmazenamentoIdAndAtivoTrue(caminhoDeArmazenamentoId);
         return DocumentoMapper.toDocumentoResponseList(documentos);
     }
@@ -56,6 +69,7 @@ public class DocumentoService {
      * O front usa o 'id' retornado para passar ao OneDriveController.
      */
     public List<CaminhoClienteResponse> listarCaminhosDoCliente(Long clienteId) {
+        authorizationUtil.verificarAcessoCliente(clienteId);
         Cliente cliente = clienteRepository.findById(clienteId)
                 .orElseThrow(() -> new ClienteNaoEncontradoException(clienteId));
 

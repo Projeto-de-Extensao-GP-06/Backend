@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
@@ -18,8 +19,12 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
     }
 
     @Override
-    public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) {
-        RuntimeException suaExcecaoCustomizada = new EscopoJwtException("Acesso negado: Este token não possui o escopo necessário.");
-        resolver.resolveException(request, response, null, suaExcecaoCustomizada);
+    public void handle(
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull AccessDeniedException accessDeniedException
+    ) {
+        RuntimeException excecao = new EscopoJwtException("Acesso negado: você não possui permissão para executar esta operação.");
+        resolver.resolveException(request, response, null, excecao);
     }
 }

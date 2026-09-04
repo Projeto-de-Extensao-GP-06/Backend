@@ -5,7 +5,9 @@ import br.com.sgpj.dto.response.SolicitacaoClientePreenchimentoResponse;
 import br.com.sgpj.dto.response.SolicitacaoDuvidaDetalhesResponse;
 import br.com.sgpj.dto.response.SolicitacaoDuvidaListarResponse;
 import br.com.sgpj.entity.SolicitacaoStatus;
+import br.com.sgpj.security.RateLimiter;
 import br.com.sgpj.service.SolicitacaoDuvidaService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -29,6 +32,8 @@ import static org.mockito.Mockito.when;
 class SolicitacaoDuvidaControllerTest {
 
     @Mock private SolicitacaoDuvidaService service;
+    @Mock private RateLimiter rateLimiter;
+    @Mock private HttpServletRequest httpRequest;
     @InjectMocks private SolicitacaoDuvidaController controller;
 
     @Test
@@ -37,11 +42,13 @@ class SolicitacaoDuvidaControllerTest {
         SolicitacaoDuvidaCriacaoRequest request = criarRequest();
         when(service.criar(request)).thenReturn(criarDetalhes());
 
-        ResponseEntity<SolicitacaoDuvidaDetalhesResponse> response = controller.criar(request);
+        ResponseEntity<SolicitacaoDuvidaDetalhesResponse> response = controller.criar(request, httpRequest);
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertEquals("/solicitacoes/30", response.getHeaders().getLocation().toString());
         assertEquals(30L, response.getBody().id());
+        
+        verify(rateLimiter).checkFormRateLimit(anyString());
     }
 
     @Test

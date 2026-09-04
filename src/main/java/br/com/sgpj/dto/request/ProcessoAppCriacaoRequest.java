@@ -9,10 +9,6 @@ import java.time.LocalDateTime;
 
 public record ProcessoAppCriacaoRequest(
 
-        @NotNull(message = "Id do usuario responsavel e obrigatorio")
-        @Schema(description = "Id do usuario responsavel", example = "1")
-        Long usuarioResponsavelId,
-
         @NotNull(message = "Id do cliente é obrigatório")
         @Schema(description = "Id do cliente associado aquele processo", example = "1")
         Long clienteId,

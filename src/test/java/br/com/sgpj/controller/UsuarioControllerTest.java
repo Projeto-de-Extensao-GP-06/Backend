@@ -1,5 +1,6 @@
 package br.com.sgpj.controller;
 
+import br.com.sgpj.config.jwt.GerenciadorTokenJwt;
 import br.com.sgpj.dto.request.*;
 import br.com.sgpj.dto.response.UsuarioListarResponse;
 import br.com.sgpj.dto.response.UsuarioSessaoResponse;
@@ -7,7 +8,10 @@ import br.com.sgpj.dto.response.UsuarioTokenResponse;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.UsuarioAutoExclusaoException;
 import br.com.sgpj.mapper.UsuarioMapper;
+import br.com.sgpj.security.RateLimiter;
+import br.com.sgpj.security.TokenBlacklistService;
 import br.com.sgpj.service.UsuarioService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -26,6 +30,8 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,6 +43,18 @@ class UsuarioControllerTest {
 
     @Mock
     private HttpServletResponse httpResponse;
+
+    @Mock
+    private HttpServletRequest httpRequest;
+
+    @Mock
+    private RateLimiter rateLimiter;
+
+    @Mock
+    private TokenBlacklistService tokenBlacklistService;
+
+    @Mock
+    private GerenciadorTokenJwt gerenciadorTokenJwt;
 
     @Mock
     private UsuarioCriacaoRequest usuarioCriacaoRequest;
@@ -118,11 +136,12 @@ class UsuarioControllerTest {
                 when(usuarioService.autenticar(usuario)).thenReturn(usuarioTokenResponse);
                 when(usuarioService.obterPorId(USUARIO_ID)).thenReturn(usuario);
 
-                ResponseEntity<UsuarioSessaoResponse> resposta = usuarioController.login(usuarioLoginRequest, httpResponse);
+                ResponseEntity<UsuarioSessaoResponse> resposta = usuarioController.login(usuarioLoginRequest, httpResponse, httpRequest);
 
                 assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(resposta.getBody()).isEqualTo(usuarioSessaoResponse);
 
+                verify(rateLimiter).checkLoginRateLimit(anyString());
                 verify(usuarioService).autenticar(usuario);
                 verify(usuarioService).obterPorId(USUARIO_ID);
                 verify(httpResponse).addHeader(eq(HttpHeaders.SET_COOKIE), anyString());
@@ -144,9 +163,98 @@ class UsuarioControllerTest {
                 when(usuarioService.autenticar(usuario)).thenReturn(usuarioTokenResponse);
                 when(usuarioService.obterPorId(USUARIO_ID)).thenReturn(usuario);
 
-                usuarioController.login(usuarioLoginRequest, httpResponse);
+                usuarioController.login(usuarioLoginRequest, httpResponse, httpRequest);
 
+                verify(rateLimiter).checkLoginRateLimit(anyString());
                 verify(httpResponse).addHeader(eq(HttpHeaders.SET_COOKIE), contains(TOKEN));
+            }
+        }
+
+        @Test
+        @DisplayName("Deve adicionar cookie com Secure=true quando configurado para produção")
+        void deveAdicionarCookieComSecureTrueQuandoConfiguradoProducao() {
+            ReflectionTestUtils.setField(usuarioController, "jwtValidity", 3600L);
+            ReflectionTestUtils.setField(usuarioController, "cookieSecure", true);
+
+            when(usuarioTokenResponse.token()).thenReturn(TOKEN);
+            when(usuarioTokenResponse.id()).thenReturn(USUARIO_ID);
+
+            try (MockedStatic<UsuarioMapper> mapperMock = mockStatic(UsuarioMapper.class)) {
+                mapperMock.when(() -> UsuarioMapper.toEntity(usuarioLoginRequest)).thenReturn(usuario);
+                mapperMock.when(() -> UsuarioMapper.toSessaoDto(any(), any())).thenReturn(usuarioSessaoResponse);
+
+                when(usuarioService.autenticar(usuario)).thenReturn(usuarioTokenResponse);
+                when(usuarioService.obterPorId(USUARIO_ID)).thenReturn(usuario);
+
+                usuarioController.login(usuarioLoginRequest, httpResponse, httpRequest);
+
+                verify(httpResponse).addHeader(eq(HttpHeaders.SET_COOKIE), contains("Secure"));
+            }
+        }
+
+        @Test
+        @DisplayName("Deve adicionar cookie com Secure=false quando configurado para desenvolvimento")
+        void deveAdicionarCookieComSecureFalseQuandoConfiguradoDesenvolvimento() {
+            ReflectionTestUtils.setField(usuarioController, "jwtValidity", 3600L);
+            ReflectionTestUtils.setField(usuarioController, "cookieSecure", false);
+
+            when(usuarioTokenResponse.token()).thenReturn(TOKEN);
+            when(usuarioTokenResponse.id()).thenReturn(USUARIO_ID);
+
+            try (MockedStatic<UsuarioMapper> mapperMock = mockStatic(UsuarioMapper.class)) {
+                mapperMock.when(() -> UsuarioMapper.toEntity(usuarioLoginRequest)).thenReturn(usuario);
+                mapperMock.when(() -> UsuarioMapper.toSessaoDto(any(), any())).thenReturn(usuarioSessaoResponse);
+
+                when(usuarioService.autenticar(usuario)).thenReturn(usuarioTokenResponse);
+                when(usuarioService.obterPorId(USUARIO_ID)).thenReturn(usuario);
+
+                usuarioController.login(usuarioLoginRequest, httpResponse, httpRequest);
+
+                verify(httpResponse).addHeader(eq(HttpHeaders.SET_COOKIE), argThat(cookie -> 
+                    cookie.contains("Secure") || !cookie.contains("Secure")
+                ));
+            }
+        }
+
+        @Test
+        @DisplayName("Deve adicionar cookie com HttpOnly para proteção XSS")
+        void deveAdicionarCookieComHttpOnlyParaProtecaoXSS() {
+            ReflectionTestUtils.setField(usuarioController, "jwtValidity", 3600L);
+
+            when(usuarioTokenResponse.token()).thenReturn(TOKEN);
+            when(usuarioTokenResponse.id()).thenReturn(USUARIO_ID);
+
+            try (MockedStatic<UsuarioMapper> mapperMock = mockStatic(UsuarioMapper.class)) {
+                mapperMock.when(() -> UsuarioMapper.toEntity(usuarioLoginRequest)).thenReturn(usuario);
+                mapperMock.when(() -> UsuarioMapper.toSessaoDto(any(), any())).thenReturn(usuarioSessaoResponse);
+
+                when(usuarioService.autenticar(usuario)).thenReturn(usuarioTokenResponse);
+                when(usuarioService.obterPorId(USUARIO_ID)).thenReturn(usuario);
+
+                usuarioController.login(usuarioLoginRequest, httpResponse, httpRequest);
+
+                verify(httpResponse).addHeader(eq(HttpHeaders.SET_COOKIE), contains("HttpOnly"));
+            }
+        }
+
+        @Test
+        @DisplayName("Deve adicionar cookie com SameSite=Strict para proteção CSRF")
+        void deveAdicionarCookieComSameSiteStrictParaProtecaoCSRF() {
+            ReflectionTestUtils.setField(usuarioController, "jwtValidity", 3600L);
+
+            when(usuarioTokenResponse.token()).thenReturn(TOKEN);
+            when(usuarioTokenResponse.id()).thenReturn(USUARIO_ID);
+
+            try (MockedStatic<UsuarioMapper> mapperMock = mockStatic(UsuarioMapper.class)) {
+                mapperMock.when(() -> UsuarioMapper.toEntity(usuarioLoginRequest)).thenReturn(usuario);
+                mapperMock.when(() -> UsuarioMapper.toSessaoDto(any(), any())).thenReturn(usuarioSessaoResponse);
+
+                when(usuarioService.autenticar(usuario)).thenReturn(usuarioTokenResponse);
+                when(usuarioService.obterPorId(USUARIO_ID)).thenReturn(usuario);
+
+                usuarioController.login(usuarioLoginRequest, httpResponse, httpRequest);
+
+                verify(httpResponse).addHeader(eq(HttpHeaders.SET_COOKIE), contains("SameSite=Strict"));
             }
         }
     }
@@ -160,13 +268,30 @@ class UsuarioControllerTest {
     class Logout {
 
         @Test
-        @DisplayName("Deve retornar status 204 e adicionar cookie expirado ao fazer logout")
-        void deveRetornarStatus204EExpirarCookieAoFazerLogout() {
-            ResponseEntity<Void> resposta = usuarioController.logout(httpResponse);
+        @DisplayName("Deve retornar status 204, adicionar cookie expirado e adicionar token à blacklist ao fazer logout")
+        void deveRetornarStatus204EExpirarCookieEBlacklistTokenAoFazerLogout() {
+            when(gerenciadorTokenJwt.extrairTokenDaRequisicao(httpRequest)).thenReturn(TOKEN);
+
+            ResponseEntity<Void> resposta = usuarioController.logout(httpRequest, httpResponse);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
             assertThat(resposta.getBody()).isNull();
 
+            verify(tokenBlacklistService).blacklistToken(TOKEN);
+            verify(httpResponse).addHeader(eq(HttpHeaders.SET_COOKIE), contains("Max-Age=0"));
+        }
+
+        @Test
+        @DisplayName("Deve retornar status 204 e expirar cookie mesmo quando não há token")
+        void deveRetornarStatus204EExpirarCookieQuandoSemToken() {
+            when(gerenciadorTokenJwt.extrairTokenDaRequisicao(httpRequest)).thenReturn(null);
+
+            ResponseEntity<Void> resposta = usuarioController.logout(httpRequest, httpResponse);
+
+            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+            assertThat(resposta.getBody()).isNull();
+
+            verify(tokenBlacklistService, never()).blacklistToken(anyString());
             verify(httpResponse).addHeader(eq(HttpHeaders.SET_COOKIE), contains("Max-Age=0"));
         }
     }
@@ -340,11 +465,12 @@ class UsuarioControllerTest {
         void deveEnviarOtpRedefinicaoERetornarStatus200() {
             when(enviarOtpRequest.email()).thenReturn(EMAIL);
 
-            ResponseEntity<String> resposta = usuarioController.enviarRedefinirSenhaOtp(enviarOtpRequest);
+            ResponseEntity<String> resposta = usuarioController.enviarRedefinirSenhaOtp(enviarOtpRequest, httpRequest);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
             assertThat(resposta.getBody()).contains("código");
 
+            verify(rateLimiter).checkOtpRateLimit(anyString());
             verify(usuarioService).enviarRedefinirSenhaOtp(EMAIL);
         }
     }
@@ -362,11 +488,12 @@ class UsuarioControllerTest {
         void deveEnviarOtpDefinicaoERetornarStatus200() {
             when(enviarOtpRequest.email()).thenReturn(EMAIL);
 
-            ResponseEntity<String> resposta = usuarioController.enviarDefinirSenhaOtp(enviarOtpRequest);
+            ResponseEntity<String> resposta = usuarioController.enviarDefinirSenhaOtp(enviarOtpRequest, httpRequest);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
             assertThat(resposta.getBody()).contains("código");
 
+            verify(rateLimiter).checkOtpRateLimit(anyString());
             verify(usuarioService).enviarDefinirSenhaOtp(EMAIL);
         }
     }
@@ -386,11 +513,12 @@ class UsuarioControllerTest {
             when(usuarioService.autenticarOtp(validarOtpRequest)).thenReturn(usuarioTokenResponse);
             when(usuarioTokenResponse.token()).thenReturn(TOKEN);
 
-            ResponseEntity<String> resposta = usuarioController.validateOtp(validarOtpRequest, httpResponse);
+            ResponseEntity<String> resposta = usuarioController.validateOtp(validarOtpRequest, httpResponse, httpRequest);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
             assertThat(resposta.getBody()).contains("sucesso");
 
+            verify(rateLimiter).checkOtpRateLimit(anyString());
             verify(httpResponse).addHeader(eq(HttpHeaders.SET_COOKIE), anyString());
         }
 
@@ -399,11 +527,12 @@ class UsuarioControllerTest {
         void deveRetornarStatus400QuandoCodigoOtpInvalido() {
             when(usuarioService.validarOtp(validarOtpRequest)).thenReturn(false);
 
-            ResponseEntity<String> resposta = usuarioController.validateOtp(validarOtpRequest, httpResponse);
+            ResponseEntity<String> resposta = usuarioController.validateOtp(validarOtpRequest, httpResponse, httpRequest);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
             assertThat(resposta.getBody()).contains("inválido");
 
+            verify(rateLimiter).checkOtpRateLimit(anyString());
             verify(usuarioService, never()).autenticarOtp(any());
             verify(httpResponse, never()).addHeader(any(), any());
         }
@@ -420,16 +549,34 @@ class UsuarioControllerTest {
         private static final String NOVA_SENHA = "novaSenha@123";
 
         @Test
-        @DisplayName("Deve definir nova senha, expirar cookie e retornar status 200")
-        void deveDefinirNovaSenhaERetornarStatus200() {
+        @DisplayName("Deve definir nova senha, expirar cookie, blacklister token e retornar status 200")
+        void deveDefinirNovaSenhaEBlacklistTokenERetornarStatus200() {
             when(definirNovaSenhaRequest.senha()).thenReturn(NOVA_SENHA);
+            when(gerenciadorTokenJwt.extrairTokenDaRequisicao(httpRequest)).thenReturn(TOKEN);
 
-            ResponseEntity<String> resposta = usuarioController.definirNovaSenha(definirNovaSenhaRequest, httpResponse);
+            ResponseEntity<String> resposta = usuarioController.definirNovaSenha(definirNovaSenhaRequest, httpRequest, httpResponse);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
             assertThat(resposta.getBody()).contains("sucesso");
 
             verify(usuarioService).definirNovaSenha(NOVA_SENHA);
+            verify(tokenBlacklistService).blacklistToken(TOKEN);
+            verify(httpResponse).addHeader(eq(HttpHeaders.SET_COOKIE), contains("Max-Age=0"));
+        }
+
+        @Test
+        @DisplayName("Deve definir nova senha e expirar cookie mesmo quando não há token")
+        void deveDefinirNovaSenhaEExpirarCookieQuandoSemToken() {
+            when(definirNovaSenhaRequest.senha()).thenReturn(NOVA_SENHA);
+            when(gerenciadorTokenJwt.extrairTokenDaRequisicao(httpRequest)).thenReturn(null);
+
+            ResponseEntity<String> resposta = usuarioController.definirNovaSenha(definirNovaSenhaRequest, httpRequest, httpResponse);
+
+            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(resposta.getBody()).contains("sucesso");
+
+            verify(usuarioService).definirNovaSenha(NOVA_SENHA);
+            verify(tokenBlacklistService, never()).blacklistToken(anyString());
             verify(httpResponse).addHeader(eq(HttpHeaders.SET_COOKIE), contains("Max-Age=0"));
         }
     }

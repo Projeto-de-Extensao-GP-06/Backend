@@ -5,11 +5,16 @@ import br.com.sgpj.dto.response.UsuarioListarResponse;
 import br.com.sgpj.dto.response.UsuarioSessaoResponse;
 import br.com.sgpj.dto.response.UsuarioTokenResponse;
 import br.com.sgpj.exception.UsuarioAutoExclusaoException;
+import br.com.sgpj.config.jwt.GerenciadorTokenJwt;
+import br.com.sgpj.security.IpAddressUtil;
+import br.com.sgpj.security.RateLimiter;
+import br.com.sgpj.security.TokenBlacklistService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.mapper.UsuarioMapper;
 import br.com.sgpj.service.UsuarioService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,10 +38,20 @@ public class UsuarioController {
     @Value("${jwt.validity}")
     private long jwtValidity;
 
-    private final UsuarioService usuarioService;
+    @Value("${cookie.secure}")
+    private boolean cookieSecure;
 
-    public UsuarioController(UsuarioService usuarioService) {
+    private final UsuarioService usuarioService;
+    private final RateLimiter rateLimiter;
+    private final TokenBlacklistService tokenBlacklistService;
+    private final GerenciadorTokenJwt gerenciadorTokenJwt;
+
+    public UsuarioController(UsuarioService usuarioService, RateLimiter rateLimiter, 
+                           TokenBlacklistService tokenBlacklistService, GerenciadorTokenJwt gerenciadorTokenJwt) {
         this.usuarioService = usuarioService;
+        this.rateLimiter = rateLimiter;
+        this.tokenBlacklistService = tokenBlacklistService;
+        this.gerenciadorTokenJwt = gerenciadorTokenJwt;
     }
 
     @PostMapping
@@ -53,7 +68,11 @@ public class UsuarioController {
     @PostMapping("/login")
     public ResponseEntity<UsuarioSessaoResponse> login(
             @RequestBody @Valid UsuarioLoginRequest usuarioLoginRequestDto,
-            HttpServletResponse response) {
+            HttpServletResponse response,
+            HttpServletRequest httpRequest) {
+
+        String identifier = IpAddressUtil.createRateLimitIdentifier(httpRequest, usuarioLoginRequestDto.email());
+        rateLimiter.checkLoginRateLimit(identifier);
 
         final Usuario usuario = UsuarioMapper.toEntity(usuarioLoginRequestDto);
         UsuarioTokenResponse autenticado = usuarioService.autenticar(usuario);
@@ -69,10 +88,17 @@ public class UsuarioController {
     }
 
     /**
-     * Invalida a sessão do usuário limpando o cookie de autenticação.
+     * Invalida a sessão do usuário limpando o cookie de autenticação e 
+     * adicionando o token à blacklist para revogação server-side.
      */
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(HttpServletResponse response) {
+    public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
+        // Extract and blacklist the current token
+        String currentToken = gerenciadorTokenJwt.extrairTokenDaRequisicao(request);
+        if (currentToken != null) {
+            tokenBlacklistService.blacklistToken(currentToken);
+        }
+        
         adicionarCookie(response, "", Duration.ZERO);   // expira o token JWT de imediato
         return ResponseEntity.noContent().build();
     }
@@ -127,7 +153,7 @@ public class UsuarioController {
      *
      * <p><b>HttpOnly:</b> inacessível ao JavaScript (proteção XSS).</p>
      * <p><b>SameSite=Strict:</b> bloqueia envio cross-site (mitiga CSRF).</p>
-     * <p><b>Secure:</b> {@code true} em produção (exige HTTPS).</p>
+     * <p><b>Secure:</b> baseado em configuração de ambiente (true em produção, false em desenvolvimento).</p>
      *
      * @param response resposta HTTP onde o cookie será adicionado
      * @param valor    valor do cookie (token JWT ou vazio para logout)
@@ -136,7 +162,7 @@ public class UsuarioController {
     private void adicionarCookie(HttpServletResponse response, String valor, Duration duracao) {
         ResponseCookie cookie = ResponseCookie.from(COOKIE_NOME, valor)
                 .httpOnly(true)             // inacessível ao JavaScript
-                .secure(false)              // true em produção (exige HTTPS)
+                .secure(cookieSecure)       // baseado em configuração (true em produção)
                 .sameSite("Strict")         // bloqueia envio cross-site (mitiga CSRF)
                 .path("/")                  // válido para toda a aplicação
                 .maxAge(duracao)            // expira junto com o token JWT
@@ -158,14 +184,22 @@ public class UsuarioController {
 
     @PostMapping("/enviar-redefinir-senha-otp")
     @PreAuthorize("permitAll()")
-    public ResponseEntity<String> enviarRedefinirSenhaOtp(@RequestBody EnviarOtpRequest request) {
+    public ResponseEntity<String> enviarRedefinirSenhaOtp(@RequestBody EnviarOtpRequest request,
+                                                          HttpServletRequest httpRequest) {
+        String identifier = IpAddressUtil.createRateLimitIdentifier(httpRequest, request.email());
+        rateLimiter.checkOtpRateLimit(identifier);
+        
         usuarioService.enviarRedefinirSenhaOtp(request.email());
         return ResponseEntity.ok("Se o e-mail estiver cadastrado, um código será enviado em instantes.");
     }
 
     @PostMapping("/enviar-definir-senha-otp")
     @PreAuthorize("permitAll()")
-    public ResponseEntity<String> enviarDefinirSenhaOtp(@RequestBody EnviarOtpRequest request) {
+    public ResponseEntity<String> enviarDefinirSenhaOtp(@RequestBody EnviarOtpRequest request,
+                                                        HttpServletRequest httpRequest) {
+        String identifier = IpAddressUtil.createRateLimitIdentifier(httpRequest, request.email());
+        rateLimiter.checkOtpRateLimit(identifier);
+        
         usuarioService.enviarDefinirSenhaOtp(request.email());
         return ResponseEntity.ok("Se o e-mail estiver cadastrado, um código será enviado em instantes.");
     }
@@ -173,7 +207,11 @@ public class UsuarioController {
     @PostMapping("/validar-otp")
     @PreAuthorize("permitAll()")
     public ResponseEntity<String> validateOtp(@RequestBody ValidarOtpRequest request,
-                                              HttpServletResponse response) {
+                                              HttpServletResponse response,
+                                              HttpServletRequest httpRequest) {
+        String identifier = IpAddressUtil.createRateLimitIdentifier(httpRequest, request.email());
+        rateLimiter.checkOtpRateLimit(identifier);
+        
         if (usuarioService.validarOtp(request)) {
             UsuarioTokenResponse autenticado = usuarioService.autenticarOtp(request);
             adicionarCookie(response, autenticado.token(), Duration.ofSeconds(900));
@@ -188,9 +226,17 @@ public class UsuarioController {
     @PreAuthorize("isAuthenticated()")
     @SecurityRequirement(name = "Bearer")
     public ResponseEntity<String> definirNovaSenha(@RequestBody DefinirNovaSenhaRequest request,
+                                                   HttpServletRequest httpRequest,
                                                    HttpServletResponse response) {
         usuarioService.definirNovaSenha(request.senha());
-        adicionarCookie(response, COOKIE_NOME, Duration.ZERO);
+        
+        // Blacklist the current token after password change
+        String currentToken = gerenciadorTokenJwt.extrairTokenDaRequisicao(httpRequest);
+        if (currentToken != null) {
+            tokenBlacklistService.blacklistToken(currentToken);
+        }
+        
+        adicionarCookie(response, "", Duration.ZERO);
         return ResponseEntity.ok("Nova senha definida com sucesso!");
     }
 

@@ -24,7 +24,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(UsuarioNaoEncontradoException.class)
     public ResponseEntity<Map<String, Object>> handleUsuarioNaoEncontrado(UsuarioNaoEncontradoException ex) {
-        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+        return buildResponse(HttpStatus.NOT_FOUND, "Usuário não encontrado");
     }
 
     @ExceptionHandler(CargoNaoEncontradoException.class)
@@ -54,7 +54,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(UsernameNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleUsernameNotFound(UsernameNotFoundException ex) {
-        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+        return buildResponse(HttpStatus.NOT_FOUND, "Usuário não encontrado");
     }
 
     @ExceptionHandler(ObjetoNaoEncontradoException.class)
@@ -185,6 +185,21 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handlePropertyReference(PropertyReferenceException ex) {
         String mensagem = String.format("Campo de ordenação inválido: '%s'. Verifique o nome do campo informado no parâmetro 'sort'.", ex.getPropertyName());
         return buildResponse(HttpStatus.BAD_REQUEST, mensagem);
+    }
+
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleRateLimitExceeded(RateLimitExceededException ex) {
+        return buildResponse(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
+    }
+
+    @ExceptionHandler(OtpGenerationLimitExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleOtpGenerationLimitExceeded(OtpGenerationLimitExceededException ex) {
+        return buildResponse(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
+    }
+
+    @ExceptionHandler(TokenBlacklistedException.class)
+    public ResponseEntity<Map<String, Object>> handleTokenBlacklisted(TokenBlacklistedException ex) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
     private ResponseEntity<Map<String, Object>> buildResponse(HttpStatus status, String message) {

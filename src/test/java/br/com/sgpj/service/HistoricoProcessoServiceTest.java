@@ -1,6 +1,5 @@
 package br.com.sgpj.service;
 
-import br.com.sgpj.adapter.database.UsuarioPersistenciaAdapter;
 import br.com.sgpj.dto.request.HistoricoProcessoRequest;
 import br.com.sgpj.dto.response.Processos.HistoricoProcessoResponse;
 import br.com.sgpj.entity.Processo.HistoricoProcesso;
@@ -8,7 +7,6 @@ import br.com.sgpj.entity.Processo.ProcessoApp;
 import br.com.sgpj.entity.Processo.TipoAlteracao;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
-import br.com.sgpj.repository.FaseProcessoRepository;
 import br.com.sgpj.repository.HistoricoProcessoRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.TipoAlteracaoRepository;
@@ -30,6 +28,8 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -47,16 +47,10 @@ class HistoricoProcessoServiceTest {
     private HistoricoProcessoRepository historicoProcessoRepository;
 
     @Mock
-    private UsuarioPersistenciaAdapter usuarioPersistenciaAdapter;
-
-    @Mock
     private ProcessoAppRepository processoAppRepository;
 
     @Mock
     private TipoAlteracaoRepository tipoAlteracaoRepository;
-
-    @Mock
-    private FaseProcessoRepository faseProcessoRepository;
 
     private HistoricoProcessoService service;
 
@@ -64,10 +58,8 @@ class HistoricoProcessoServiceTest {
     void setUp() {
         service = new HistoricoProcessoService(
                 historicoProcessoRepository,
-                usuarioPersistenciaAdapter,
                 processoAppRepository,
-                tipoAlteracaoRepository,
-                faseProcessoRepository
+                tipoAlteracaoRepository
         );
     }
 
@@ -79,11 +71,10 @@ class HistoricoProcessoServiceTest {
         @DisplayName("Deve registrar historico e mapear a resposta")
         void deveRegistrarHistoricoEMapearResposta() {
             ProcessoApp processo = criarProcessoApp(10L);
-            Usuario usuario = criarUsuario(20L, "Usuario Teste");
+            Usuario usuarioAutenticado = criarUsuario(20L, "Usuario Autenticado");
             TipoAlteracao tipoAlteracao = new TipoAlteracao(30L, "ALTERACAO");
             HistoricoProcessoRequest request = new HistoricoProcessoRequest(
                     10L,
-                    20L,
                     "Mudanca de fase",
                     LocalDateTime.of(2026, 7, 10, 10, 0),
                     30L,
@@ -92,7 +83,6 @@ class HistoricoProcessoServiceTest {
             );
 
             when(processoAppRepository.findById(10L)).thenReturn(Optional.of(processo));
-            when(usuarioPersistenciaAdapter.buscarUsuarioPorId(20L)).thenReturn(usuario);
             when(tipoAlteracaoRepository.findById(30L)).thenReturn(Optional.of(tipoAlteracao));
             when(historicoProcessoRepository.save(any(HistoricoProcesso.class))).thenAnswer(invocation -> {
                 HistoricoProcesso historico = invocation.getArgument(0);
@@ -100,7 +90,7 @@ class HistoricoProcessoServiceTest {
                 return historico;
             });
 
-            HistoricoProcessoResponse response = service.adicionarRegistro(request);
+            HistoricoProcessoResponse response = service.adicionarRegistro(request, usuarioAutenticado);
 
             ArgumentCaptor<HistoricoProcesso> captor = ArgumentCaptor.forClass(HistoricoProcesso.class);
             verify(historicoProcessoRepository).save(captor.capture());
@@ -115,7 +105,7 @@ class HistoricoProcessoServiceTest {
                     () -> assertEquals(77L, response.historicoProcessoId()),
                     () -> assertEquals(10L, response.processoAppId()),
                     () -> assertEquals(20L, response.usuarioUtilizadoId()),
-                    () -> assertEquals("Usuario Teste", response.usuarioUtilizadoNome()),
+                    () -> assertEquals("Usuario Autenticado", response.usuarioUtilizadoNome()),
                     () -> assertEquals("Mudanca de fase", response.descricaoAlteracao()),
                     () -> assertEquals(30L, response.tipoAlteracaoId()),
                     () -> assertEquals("ALTERACAO", response.tipoAlteracaoNome())
@@ -123,11 +113,44 @@ class HistoricoProcessoServiceTest {
         }
 
         @Test
-        @DisplayName("Deve lancar excecao quando processo nao for encontrado")
-        void deveLancarExcecaoQuandoProcessoNaoForEncontrado() {
+        @DisplayName("Deve usar usuario autenticado como usuario utilizado")
+        void deveUsarUsuarioAutenticadoComoUsuarioUtilizado() {
+            ProcessoApp processo = criarProcessoApp(10L);
+            Usuario usuarioAutenticado = criarUsuario(99L, "Usuario Autenticado");
+            TipoAlteracao tipoAlteracao = new TipoAlteracao(30L, "ALTERACAO");
             HistoricoProcessoRequest request = new HistoricoProcessoRequest(
                     10L,
-                    20L,
+                    "Mudanca de fase",
+                    null,
+                    30L,
+                    null,
+                    11L
+            );
+
+            when(processoAppRepository.findById(10L)).thenReturn(Optional.of(processo));
+            when(tipoAlteracaoRepository.findById(30L)).thenReturn(Optional.of(tipoAlteracao));
+            when(historicoProcessoRepository.save(any(HistoricoProcesso.class))).thenAnswer(invocation -> {
+                HistoricoProcesso historico = invocation.getArgument(0);
+                historico.setId(77L);
+                return historico;
+            });
+
+            HistoricoProcessoResponse response = service.adicionarRegistro(request, usuarioAutenticado);
+
+            ArgumentCaptor<HistoricoProcesso> captor = ArgumentCaptor.forClass(HistoricoProcesso.class);
+            verify(historicoProcessoRepository).save(captor.capture());
+
+            HistoricoProcesso salvo = captor.getValue();
+            assertEquals(usuarioAutenticado, salvo.getUsuarioUtilizado());
+            assertEquals(usuarioAutenticado.getId(), response.usuarioUtilizadoId());
+        }
+
+        @Test
+        @DisplayName("Deve lancar excecao quando processo nao for encontrado")
+        void deveLancarExcecaoQuandoProcessoNaoForEncontrado() {
+            Usuario usuarioAutenticado = criarUsuario(20L, "Usuario Autenticado");
+            HistoricoProcessoRequest request = new HistoricoProcessoRequest(
+                    10L,
                     "Mudanca de fase",
                     null,
                     30L,
@@ -137,18 +160,17 @@ class HistoricoProcessoServiceTest {
 
             when(processoAppRepository.findById(10L)).thenReturn(Optional.empty());
 
-            assertThrows(ObjetoNaoEncontradoException.class, () -> service.adicionarRegistro(request));
-            verifyNoInteractions(usuarioPersistenciaAdapter, tipoAlteracaoRepository, historicoProcessoRepository);
+            assertThrows(ObjetoNaoEncontradoException.class, () -> service.adicionarRegistro(request, usuarioAutenticado));
+            verifyNoInteractions(tipoAlteracaoRepository, historicoProcessoRepository);
         }
 
         @Test
         @DisplayName("Deve lancar excecao quando tipo de alteracao nao for encontrado")
         void deveLancarExcecaoQuandoTipoAlteracaoNaoForEncontrado() {
             ProcessoApp processo = criarProcessoApp(10L);
-            Usuario usuario = criarUsuario(20L, "Usuario Teste");
+            Usuario usuarioAutenticado = criarUsuario(20L, "Usuario Autenticado");
             HistoricoProcessoRequest request = new HistoricoProcessoRequest(
                     10L,
-                    20L,
                     "Mudanca de fase",
                     null,
                     30L,
@@ -157,11 +179,80 @@ class HistoricoProcessoServiceTest {
             );
 
             when(processoAppRepository.findById(10L)).thenReturn(Optional.of(processo));
-            when(usuarioPersistenciaAdapter.buscarUsuarioPorId(20L)).thenReturn(usuario);
             when(tipoAlteracaoRepository.findById(30L)).thenReturn(Optional.empty());
 
-            assertThrows(ObjetoNaoEncontradoException.class, () -> service.adicionarRegistro(request));
+            assertThrows(ObjetoNaoEncontradoException.class, () -> service.adicionarRegistro(request, usuarioAutenticado));
             verify(historicoProcessoRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Deve impedir falsificacao de usuario utilizado")
+        void deveImpedirFalsificacaoDeUsuarioUtilizado() {
+            ProcessoApp processo = criarProcessoApp(10L);
+            Usuario usuarioAutenticado = criarUsuario(5L, "Usuario Autenticado");
+            Usuario usuarioFalsificado = criarUsuario(99L, "Usuario Falsificado");
+            TipoAlteracao tipoAlteracao = new TipoAlteracao(30L, "ALTERACAO");
+            HistoricoProcessoRequest request = new HistoricoProcessoRequest(
+                    10L,
+                    "Mudanca de fase",
+                    null,
+                    30L,
+                    null,
+                    11L
+            );
+
+            when(processoAppRepository.findById(10L)).thenReturn(Optional.of(processo));
+            when(tipoAlteracaoRepository.findById(30L)).thenReturn(Optional.of(tipoAlteracao));
+            when(historicoProcessoRepository.save(any(HistoricoProcesso.class))).thenAnswer(invocation -> {
+                HistoricoProcesso historico = invocation.getArgument(0);
+                historico.setId(77L);
+                return historico;
+            });
+
+            HistoricoProcessoResponse response = service.adicionarRegistro(request, usuarioAutenticado);
+
+            ArgumentCaptor<HistoricoProcesso> captor = ArgumentCaptor.forClass(HistoricoProcesso.class);
+            verify(historicoProcessoRepository).save(captor.capture());
+
+            HistoricoProcesso salvo = captor.getValue();
+            assertNotEquals(usuarioFalsificado, salvo.getUsuarioUtilizado());
+            assertEquals(usuarioAutenticado, salvo.getUsuarioUtilizado());
+            assertEquals(usuarioAutenticado.getId(), response.usuarioUtilizadoId());
+            assertNotEquals(usuarioFalsificado.getId(), response.usuarioUtilizadoId());
+        }
+
+        @Test
+        @DisplayName("Deve registrar historico sem descricao alteracao")
+        void deveRegistrarHistoricoSemDescricaoAlteracao() {
+            ProcessoApp processo = criarProcessoApp(10L);
+            Usuario usuarioAutenticado = criarUsuario(20L, "Usuario Autenticado");
+            TipoAlteracao tipoAlteracao = new TipoAlteracao(30L, "ALTERACAO");
+            HistoricoProcessoRequest request = new HistoricoProcessoRequest(
+                    10L,
+                    null,
+                    null,
+                    30L,
+                    null,
+                    11L
+            );
+
+            when(processoAppRepository.findById(10L)).thenReturn(Optional.of(processo));
+            when(tipoAlteracaoRepository.findById(30L)).thenReturn(Optional.of(tipoAlteracao));
+            when(historicoProcessoRepository.save(any(HistoricoProcesso.class))).thenAnswer(invocation -> {
+                HistoricoProcesso historico = invocation.getArgument(0);
+                historico.setId(77L);
+                return historico;
+            });
+
+            HistoricoProcessoResponse response = service.adicionarRegistro(request, usuarioAutenticado);
+
+            ArgumentCaptor<HistoricoProcesso> captor = ArgumentCaptor.forClass(HistoricoProcesso.class);
+            verify(historicoProcessoRepository).save(captor.capture());
+
+            HistoricoProcesso salvo = captor.getValue();
+            assertEquals(usuarioAutenticado, salvo.getUsuarioUtilizado());
+            assertNull(salvo.getDescricaoAlteracao());
+            assertNotNull(salvo.getDataHoraAlteracao());
         }
     }
 

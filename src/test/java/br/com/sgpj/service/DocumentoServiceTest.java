@@ -9,10 +9,12 @@ import br.com.sgpj.entity.documentos.CaminhoPadraoDeArmazenamento;
 import br.com.sgpj.entity.documentos.Documento;
 import br.com.sgpj.entity.documentos.TipoDocumento;
 import br.com.sgpj.exception.ClienteNaoEncontradoException;
+import br.com.sgpj.exception.ObjetoNaoEncontradoException;
 import br.com.sgpj.repository.CaminhoPadraoDeArmazenamentoRepository;
 import br.com.sgpj.repository.ClienteRepository;
 import br.com.sgpj.repository.DocumentoRepository;
 import br.com.sgpj.repository.TipoDocumentoRepository;
+import br.com.sgpj.security.AuthorizationUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -27,7 +29,12 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("DocumentoService — Testes unitários")
@@ -37,6 +44,7 @@ class DocumentoServiceTest {
     @Mock private CaminhoPadraoDeArmazenamentoRepository caminhoRepository;
     @Mock private DocumentoRepository documentoRepository;
     @Mock private ClienteRepository clienteRepository;
+    @Mock private AuthorizationUtil authorizationUtil;
 
     private DocumentoService service;
 
@@ -46,7 +54,8 @@ class DocumentoServiceTest {
                 tipoDocumentoRepository,
                 caminhoRepository,
                 documentoRepository,
-                clienteRepository
+                clienteRepository,
+                authorizationUtil
         );
     }
 
@@ -116,22 +125,74 @@ class DocumentoServiceTest {
     class ListarDocumentosPorCaminhoTest {
 
         @Test
-        @DisplayName("Deve retornar documentos de um caminho")
-        void deveRetornarDocumentos() {
+        @DisplayName("Deve retornar documentos de um caminho com cliente")
+        void deveRetornarDocumentosComCliente() {
+            Cliente cliente = new Cliente();
+            cliente.setId(1L);
+            
+            CaminhoPadraoDeArmazenamento caminho = new CaminhoPadraoDeArmazenamento();
+            caminho.setId(5L);
+            caminho.setCliente(cliente);
+            
             Documento doc = criarDocumentoMock(1L, "contrato.pdf");
+            
+            doNothing().when(authorizationUtil).verificarAcessoCliente(1L);
+            when(caminhoRepository.findById(5L)).thenReturn(Optional.of(caminho));
             when(documentoRepository.findByPadraoArmazenamentoIdAndAtivoTrue(5L)).thenReturn(List.of(doc));
 
             List<DocumentoResponse> result = service.listarDocumentosPorCaminho(5L);
 
             assertEquals(1, result.size());
             assertEquals("contrato.pdf", result.getFirst().nomeOriginal());
+            
+            verify(authorizationUtil, times(1)).verificarAcessoCliente(1L);
+        }
+
+        @Test
+        @DisplayName("Deve retornar documentos de um caminho sem cliente")
+        void deveRetornarDocumentosSemCliente() {
+            CaminhoPadraoDeArmazenamento caminho = new CaminhoPadraoDeArmazenamento();
+            caminho.setId(5L);
+            caminho.setCliente(null);
+            
+            Documento doc = criarDocumentoMock(1L, "contrato.pdf");
+            
+            when(caminhoRepository.findById(5L)).thenReturn(Optional.of(caminho));
+            when(documentoRepository.findByPadraoArmazenamentoIdAndAtivoTrue(5L)).thenReturn(List.of(doc));
+
+            List<DocumentoResponse> result = service.listarDocumentosPorCaminho(5L);
+
+            assertEquals(1, result.size());
+            assertEquals("contrato.pdf", result.getFirst().nomeOriginal());
+            
+            verify(authorizationUtil, never()).verificarAcessoCliente(anyLong());
+        }
+
+        @Test
+        @DisplayName("Deve lançar exceção quando caminho não existe")
+        void deveLancarExcecaoQuandoCaminhoNaoExiste() {
+            when(caminhoRepository.findById(99L)).thenReturn(Optional.empty());
+
+            assertThrows(ObjetoNaoEncontradoException.class, () -> service.listarDocumentosPorCaminho(99L));
         }
 
         @Test
         @DisplayName("Deve retornar lista vazia quando sem documentos")
         void deveRetornarVazio() {
+            Cliente cliente = new Cliente();
+            cliente.setId(1L);
+            
+            CaminhoPadraoDeArmazenamento caminho = new CaminhoPadraoDeArmazenamento();
+            caminho.setId(99L);
+            caminho.setCliente(cliente);
+            
+            doNothing().when(authorizationUtil).verificarAcessoCliente(1L);
+            when(caminhoRepository.findById(99L)).thenReturn(Optional.of(caminho));
             when(documentoRepository.findByPadraoArmazenamentoIdAndAtivoTrue(99L)).thenReturn(Collections.emptyList());
+            
             assertTrue(service.listarDocumentosPorCaminho(99L).isEmpty());
+            
+            verify(authorizationUtil, times(1)).verificarAcessoCliente(1L);
         }
     }
 
@@ -149,6 +210,8 @@ class DocumentoServiceTest {
             cliente.setId(1L);
             cliente.setNomeRazaoSocial("Rafael Silva");
             cliente.setCpfCnpj("12345678901");
+            
+            doNothing().when(authorizationUtil).verificarAcessoCliente(1L);
             when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
 
             CaminhoPadraoDeArmazenamento c1 = new CaminhoPadraoDeArmazenamento();
@@ -164,6 +227,8 @@ class DocumentoServiceTest {
             assertEquals("Rafael Silva - 12345678901", result.getFirst().descricao());
             assertEquals("rafael-silva-12345678901/1234567", result.get(0).caminho());
             assertEquals(11L, result.get(1).id());
+            
+            verify(authorizationUtil, times(1)).verificarAcessoCliente(1L);
         }
 
         @Test
@@ -173,6 +238,8 @@ class DocumentoServiceTest {
             cliente.setId(2L);
             cliente.setNomeRazaoSocial("Empresa XYZ");
             cliente.setCpfCnpj(null);
+            
+            doNothing().when(authorizationUtil).verificarAcessoCliente(2L);
             when(clienteRepository.findById(2L)).thenReturn(Optional.of(cliente));
 
             CaminhoPadraoDeArmazenamento c = new CaminhoPadraoDeArmazenamento();
@@ -183,6 +250,8 @@ class DocumentoServiceTest {
 
             assertEquals(1, result.size());
             assertTrue(result.getFirst().descricao().contains("sem documento"));
+            
+            verify(authorizationUtil, times(1)).verificarAcessoCliente(2L);
         }
 
         @Test
@@ -191,19 +260,26 @@ class DocumentoServiceTest {
             Cliente cliente = new Cliente();
             cliente.setId(3L);
             cliente.setNomeRazaoSocial("Teste");
+            
+            doNothing().when(authorizationUtil).verificarAcessoCliente(3L);
             when(clienteRepository.findById(3L)).thenReturn(Optional.of(cliente));
             when(caminhoRepository.findByClienteId(3L)).thenReturn(Collections.emptyList());
 
             List<CaminhoClienteResponse> result = service.listarCaminhosDoCliente(3L);
 
             assertTrue(result.isEmpty());
+            
+            verify(authorizationUtil, times(1)).verificarAcessoCliente(3L);
         }
 
         @Test
         @DisplayName("Deve lançar exceção quando cliente não existe")
         void deveLancarExcecaoClienteNaoExiste() {
+            doNothing().when(authorizationUtil).verificarAcessoCliente(99L);
             when(clienteRepository.findById(99L)).thenReturn(Optional.empty());
             assertThrows(ClienteNaoEncontradoException.class, () -> service.listarCaminhosDoCliente(99L));
+            
+            verify(authorizationUtil, times(1)).verificarAcessoCliente(99L);
         }
     }
 

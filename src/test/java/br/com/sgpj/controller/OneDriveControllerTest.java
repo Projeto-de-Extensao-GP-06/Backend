@@ -88,6 +88,44 @@ class OneDriveControllerTest {
     }
 
     @Test
+    @DisplayName("PUT /arquivo/renomear — Deve sanitizar ambos os nomes de arquivo")
+    void renomearDeveSanitizarAmbosNomes() {
+        OneDriveItemResponse renomeado = new OneDriveItemResponse("id-1", "novo.pdf", "arquivo", 1024L, "application/pdf", null, null, null, null, null);
+        when(service.renomearArquivo(eq(1L), eq("antigo.pdf"), eq("novo.pdf"))).thenReturn(renomeado);
+        
+        ResponseEntity<OneDriveItemResponse> resposta = controller.renomearArquivo(1L, "antigo.pdf", "novo.pdf");
+        
+        assertEquals(HttpStatus.OK, resposta.getStatusCode());
+        verify(service).renomearArquivo(1L, "antigo.pdf", "novo.pdf");
+    }
+
+    @Test
+    @DisplayName("PUT /arquivo/renomear — Deve prevenir path injection no nome atual")
+    void renomearDevePrevenirPathInjectionNomeAtual() {
+        OneDriveItemResponse renomeado = new OneDriveItemResponse("id-1", "novo.pdf", "arquivo", 1024L, "application/pdf", null, null, null, null, null);
+        when(service.renomearArquivo(eq(1L), anyString(), eq("novo.pdf"))).thenReturn(renomeado);
+        
+        ResponseEntity<OneDriveItemResponse> resposta = controller.renomearArquivo(1L, "../../../etc/passwd", "novo.pdf");
+        
+        assertEquals(HttpStatus.OK, resposta.getStatusCode());
+        // Verifica que o service foi chamado
+        verify(service).renomearArquivo(eq(1L), anyString(), eq("novo.pdf"));
+    }
+
+    @Test
+    @DisplayName("PUT /arquivo/renomear — Deve prevenir path injection no novo nome")
+    void renomearDevePrevenirPathInjectionNovoNome() {
+        OneDriveItemResponse renomeado = new OneDriveItemResponse("id-1", "novo.pdf", "arquivo", 1024L, "application/pdf", null, null, null, null, null);
+        when(service.renomearArquivo(eq(1L), eq("antigo.pdf"), anyString())).thenReturn(renomeado);
+        
+        ResponseEntity<OneDriveItemResponse> resposta = controller.renomearArquivo(1L, "antigo.pdf", "../../../etc/passwd");
+        
+        assertEquals(HttpStatus.OK, resposta.getStatusCode());
+        // Verifica que o service foi chamado
+        verify(service).renomearArquivo(eq(1L), eq("antigo.pdf"), anyString());
+    }
+
+    @Test
     @DisplayName("DELETE /arquivo — Excluir arquivo deve retornar 204")
     void excluirArquivoDeveRetornar204() {
         doNothing().when(service).excluirArquivo(1L, "doc.pdf");

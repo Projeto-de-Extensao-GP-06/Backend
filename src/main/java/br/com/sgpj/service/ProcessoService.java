@@ -9,7 +9,9 @@ import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Processo.*;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.entity.documentos.Documento;
+import br.com.sgpj.exception.AcessoNegadoException;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
+import br.com.sgpj.security.AuthorizationUtil;
 import br.com.sgpj.mapper.HistoricoProcessoMapper;
 import br.com.sgpj.mapper.ProcessoApiMapper;
 import br.com.sgpj.mapper.ProcessoAppMapper;
@@ -39,9 +41,9 @@ public class ProcessoService {
     private final HistoricoProcessoRepository historicoProcessoRepository;
     private final DocumentoRepository documentoRepository;
     private final ProcessoDocumentoRepository processoDocumentoRepository;
+    private final AuthorizationUtil authorizationUtil;
 
-
-    public ProcessoService(UsuarioPersistenciaAdapter usuarioPersistenciaAdapter, DataJudAdapter dataJudAdapter, ProcessoAppRepository processoAppRepository, PrioridadeRepository prioridadeRepository, FaseProcessoRepository faseProcessoRepository, SiglaTribunalRepository siglaTribunalRepository, ClienteRepository clienteRepository, HistoricoProcessoRepository historicoProcessoRepository, DocumentoRepository documentoRepository, ProcessoDocumentoRepository processoDocumentoRepository) {
+    public ProcessoService(UsuarioPersistenciaAdapter usuarioPersistenciaAdapter, DataJudAdapter dataJudAdapter, ProcessoAppRepository processoAppRepository, PrioridadeRepository prioridadeRepository, FaseProcessoRepository faseProcessoRepository, SiglaTribunalRepository siglaTribunalRepository, ClienteRepository clienteRepository, HistoricoProcessoRepository historicoProcessoRepository, DocumentoRepository documentoRepository, ProcessoDocumentoRepository processoDocumentoRepository, AuthorizationUtil authorizationUtil) {
         this.usuarioPersistenciaAdapter = usuarioPersistenciaAdapter;
         this.dataJudAdapter = dataJudAdapter;
         this.processoAppRepository = processoAppRepository;
@@ -52,6 +54,7 @@ public class ProcessoService {
         this.historicoProcessoRepository = historicoProcessoRepository;
         this.documentoRepository = documentoRepository;
         this.processoDocumentoRepository = processoDocumentoRepository;
+        this.authorizationUtil = authorizationUtil;
     }
 
     // ----CRIAÇÃO, ATUALIZAÇÃO E DELEÇÃO----
@@ -66,8 +69,8 @@ public class ProcessoService {
         return ProcessoApiMapper.toEntity(jsonDataJud);
     }
 
-    public ProcessoAppCreateResponse criarProcesso(ProcessoAppCriacaoRequest novoProcesso) {
-        Usuario usuarioResponsavel = usuarioPersistenciaAdapter.buscarUsuarioPorId(novoProcesso.usuarioResponsavelId());
+    public ProcessoAppCreateResponse criarProcesso(ProcessoAppCriacaoRequest novoProcesso, Usuario usuarioAutenticado) {
+        Usuario usuarioResponsavel = usuarioAutenticado;
         Prioridade prioridade = prioridadeRepository.findById(novoProcesso.prioridadeId())
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Prioridade nao encontrada para o ID: " + novoProcesso.prioridadeId()));
         FaseProcesso faseProcesso = faseProcessoRepository.findById(novoProcesso.faseProcessoId())
@@ -166,6 +169,7 @@ public class ProcessoService {
     }
 
     public ProcessoAppResponse buscarPorId(Long id) {
+        authorizationUtil.verificarAcessoProcesso(id);
         ProcessoApp processoAppEncontrado = processoAppRepository.findById(id)
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Processo nÃ£o encontrado para o ID: " + id));
         if (!deveExibirComoProcesso(processoAppEncontrado)) {
@@ -183,6 +187,7 @@ public class ProcessoService {
     }
 
     public List<ProcessoAppMiniResponse> buscarPorClienteId(Long clienteId){
+        authorizationUtil.verificarAcessoCliente(clienteId);
         Cliente cliente = clienteRepository.findById(clienteId)
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Cliente nÃ£o encontrado para o ID: " + clienteId));
 
@@ -264,6 +269,7 @@ public class ProcessoService {
     }
 
     public List<ProcessoDocumentoResponse> listarDocumentosDoProcesso(Long processoAppId) {
+        authorizationUtil.verificarAcessoProcesso(processoAppId);
         return processoDocumentoRepository.findByProcessoAppId(processoAppId)
                 .stream()
                 .map(pd -> new ProcessoDocumentoResponse(

@@ -13,6 +13,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -74,6 +75,7 @@ public class GerenciadorTokenJwt {
      *
      * <p>O token gerado contém os seguintes claims no payload:</p>
      * <ul>
+     *   <li>{@code jti} (JWT ID): identificador único para token revocation</li>
      *   <li>{@code sub} (subject): e-mail/username do usuário autenticado</li>
      *   <li>{@code authorities}: perfis/roles separados por vírgula (ex: "ROLE_USER,ROLE_ADMIN")</li>
      *   <li>{@code iat} (issued at): momento em que o token foi emitido</li>
@@ -93,6 +95,7 @@ public class GerenciadorTokenJwt {
         Date expiracao = new Date(agora.getTime() + jwtTokenValidity * 1_000);
 
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())      // claim "jti": ID único para revogação
                 .subject(authentication.getName())           // claim "sub": quem é o usuário
                 .claim("authorities", authorities)     // claim customizado: perfis do usuário
                 .claim("scope", "GENERAL_USE")        // claim que define o escopo do jwt
@@ -112,6 +115,7 @@ public class GerenciadorTokenJwt {
         Date expiracao = new Date(agora.getTime() + 900 * 1_000);
 
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())      // claim "jti": ID único para revogação
                 .subject(authentication.getName())           // claim "sub": quem é o usuário
                 .claim("authorities", authorities)        // claim customizado: perfis do usuário
                 .claim("scope", "SET_PASSWORD")        // claim que define o escopo do jwt

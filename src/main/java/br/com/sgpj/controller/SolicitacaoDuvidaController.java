@@ -4,10 +4,13 @@ import br.com.sgpj.dto.request.SolicitacaoDuvidaCriacaoRequest;
 import br.com.sgpj.dto.response.SolicitacaoClientePreenchimentoResponse;
 import br.com.sgpj.dto.response.SolicitacaoDuvidaDetalhesResponse;
 import br.com.sgpj.dto.response.SolicitacaoDuvidaListarResponse;
+import br.com.sgpj.security.IpAddressUtil;
+import br.com.sgpj.security.RateLimiter;
 import br.com.sgpj.service.SolicitacaoDuvidaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,12 +32,20 @@ import java.util.List;
 public class SolicitacaoDuvidaController {
 
     private final SolicitacaoDuvidaService solicitacaoDuvidaService;
+    private final RateLimiter rateLimiter;
 
-    public SolicitacaoDuvidaController(SolicitacaoDuvidaService solicitacaoDuvidaService) { this.solicitacaoDuvidaService = solicitacaoDuvidaService; }
+    public SolicitacaoDuvidaController(SolicitacaoDuvidaService solicitacaoDuvidaService, RateLimiter rateLimiter) { 
+        this.solicitacaoDuvidaService = solicitacaoDuvidaService;
+        this.rateLimiter = rateLimiter;
+    }
 
     @PostMapping
     @Operation(summary = "Recebe uma dúvida enviada pelo formulário público")
-    public ResponseEntity<SolicitacaoDuvidaDetalhesResponse> criar(@RequestBody @Valid SolicitacaoDuvidaCriacaoRequest request) {
+    public ResponseEntity<SolicitacaoDuvidaDetalhesResponse> criar(@RequestBody @Valid SolicitacaoDuvidaCriacaoRequest request,
+                                                                     HttpServletRequest httpRequest) {
+        String identifier = IpAddressUtil.getClientIpAddress(httpRequest);
+        rateLimiter.checkFormRateLimit(identifier);
+        
         SolicitacaoDuvidaDetalhesResponse solicitacao = solicitacaoDuvidaService.criar(request);
         URI location = URI.create("/solicitacoes/" + solicitacao.id());
         return ResponseEntity.created(location).body(solicitacao);

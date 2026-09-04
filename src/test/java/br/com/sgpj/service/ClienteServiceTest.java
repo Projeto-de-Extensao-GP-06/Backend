@@ -10,9 +10,11 @@ import br.com.sgpj.entity.Processo.ProcessoApp;
 import br.com.sgpj.entity.Processo.ProcessoDocumento;
 import br.com.sgpj.entity.documentos.CaminhoPadraoDeArmazenamento;
 import br.com.sgpj.entity.documentos.Documento;
+import br.com.sgpj.exception.AcessoNegadoException;
 import br.com.sgpj.exception.ClienteJaExistenteException;
 import br.com.sgpj.exception.ClienteNaoEncontradoException;
 import br.com.sgpj.repository.*;
+import br.com.sgpj.security.AuthorizationUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -34,7 +36,13 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Testes do ClienteService")
@@ -62,6 +70,8 @@ class ClienteServiceTest {
     private ProcessoDocumentoRepository processoDocumentoRepository;
     @Mock
     private OneDriveService oneDriveService;
+    @Mock
+    private AuthorizationUtil authorizationUtil;
 
     @InjectMocks
     private ClienteService clienteService;
@@ -179,6 +189,7 @@ class ClienteServiceTest {
             Cliente cliente = criarClienteComStatus(1L, "João da Silva", "12345678901", "Ativo");
             cliente.setRg("123456789");
 
+            doNothing().when(authorizationUtil).verificarAcessoCliente(1L);
             when(clientePersistenciaAdapter.buscarPorId(1L)).thenReturn(cliente);
 
             ClienteDetalhesResponse resultado = clienteService.buscarPorId(1L);
@@ -195,12 +206,14 @@ class ClienteServiceTest {
             assertEquals("contato@email.com", resultado.contatos().get(0).email());
             assertTrue(resultado.contatos().get(0).principal());
 
+            verify(authorizationUtil, times(1)).verificarAcessoCliente(1L);
             verify(clientePersistenciaAdapter, times(1)).buscarPorId(1L);
         }
 
         @Test
         @DisplayName("Deve lançar exceção quando cliente não for encontrado")
         void deveLancarExcecaoQuandoClienteNaoEncontrado() {
+            doNothing().when(authorizationUtil).verificarAcessoCliente(999L);
             when(clientePersistenciaAdapter.buscarPorId(999L))
                     .thenThrow(new ClienteNaoEncontradoException(999L));
 
@@ -210,7 +223,24 @@ class ClienteServiceTest {
             );
 
             assertTrue(exception.getMessage().contains("999"));
+            verify(authorizationUtil, times(1)).verificarAcessoCliente(999L);
             verify(clientePersistenciaAdapter, times(1)).buscarPorId(999L);
+        }
+
+        @Test
+        @DisplayName("Deve lançar exceção quando acesso for negado")
+        void deveLancarExcecaoQuandoAcessoNegado() {
+            doThrow(new AcessoNegadoException("Acesso negado ao cliente"))
+                    .when(authorizationUtil).verificarAcessoCliente(1L);
+
+            AcessoNegadoException exception = assertThrows(
+                    AcessoNegadoException.class,
+                    () -> clienteService.buscarPorId(1L)
+            );
+
+            assertEquals("Acesso negado ao cliente", exception.getMessage());
+            verify(authorizationUtil, times(1)).verificarAcessoCliente(1L);
+            verify(clientePersistenciaAdapter, never()).buscarPorId(anyLong());
         }
 
         @Test
@@ -223,6 +253,7 @@ class ClienteServiceTest {
             cliente.setEndereco(null);
             cliente.setContatos(null);
 
+            doNothing().when(authorizationUtil).verificarAcessoCliente(1L);
             when(clientePersistenciaAdapter.buscarPorId(1L)).thenReturn(cliente);
 
             ClienteDetalhesResponse resultado = clienteService.buscarPorId(1L);
@@ -232,6 +263,8 @@ class ClienteServiceTest {
             assertNull(resultado.status());
             assertNull(resultado.endereco());
             assertTrue(resultado.contatos().isEmpty());
+            
+            verify(authorizationUtil, times(1)).verificarAcessoCliente(1L);
         }
     }
 

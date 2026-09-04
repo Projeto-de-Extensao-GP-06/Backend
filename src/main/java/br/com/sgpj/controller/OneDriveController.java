@@ -1,6 +1,7 @@
 package br.com.sgpj.controller;
 
 import br.com.sgpj.dto.response.OneDriveItemResponse;
+import br.com.sgpj.security.FilenameSanitizer;
 import br.com.sgpj.service.OneDriveService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -59,9 +60,13 @@ public class OneDriveController {
         if (arquivo.isEmpty()) {
             throw new IllegalArgumentException("O arquivo enviado está vazio.");
         }
+        
+        // Sanitize filename to prevent path injection attacks
+        String nomeArquivoSanitizado = FilenameSanitizer.sanitizeSafe(nomeArquivo);
+        
         byte[] conteudo = arquivo.getBytes();
 
-        OneDriveItemResponse resposta = service.uploadDocumento(nomeArquivo, conteudo, tipoDocumentoId, caminhoDeArmazenamentoId, processoAppId);
+        OneDriveItemResponse resposta = service.uploadDocumento(nomeArquivoSanitizado, conteudo, tipoDocumentoId, caminhoDeArmazenamentoId, processoAppId);
         return ResponseEntity.ok(resposta);
     }
 
@@ -72,7 +77,10 @@ public class OneDriveController {
     public ResponseEntity<OneDriveItemResponse> criarPasta(
             @RequestParam @NotNull(message = "O ID do cliente é obrigatório") @Positive(message = "O ID do cliente deve ser um número positivo") Long clienteId,
             @RequestParam @NotBlank(message = "O número CNJ é obrigatório") String numeroCnj) {
-        OneDriveItemResponse resposta = service.criarPasta(clienteId, numeroCnj);
+        // Sanitize CNJ number to prevent path injection attacks
+        String numeroCnjSanitizado = FilenameSanitizer.sanitizeSafe(numeroCnj);
+        
+        OneDriveItemResponse resposta = service.criarPasta(clienteId, numeroCnjSanitizado);
         return ResponseEntity.ok(resposta);
     }
 
@@ -84,7 +92,11 @@ public class OneDriveController {
             @RequestParam @NotNull(message = "O ID do caminho de armazenamento é obrigatório") @Positive(message = "O ID do caminho de armazenamento deve ser um número positivo") Long caminhoDeArmazenamentoId,
             @RequestParam @NotBlank(message = "O nome do arquivo é obrigatório") String nomeArquivo,
             @RequestParam @NotBlank(message = "O novo nome do arquivo é obrigatório") String novoNome) {
-        OneDriveItemResponse resposta = service.renomearArquivo(caminhoDeArmazenamentoId, nomeArquivo, novoNome);
+        // Sanitize both filenames to prevent path injection attacks
+        String nomeArquivoSanitizado = FilenameSanitizer.sanitizeSafe(nomeArquivo);
+        String novoNomeSanitizado = FilenameSanitizer.sanitizeSafe(novoNome);
+        
+        OneDriveItemResponse resposta = service.renomearArquivo(caminhoDeArmazenamentoId, nomeArquivoSanitizado, novoNomeSanitizado);
         return ResponseEntity.ok(resposta);
     }
 
@@ -95,7 +107,10 @@ public class OneDriveController {
     public ResponseEntity<Void> excluirArquivo(
             @RequestParam @NotNull(message = "O ID do caminho de armazenamento é obrigatório") @Positive(message = "O ID do caminho de armazenamento deve ser um número positivo") Long caminhoDeArmazenamentoId,
             @RequestParam @NotBlank(message = "O nome do arquivo é obrigatório") String nomeArquivo) {
-        service.excluirArquivo(caminhoDeArmazenamentoId, nomeArquivo);
+        // Sanitize filename to prevent path injection attacks
+        String nomeArquivoSanitizado = FilenameSanitizer.sanitizeSafe(nomeArquivo);
+        
+        service.excluirArquivo(caminhoDeArmazenamentoId, nomeArquivoSanitizado);
         return ResponseEntity.noContent().build();
     }
 

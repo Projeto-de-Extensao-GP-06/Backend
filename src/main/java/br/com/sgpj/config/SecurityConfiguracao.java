@@ -5,6 +5,7 @@ import br.com.sgpj.config.jwt.AutenticacaoFilter;
 import br.com.sgpj.config.jwt.AutenticacaoProvider;
 import br.com.sgpj.config.jwt.GerenciadorTokenJwt;
 import br.com.sgpj.exception.CustomAccessDeniedHandler;
+import br.com.sgpj.security.TokenBlacklistService;
 import br.com.sgpj.service.AutenticacaoService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -55,6 +56,7 @@ public class SecurityConfiguracao {
 
     private final AutenticacaoService autenticacaoService;
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
+    private final TokenBlacklistService tokenBlacklistService;
 
     // AutenticacaoEntryPoint é registrado como @Component, o Spring injeta automaticamente
     private final AutenticacaoEntryPoint autenticacaoJwtEntryPoint;
@@ -62,10 +64,12 @@ public class SecurityConfiguracao {
     public SecurityConfiguracao(
             AutenticacaoService autenticacaoService,
             AutenticacaoEntryPoint autenticacaoJwtEntryPoint,
-            CustomAccessDeniedHandler customAccessDeniedHandler) {
+            CustomAccessDeniedHandler customAccessDeniedHandler,
+            TokenBlacklistService tokenBlacklistService) {
         this.autenticacaoService = autenticacaoService;
         this.autenticacaoJwtEntryPoint = autenticacaoJwtEntryPoint;
         this.customAccessDeniedHandler = customAccessDeniedHandler;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     /**
@@ -171,7 +175,7 @@ public class SecurityConfiguracao {
      */
     @Bean
     public AutenticacaoFilter autenticacaoFilter() {
-        return new AutenticacaoFilter(autenticacaoService, gerenciadorTokenJwt());
+        return new AutenticacaoFilter(autenticacaoService, gerenciadorTokenJwt(), tokenBlacklistService);
     }
 
     /**

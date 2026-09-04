@@ -5,6 +5,7 @@ import br.com.sgpj.dto.request.HistoricoProcessoRequest;
 import br.com.sgpj.dto.response.Processos.HistoricoProcessoResponse;
 import br.com.sgpj.entity.Processo.HistoricoProcesso;
 import br.com.sgpj.entity.Processo.ProcessoApp;
+import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
 import br.com.sgpj.mapper.HistoricoProcessoMapper;
 import br.com.sgpj.repository.FaseProcessoRepository;
@@ -23,25 +24,23 @@ import java.util.Optional;
 public class HistoricoProcessoService {
 
     private final HistoricoProcessoRepository historicoProcessoRepository;
-    private final UsuarioPersistenciaAdapter usuarioPersistenciaAdapter;
     private final ProcessoAppRepository processoAppRepository;
     private final TipoAlteracaoRepository tipoAlteracaoRepository;
 
-    public HistoricoProcessoService(HistoricoProcessoRepository historicoProcessoRepository, UsuarioPersistenciaAdapter usuarioPersistenciaAdapter, ProcessoAppRepository processoAppRepository, TipoAlteracaoRepository tipoAlteracaoRepository, FaseProcessoRepository faseProcessoRepository) {
+    public HistoricoProcessoService(HistoricoProcessoRepository historicoProcessoRepository, ProcessoAppRepository processoAppRepository, TipoAlteracaoRepository tipoAlteracaoRepository) {
         this.historicoProcessoRepository = historicoProcessoRepository;
-        this.usuarioPersistenciaAdapter = usuarioPersistenciaAdapter;
         this.processoAppRepository = processoAppRepository;
         this.tipoAlteracaoRepository = tipoAlteracaoRepository;
     }
 
 
 
-    public HistoricoProcessoResponse adicionarRegistro(HistoricoProcessoRequest registro){
+    public HistoricoProcessoResponse adicionarRegistro(HistoricoProcessoRequest registro, Usuario usuarioAutenticado){
 
         HistoricoProcesso novoRegistro = new HistoricoProcesso();
         novoRegistro.setProcessoApp(processoAppRepository.findById(registro.processoAppId())
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Processo nÃ£o encontrado para o ID: " + registro.processoAppId())));
-        novoRegistro.setUsuarioUtilizado(usuarioPersistenciaAdapter.buscarUsuarioPorId(registro.usuarioUtilizadoId()));
+        novoRegistro.setUsuarioUtilizado(usuarioAutenticado);
         novoRegistro.setDescricaoAlteracao(registro.descricaoAlteracao());
         novoRegistro.setDataHoraAlteracao(LocalDateTime.now());
         novoRegistro.setTipoAlteracao(tipoAlteracaoRepository.findById(registro.tipoAlteracaoId())

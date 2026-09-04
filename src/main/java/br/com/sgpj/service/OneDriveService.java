@@ -14,6 +14,7 @@ import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.*;
 import br.com.sgpj.mapper.OneDriveMapper;
 import br.com.sgpj.repository.*;
+import br.com.sgpj.security.FilenameSanitizer;
 import com.microsoft.graph.core.models.UploadResult;
 import com.microsoft.graph.core.tasks.LargeFileUploadTask;
 import com.microsoft.graph.drives.item.items.item.createuploadsession.CreateUploadSessionPostRequestBody;
@@ -141,8 +142,11 @@ public class OneDriveService {
         Cliente cliente = clienteRepository.findById(clienteId)
                 .orElseThrow(() -> new ClienteNaoEncontradoException(clienteId));
 
+        // Sanitize CNJ number to prevent path injection attacks
+        String numeroCnjSanitizado = FilenameSanitizer.sanitizeSafe(numeroCnj);
+
         String nomeBase = gerarNomePasta(cliente);
-        String caminhoCompleto = nomeBase + "/" + numeroCnj;
+        String caminhoCompleto = nomeBase + "/" + numeroCnjSanitizado;
 
         // Verifica se já existe esse caminho no banco → 409 Conflict, não 500
         if (caminhoPadraoDeArmazenamentoRepository.existsByCaminho(caminhoCompleto)) {
@@ -157,7 +161,7 @@ public class OneDriveService {
 
             // 2. Cria a pasta do processo dentro da pasta do cliente
             String caminhoPaiProcesso = CAMINHO_PADRAO + "/" + nomeBase + ":";
-            DriveItem pastaCriada = criarPastaNoOneDrive(driveId, caminhoPaiProcesso, numeroCnj);
+            DriveItem pastaCriada = criarPastaNoOneDrive(driveId, caminhoPaiProcesso, numeroCnjSanitizado);
 
             // Só salva no banco DEPOIS de criar com sucesso no OneDrive
             CaminhoPadraoDeArmazenamento novoCaminho = new CaminhoPadraoDeArmazenamento();
@@ -207,24 +211,33 @@ public class OneDriveService {
                 .replaceAll("\\s+", "-");
 
         String documento = cliente.getCpfCnpj() != null ? cliente.getCpfCnpj() : "sem-documento";
-        return nome + "-" + documento;
+        
+        // Sanitize the generated folder name to prevent path injection
+        String nomePasta = nome + "-" + documento;
+        return FilenameSanitizer.sanitizeSafe(nomePasta);
     }
 
     // Escolhe automaticamente entre upload simples (≤ 4 MB) e upload em chunks (> 4 MB).
     public OneDriveItemResponse uploadDocumento(String nome, byte[] conteudo, Long tipoDocumentoId, Long caminhoDeArmazenamentoId, Long processoAppId) {
+        // Sanitize filename to prevent path injection attacks (defense in depth)
+        String nomeSanitizado = FilenameSanitizer.sanitizeSafe(nome);
+        
         CaminhoPadraoDeArmazenamento caminho = obterCaminho(caminhoDeArmazenamentoId);
 
         if (conteudo.length <= LIMITE_UPLOAD_SIMPLES) {
-            return uploadSimples(nome, conteudo, tipoDocumentoId, caminho, processoAppId);
+            return uploadSimples(nomeSanitizado, conteudo, tipoDocumentoId, caminho, processoAppId);
         }
-        return uploadGrande(nome, conteudo, tipoDocumentoId, caminho, processoAppId);
+        return uploadGrande(nomeSanitizado, conteudo, tipoDocumentoId, caminho, processoAppId);
     }
 
     public void excluirArquivo(Long caminhoDeArmazenamentoId, String nomeArquivo) {
         try {
+            // Sanitize filename to prevent path injection attacks
+            String nomeArquivoSanitizado = FilenameSanitizer.sanitizeSafe(nomeArquivo);
+            
             CaminhoPadraoDeArmazenamento caminhoArmazenamento = obterCaminho(caminhoDeArmazenamentoId);
             String driveId = obterDriveId();
-            String caminho = CAMINHO_PADRAO + "/" + caminhoArmazenamento.getCaminho() + "/" + nomeArquivo + ":";
+            String caminho = CAMINHO_PADRAO + "/" + caminhoArmazenamento.getCaminho() + "/" + nomeArquivoSanitizado + ":";
 
             getClient()
                     .drives().byDriveId(driveId)
@@ -232,7 +245,7 @@ public class OneDriveService {
                     .delete();
 
             documentoRepository.findByNomeOriginalAndPadraoArmazenamentoIdAndAtivoTrue(
-                    nomeArquivo, caminhoArmazenamento.getId()
+                    nomeArquivoSanitizado, caminhoArmazenamento.getId()
             ).ifPresent(doc -> {
                 Usuario usuario = obterUsuarioLogado();
                 doc.setAtivo(false);
@@ -330,12 +343,16 @@ public class OneDriveService {
 
     public OneDriveItemResponse renomearArquivo(Long caminhoDeArmazenamentoId, String nomeAtual, String novoNome) {
         try {
+            // Sanitize both filenames to prevent path injection attacks
+            String nomeAtualSanitizado = FilenameSanitizer.sanitizeSafe(nomeAtual);
+            String novoNomeSanitizado = FilenameSanitizer.sanitizeSafe(novoNome);
+            
             CaminhoPadraoDeArmazenamento caminhoArmazenamento = obterCaminho(caminhoDeArmazenamentoId);
             String driveId = obterDriveId();
-            String caminho = CAMINHO_PADRAO + "/" + caminhoArmazenamento.getCaminho() + "/" + nomeAtual + ":";
+            String caminho = CAMINHO_PADRAO + "/" + caminhoArmazenamento.getCaminho() + "/" + nomeAtualSanitizado + ":";
 
             DriveItem patch = new DriveItem();
-            patch.setName(novoNome);
+            patch.setName(novoNomeSanitizado);
 
             DriveItem atualizado = getClient()
                     .drives().byDriveId(driveId)
@@ -346,9 +363,9 @@ public class OneDriveService {
 
             // Atualiza o documento no banco
             documentoRepository.findByNomeOriginalAndPadraoArmazenamentoIdAndAtivoTrue(
-                    nomeAtual, caminhoArmazenamento.getId()
+                    nomeAtualSanitizado, caminhoArmazenamento.getId()
             ).ifPresent(doc -> {
-                doc.setNomeOriginal(novoNome);
+                doc.setNomeOriginal(novoNomeSanitizado);
                 doc.setUltimaAtualizacao(LocalDateTime.now());
                 doc.setOnedriveUrlDownload(res.urlDownload());
                 doc.setOnedriveUrlThumbnail(res.thumbnailUrl());

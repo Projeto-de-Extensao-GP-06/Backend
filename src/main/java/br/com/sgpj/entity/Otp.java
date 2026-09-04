@@ -4,6 +4,12 @@ import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * Entidade que representa um código OTP (One-Time Password) armazenado no banco de dados.
+ *
+ * <p><b>Segurança:</b> O código OTP é armazenado como hash BCrypt, não em texto puro,
+ * para evitar exposição em caso de acesso não autorizado ao banco de dados.</p>
+ */
 @Entity
 @Table(name = "usuario_otp")
 public class Otp {
@@ -12,7 +18,7 @@ public class Otp {
     @Column(name = "email", nullable = false, length = 255)
     private String email;
 
-    @Column(name = "otp", nullable = false, length = 6)
+    @Column(name = "otp", nullable = false, length = 60)
     private String otp;
 
     @Column(name = "expira_em", nullable = false)

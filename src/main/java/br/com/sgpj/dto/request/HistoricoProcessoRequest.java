@@ -10,9 +10,6 @@ public record HistoricoProcessoRequest(
         @NotNull(message = "Id do processo responsavel e obrigatorio")
         @Schema(description = "Id do processp responsavel", example = "1")
         Long processoAppId,
-        @NotNull(message = "Id do usuario responsavel e obrigatorio")
-        @Schema(description = "Id do usuario responsavel", example = "1")
-        Long usuarioUtilizadoId,
         String descricaoAlteracao,
         LocalDateTime dataHoraAlteracao,
         @NotNull(message = "Id do tipo de alteracao  e obrigatorio")

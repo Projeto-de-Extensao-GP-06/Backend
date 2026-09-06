@@ -520,6 +520,7 @@ VALUES (
 INSERT INTO cliente (
     nome_razao_social,
     cpf_cnpj,
+    is_pf,
     rg,
     status_cliente_id,
     endereco_id,
@@ -529,6 +530,7 @@ INSERT INTO cliente (
 VALUES (
     'João Carlos da Silva',
     '12345678901',
+    1,
     '445566778',
     3,
     1,

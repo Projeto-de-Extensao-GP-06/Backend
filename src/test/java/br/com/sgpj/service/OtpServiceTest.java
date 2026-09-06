@@ -1,6 +1,5 @@
 package br.com.sgpj.service;
 
-import br.com.sgpj.adapter.database.OtpPersistenciaAdapter;
 import br.com.sgpj.entity.Otp;
 import br.com.sgpj.exception.LimiteTentativasExcedidoException;
 import br.com.sgpj.exception.OtpGenerationLimitExceededException;

@@ -39,7 +39,7 @@ public class DataJudAdapter {
             try {
                 return restClient.post()
                         .uri(endpoint)
-                        .header("Authorization", "APIKey " + dataJudApiKey)
+                        .header("Authorization", dataJudApiKey)
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(body)
                         .retrieve()

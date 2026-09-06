@@ -1,7 +1,5 @@
 package br.com.sgpj.service;
 
-import br.com.sgpj.adapter.database.CargoPersistenciaAdapter;
-import br.com.sgpj.adapter.database.UsuarioPersistenciaAdapter;
 import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
 import br.com.sgpj.dto.request.UsuarioAtualizacaoRequest;
 import br.com.sgpj.dto.request.UsuarioCriacaoRequest;
@@ -242,7 +240,7 @@ class UsuarioServiceTest {
     }
 
     // ========================
-    // listarPorFuncao()
+    // listarPorCargo()
     // ========================
 
     @Test
@@ -250,15 +248,15 @@ class UsuarioServiceTest {
     void deveListarUsuariosPorFuncao() {
         // Given
         String funcao = "ADMIN";
-        when(usuarioPersistenciaAdapter.listarPorFuncao(funcao)).thenReturn(List.of(criarUsuarioAtivo()));
+        when(usuarioPersistenciaAdapter.listarPorCargo(funcao)).thenReturn(List.of(criarUsuarioAtivo()));
 
         // When
-        List<UsuarioListarResponse> resultado = usuarioService.listarPorFuncao(funcao);
+        List<UsuarioListarResponse> resultado = usuarioService.listarPorCargo(funcao);
 
         // Then
         assertNotNull(resultado);
         assertFalse(resultado.isEmpty());
-        verify(usuarioPersistenciaAdapter, times(1)).listarPorFuncao(funcao);
+        verify(usuarioPersistenciaAdapter, times(1)).listarPorCargo(funcao);
     }
 
     // ========================

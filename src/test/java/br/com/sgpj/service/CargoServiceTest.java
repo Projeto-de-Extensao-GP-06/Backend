@@ -1,9 +1,5 @@
 package br.com.sgpj.service;
 
-import br.com.sgpj.adapter.database.CargoPermissaoAdapter;
-import br.com.sgpj.adapter.database.CargoPersistenciaAdapter;
-import br.com.sgpj.adapter.database.PermissaoPersistenciaAdapter;
-import br.com.sgpj.adapter.database.UsuarioPersistenciaAdapter;
 import br.com.sgpj.dto.request.AtribuirPermissoesRequest;
 import br.com.sgpj.dto.request.CriarCargoRequest;
 import br.com.sgpj.dto.response.CargoResponse;

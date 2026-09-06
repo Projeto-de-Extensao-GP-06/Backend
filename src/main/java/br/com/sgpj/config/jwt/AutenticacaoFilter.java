@@ -18,7 +18,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.web.filter.OncePerRequestFilter;
-import br.com.sgpj.controller.UsuarioController;
 import br.com.sgpj.exception.TokenBlacklistedException;
 import br.com.sgpj.security.TokenBlacklistService;
 import br.com.sgpj.service.AutenticacaoService;
@@ -131,7 +130,7 @@ public class AutenticacaoFilter extends OncePerRequestFilter {
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
             String tokenDoCookie = Arrays.stream(cookies)
-                    .filter(c -> UsuarioController.COOKIE_NOME.equals(c.getName()))
+                    .filter(c -> GerenciadorTokenJwt.COOKIE_NOME.equals(c.getName()))
                     .map(Cookie::getValue)
                     .findFirst()
                     .orElse(null);

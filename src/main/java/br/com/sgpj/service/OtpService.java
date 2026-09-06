@@ -1,9 +1,9 @@
 package br.com.sgpj.service;
 
-import br.com.sgpj.adapter.database.OtpPersistenciaAdapter;
 import br.com.sgpj.entity.Otp;
 import br.com.sgpj.exception.LimiteTentativasExcedidoException;
 import br.com.sgpj.exception.OtpGenerationLimitExceededException;
+import br.com.sgpj.repository.OtpRepository;
 import br.com.sgpj.security.OtpHashUtil;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -28,12 +28,12 @@ public class OtpService {
     private static final int MAX_OTP_GENERATION_PER_HOUR = 5;
 
     private final SecureRandom secureRandom = new SecureRandom();
-    private final OtpPersistenciaAdapter otpPersistenciaAdapter;
+    private final OtpRepository otpRepository;
     private final OtpHashUtil otpHashUtil;
     private final ConcurrentMap<String, OtpGenerationHistory> otpGenerationHistory = new ConcurrentHashMap<>();
 
-    public OtpService(OtpPersistenciaAdapter otpPersistenciaAdapter, OtpHashUtil otpHashUtil) {
-        this.otpPersistenciaAdapter = otpPersistenciaAdapter;
+    public OtpService(OtpRepository otpRepository, OtpHashUtil otpHashUtil) {
+        this.otpRepository = otpRepository;
         this.otpHashUtil = otpHashUtil;
     }
 
@@ -46,7 +46,7 @@ public class OtpService {
         // Hash do OTP antes de armazenar no banco
         String hashedOtp = otpHashUtil.hashOtp(otp);
         Otp usuarioOtp = new Otp(email, hashedOtp, expiryTime);
-        otpPersistenciaAdapter.save(usuarioOtp);
+        otpRepository.save(usuarioOtp);
 
         // Record this OTP generation
         recordOtpGeneration(email);
@@ -121,7 +121,7 @@ public class OtpService {
             inputOtp = inputOtp.trim();
         }
 
-        Otp otp = otpPersistenciaAdapter.findByEmail(email);
+        Otp otp = otpRepository.findByEmail(email);
 
         if (otp.isExpired()) {
             removeOtp(email);
@@ -130,7 +130,7 @@ public class OtpService {
 
         // Verificar o OTP usando hash
         if (otpHashUtil.verifyOtp(inputOtp, otp.getOtp())) {
-            otpPersistenciaAdapter.deleteByEmail(email);
+            otpRepository.deleteByEmail(email);
             return true;
         }
 
@@ -141,18 +141,18 @@ public class OtpService {
             throw new LimiteTentativasExcedidoException("Número máximo de tentativas alcançado. Solicite um novo código.");
         }
 
-        otpPersistenciaAdapter.save(otp);
+        otpRepository.save(otp);
         return false;
     }
 
     public void removeOtp(String email) {
-        otpPersistenciaAdapter.deleteByEmail(email);
+        otpRepository.deleteByEmail(email);
     }
 
     // Método que roda a cada 10min para limpar OTPs expiradas
     @Scheduled(cron = "0 */10 * * * *")
     public void executeCleanup() {
-        otpPersistenciaAdapter.deleteExpiredBefore(LocalDateTime.now());
+        otpRepository.deleteByExpiraEmBefore(LocalDateTime.now());
         cleanupOtpGenerationHistory();
     }
 

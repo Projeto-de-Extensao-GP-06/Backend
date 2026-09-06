@@ -30,8 +30,11 @@ public class AuthorizationUtil {
 
     public Usuario getUsuarioLogado() {
         String email = usuarioAutenticacaoAdapter.obterEmailUsuarioLogado();
-        return usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new AcessoNegadoException("Usuário não encontrado"));
+        Usuario usuario = usuarioRepository.findByEmail(email);
+        if (usuario == null) {
+            throw new AcessoNegadoException("Usuário não encontrado");
+        }
+        return usuario;
     }
 
     public void verificarAcessoCliente(Long clienteId) {

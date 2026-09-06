@@ -329,34 +329,34 @@ class UsuarioControllerTest {
     }
 
     // =========================================================================
-    // listarPorFuncao
+    // listarPorCargo
     // =========================================================================
 
     @Nested
-    @DisplayName("GET /usuarios/funcao - listarPorFuncao")
-    class ListarPorFuncao {
+    @DisplayName("GET /usuarios/funcao - listarPorCargo")
+    class ListarPorCargo {
 
         private static final String FUNCAO = "ANALISTA";
 
         @Test
         @DisplayName("Deve retornar lista com status 200 quando há usuários com a função informada")
         void deveRetornarListaComStatus200QuandoHaUsuarios() {
-            when(usuarioService.listarPorFuncao(FUNCAO)).thenReturn(List.of(usuarioListarResponse));
+            when(usuarioService.listarPorCargo(FUNCAO)).thenReturn(List.of(usuarioListarResponse));
 
-            ResponseEntity<List<UsuarioListarResponse>> resposta = usuarioController.listarPorFuncao(FUNCAO);
+            ResponseEntity<List<UsuarioListarResponse>> resposta = usuarioController.listarPorCargo(FUNCAO);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
             assertThat(resposta.getBody()).hasSize(1);
 
-            verify(usuarioService).listarPorFuncao(FUNCAO);
+            verify(usuarioService).listarPorCargo(FUNCAO);
         }
 
         @Test
         @DisplayName("Deve retornar status 204 quando não há usuários com a função informada")
         void deveRetornarStatus204QuandoListaVazia() {
-            when(usuarioService.listarPorFuncao(FUNCAO)).thenReturn(List.of());
+            when(usuarioService.listarPorCargo(FUNCAO)).thenReturn(List.of());
 
-            ResponseEntity<List<UsuarioListarResponse>> resposta = usuarioController.listarPorFuncao(FUNCAO);
+            ResponseEntity<List<UsuarioListarResponse>> resposta = usuarioController.listarPorCargo(FUNCAO);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
         }

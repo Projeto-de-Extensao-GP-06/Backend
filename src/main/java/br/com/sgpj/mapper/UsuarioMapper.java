@@ -44,11 +44,29 @@ public class UsuarioMapper {
   }
 
   public static UsuarioTokenResponse toTokenDto(Usuario usuario, String token) {
+    UsuarioSessaoResponse.CargoDto cargoDto = null;
+    List<String> permissoes = Collections.emptyList();
+
+    if (usuario.getCargo() != null) {
+      cargoDto = new UsuarioSessaoResponse.CargoDto(
+              usuario.getCargo().getId(),
+              usuario.getCargo().getNome()
+      );
+
+      if (usuario.getCargo().getPermissoes() != null) {
+        permissoes = usuario.getCargo().getPermissoes().stream()
+                .map(cargoPermissao -> cargoPermissao.getPermissao().getNome())
+                .toList();
+      }
+    }
+
     return new UsuarioTokenResponse(
             usuario.getId(),
             usuario.getNome(),
             usuario.getEmail(),
-            token);
+            token,
+            cargoDto,
+            permissoes);
   }
 
   /**

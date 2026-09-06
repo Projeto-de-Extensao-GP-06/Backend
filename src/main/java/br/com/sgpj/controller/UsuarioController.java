@@ -1,249 +1,132 @@
 package br.com.sgpj.controller;
 
-import br.com.sgpj.dto.request.*;
+import br.com.sgpj.dto.request.UsuarioAtualizacaoRequest;
+import br.com.sgpj.dto.request.UsuarioCriacaoRequest;
 import br.com.sgpj.dto.response.UsuarioListarResponse;
-import br.com.sgpj.dto.response.UsuarioSessaoResponse;
-import br.com.sgpj.dto.response.UsuarioTokenResponse;
-import br.com.sgpj.exception.UsuarioAutoExclusaoException;
-import br.com.sgpj.config.jwt.GerenciadorTokenJwt;
-import br.com.sgpj.security.IpAddressUtil;
-import br.com.sgpj.security.RateLimiter;
-import br.com.sgpj.security.TokenBlacklistService;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import br.com.sgpj.entity.Usuario;
-import br.com.sgpj.mapper.UsuarioMapper;
 import br.com.sgpj.service.UsuarioService;
+
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
+
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Duration;
 import java.util.List;
 
 @RestController
 @RequestMapping("/usuarios")
 @Tag(name = "Usuários")
+@SecurityRequirement(name = "Bearer")
 public class UsuarioController {
 
-    public static final String COOKIE_NOME = "authToken";
-
-    @Value("${jwt.validity}")
-    private long jwtValidity;
-
-    @Value("${cookie.secure}")
-    private boolean cookieSecure;
-
     private final UsuarioService usuarioService;
-    private final RateLimiter rateLimiter;
-    private final TokenBlacklistService tokenBlacklistService;
-    private final GerenciadorTokenJwt gerenciadorTokenJwt;
 
-    public UsuarioController(UsuarioService usuarioService, RateLimiter rateLimiter, 
-                           TokenBlacklistService tokenBlacklistService, GerenciadorTokenJwt gerenciadorTokenJwt) {
+    public UsuarioController(
+
+            UsuarioService usuarioService) {
+
         this.usuarioService = usuarioService;
-        this.rateLimiter = rateLimiter;
-        this.tokenBlacklistService = tokenBlacklistService;
-        this.gerenciadorTokenJwt = gerenciadorTokenJwt;
     }
 
     @PostMapping
-    @SecurityRequirement(name = "Bearer")
-    @PreAuthorize("hasAuthority('CRIAR USUÁRIO') || hasAuthority('TODAS AS PERMISSÕES')")
-    public ResponseEntity<Void> criar(@RequestBody @Valid UsuarioCriacaoRequest usuarioCriacaoRequest) {
-        this.usuarioService.criar(usuarioCriacaoRequest);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
-    }
+    @PreAuthorize(
+            "hasAuthority('CRIAR USUÁRIO') || hasAuthority('TODAS AS PERMISSÕES')"
+    )
+    public ResponseEntity<Void> criar(
+            @RequestBody @Valid UsuarioCriacaoRequest request
+    ) {
+        usuarioService.criar(request);
 
-    /**
-     * Autentica o usuário e retorna o token JWT como cookie HttpOnly.
-     */
-    @PostMapping("/login")
-    public ResponseEntity<UsuarioSessaoResponse> login(
-            @RequestBody @Valid UsuarioLoginRequest usuarioLoginRequestDto,
-            HttpServletResponse response,
-            HttpServletRequest httpRequest) {
-
-        String identifier = IpAddressUtil.createRateLimitIdentifier(httpRequest, usuarioLoginRequestDto.email());
-        rateLimiter.checkLoginRateLimit(identifier);
-
-        final Usuario usuario = UsuarioMapper.toEntity(usuarioLoginRequestDto);
-        UsuarioTokenResponse autenticado = usuarioService.autenticar(usuario);
-
-        adicionarCookie(response, autenticado.token(), Duration.ofSeconds(jwtValidity));
-
-        // Busca o usuário novamente para obter cargo e permissões
-        Usuario usuarioComPermissoes = usuarioService.obterPorId(autenticado.id());
-        
-        // Body retorna dados de sessão com cargo e permissões
-        UsuarioSessaoResponse sessao = UsuarioMapper.toSessaoDto(autenticado, usuarioComPermissoes);
-        return ResponseEntity.ok(sessao);
-    }
-
-    /**
-     * Invalida a sessão do usuário limpando o cookie de autenticação e 
-     * adicionando o token à blacklist para revogação server-side.
-     */
-    @PostMapping("/logout")
-    public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
-        // Extract and blacklist the current token
-        String currentToken = gerenciadorTokenJwt.extrairTokenDaRequisicao(request);
-        if (currentToken != null) {
-            tokenBlacklistService.blacklistToken(currentToken);
-        }
-        
-        adicionarCookie(response, "", Duration.ZERO);   // expira o token JWT de imediato
-        return ResponseEntity.noContent().build();
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .build();
     }
 
     @GetMapping
-    @SecurityRequirement(name = "Bearer")
     public ResponseEntity<List<UsuarioListarResponse>> listarTodos() {
-        List<UsuarioListarResponse> usuariosEncontrados = usuarioService.listarTodos();
 
-        if (usuariosEncontrados.isEmpty()) {
+        List<UsuarioListarResponse> usuarios =
+                usuarioService.listarTodos();
+
+        if (usuarios.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
-        return ResponseEntity.ok(usuariosEncontrados);
+
+        return ResponseEntity.ok(usuarios);
     }
 
-    @GetMapping("/funcao")
-    @SecurityRequirement(name = "Bearer")
-    public ResponseEntity<List<UsuarioListarResponse>> listarPorFuncao(@RequestParam String funcao) {
-        List<UsuarioListarResponse> usuariosEncontrados = usuarioService.listarPorFuncao(funcao);
+    @GetMapping("/cargo")
+    public ResponseEntity<List<UsuarioListarResponse>> listarPorCargo(
+            @RequestParam String cargo
+    ) {
 
-        if (usuariosEncontrados.isEmpty()) {
+        List<UsuarioListarResponse> usuarios =
+                usuarioService.listarPorCargo(cargo);
+
+        if (usuarios.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
-        return ResponseEntity.ok(usuariosEncontrados);
+
+        return ResponseEntity.ok(usuarios);
     }
 
     @GetMapping("/pesquisar")
-    @SecurityRequirement(name = "Bearer")
-    public ResponseEntity<List<UsuarioListarResponse>> pesquisarPorNomeOuEmail(@RequestParam String pesquisa) {
-        List<UsuarioListarResponse> usuariosEncontrados = usuarioService.buscarPorNomeOuEmail(pesquisa);
+    public ResponseEntity<List<UsuarioListarResponse>> pesquisar(
+            @RequestParam String pesquisa
+    ) {
 
-        if (usuariosEncontrados.isEmpty()) {
+        List<UsuarioListarResponse> usuarios =
+                usuarioService.buscarPorNomeOuEmail(pesquisa);
+
+        if (usuarios.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
-        return ResponseEntity.ok(usuariosEncontrados);
-    }
 
+        return ResponseEntity.ok(usuarios);
+    }
 
     @PutMapping("/{id}")
-    @SecurityRequirement(name = "Bearer")
-    @PreAuthorize("hasAuthority('EDITAR USUÁRIO') || hasAuthority('TODAS AS PERMISSÕES')")
-    public ResponseEntity<UsuarioListarResponse> atualizarUsuario(@Valid @RequestBody UsuarioAtualizacaoRequest atualizacao,
-                                                                  @PathVariable Long id){
-        UsuarioListarResponse usuarioEditado = usuarioService.atualizarUsuario(atualizacao, id);
-        return ResponseEntity.status(HttpStatus.OK).body(usuarioEditado);
-    }
+    @PreAuthorize(
+            "hasAuthority('EDITAR USUÁRIO') || hasAuthority('TODAS AS PERMISSÕES')"
+    )
+    public ResponseEntity<UsuarioListarResponse> atualizar(
+            @PathVariable Long id,
+            @RequestBody @Valid UsuarioAtualizacaoRequest request
+    ) {
 
+        UsuarioListarResponse usuario =
+                usuarioService.atualizarUsuario(id, request);
 
-
-    /**
-     * Cria e adiciona o cookie de autenticação na resposta HTTP.
-     *
-     * <p><b>HttpOnly:</b> inacessível ao JavaScript (proteção XSS).</p>
-     * <p><b>SameSite=Strict:</b> bloqueia envio cross-site (mitiga CSRF).</p>
-     * <p><b>Secure:</b> baseado em configuração de ambiente (true em produção, false em desenvolvimento).</p>
-     *
-     * @param response resposta HTTP onde o cookie será adicionado
-     * @param valor    valor do cookie (token JWT ou vazio para logout)
-     * @param duracao  tempo de vida do cookie ({@code Duration.ZERO} para deletar)
-     */
-    private void adicionarCookie(HttpServletResponse response, String valor, Duration duracao) {
-        ResponseCookie cookie = ResponseCookie.from(COOKIE_NOME, valor)
-                .httpOnly(true)             // inacessível ao JavaScript
-                .secure(cookieSecure)       // baseado em configuração (true em produção)
-                .sameSite("Strict")         // bloqueia envio cross-site (mitiga CSRF)
-                .path("/")                  // válido para toda a aplicação
-                .maxAge(duracao)            // expira junto com o token JWT
-                .build();
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        return ResponseEntity.ok(usuario);
     }
 
     @DeleteMapping("/{id}")
-    @SecurityRequirement(name = "Bearer")
-    @PreAuthorize("hasAuthority('EXCLUIR USUÁRIO') || hasAuthority('TODAS AS PERMISSÕES')")
-    public ResponseEntity<Void> deletar(@PathVariable Long id) {
-        if (!usuarioService.isDifferentId(id)) {
-            throw new UsuarioAutoExclusaoException("Não é possível excluir o próprio usuário.");
-        }
+    @PreAuthorize(
+            "hasAuthority('EXCLUIR USUÁRIO') || hasAuthority('TODAS AS PERMISSÕES')"
+    )
+    public ResponseEntity<Void> deletar(
+            @PathVariable Long id
+    ) {
 
-        this.usuarioService.deletar(id);
+        usuarioService.deletar(id);
+
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/enviar-redefinir-senha-otp")
-    @PreAuthorize("permitAll()")
-    public ResponseEntity<String> enviarRedefinirSenhaOtp(@RequestBody EnviarOtpRequest request,
-                                                          HttpServletRequest httpRequest) {
-        String identifier = IpAddressUtil.createRateLimitIdentifier(httpRequest, request.email());
-        rateLimiter.checkOtpRateLimit(identifier);
-        
-        usuarioService.enviarRedefinirSenhaOtp(request.email());
-        return ResponseEntity.ok("Se o e-mail estiver cadastrado, um código será enviado em instantes.");
-    }
-
-    @PostMapping("/enviar-definir-senha-otp")
-    @PreAuthorize("permitAll()")
-    public ResponseEntity<String> enviarDefinirSenhaOtp(@RequestBody EnviarOtpRequest request,
-                                                        HttpServletRequest httpRequest) {
-        String identifier = IpAddressUtil.createRateLimitIdentifier(httpRequest, request.email());
-        rateLimiter.checkOtpRateLimit(identifier);
-        
-        usuarioService.enviarDefinirSenhaOtp(request.email());
-        return ResponseEntity.ok("Se o e-mail estiver cadastrado, um código será enviado em instantes.");
-    }
-
-    @PostMapping("/validar-otp")
-    @PreAuthorize("permitAll()")
-    public ResponseEntity<String> validateOtp(@RequestBody ValidarOtpRequest request,
-                                              HttpServletResponse response,
-                                              HttpServletRequest httpRequest) {
-        String identifier = IpAddressUtil.createRateLimitIdentifier(httpRequest, request.email());
-        rateLimiter.checkOtpRateLimit(identifier);
-        
-        if (usuarioService.validarOtp(request)) {
-            UsuarioTokenResponse autenticado = usuarioService.autenticarOtp(request);
-            adicionarCookie(response, autenticado.token(), Duration.ofSeconds(900));
-
-            return ResponseEntity.ok("Código validado com sucesso!");
-        } else {
-            return ResponseEntity.badRequest().body("Código inválido ou expirado.");
-        }
-    }
-
-    @PostMapping("/definir-nova-senha")
-    @PreAuthorize("isAuthenticated()")
-    @SecurityRequirement(name = "Bearer")
-    public ResponseEntity<String> definirNovaSenha(@RequestBody DefinirNovaSenhaRequest request,
-                                                   HttpServletRequest httpRequest,
-                                                   HttpServletResponse response) {
-        usuarioService.definirNovaSenha(request.senha());
-        
-        // Blacklist the current token after password change
-        String currentToken = gerenciadorTokenJwt.extrairTokenDaRequisicao(httpRequest);
-        if (currentToken != null) {
-            tokenBlacklistService.blacklistToken(currentToken);
-        }
-        
-        adicionarCookie(response, "", Duration.ZERO);
-        return ResponseEntity.ok("Nova senha definida com sucesso!");
-    }
-
     @PostMapping("/reactivate/{id}")
-    @PreAuthorize("hasAuthority('EDITAR USUÁRIO') || hasAuthority('TODAS AS PERMISSÕES')")
-    @SecurityRequirement(name = "Bearer")
-    public ResponseEntity<UsuarioListarResponse> reativarUsuario(@PathVariable Long id) {
-        return ResponseEntity.ok().body(usuarioService.reativarUsuario(id));
+    @PreAuthorize(
+            "hasAuthority('EDITAR USUÁRIO') || hasAuthority('TODAS AS PERMISSÕES')"
+    )
+    public ResponseEntity<UsuarioListarResponse> reativar(
+            @PathVariable Long id
+    ) {
+
+        return ResponseEntity.ok(
+                usuarioService.reativarUsuario(id)
+        );
     }
 }

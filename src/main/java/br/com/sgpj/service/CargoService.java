@@ -1,9 +1,5 @@
 package br.com.sgpj.service;
 
-import br.com.sgpj.adapter.database.CargoPermissaoAdapter;
-import br.com.sgpj.adapter.database.CargoPersistenciaAdapter;
-import br.com.sgpj.adapter.database.PermissaoPersistenciaAdapter;
-import br.com.sgpj.adapter.database.UsuarioPersistenciaAdapter;
 import br.com.sgpj.dto.request.AtribuirPermissoesRequest;
 import br.com.sgpj.dto.request.CriarCargoRequest;
 import br.com.sgpj.dto.response.CargoResponse;
@@ -13,6 +9,10 @@ import br.com.sgpj.exception.CargoJaExisteException;
 import br.com.sgpj.exception.CargoNaoEncontradoException;
 import br.com.sgpj.exception.OperacaoInvalidaException;
 import br.com.sgpj.mapper.CargoMapper;
+import br.com.sgpj.repository.CargoPermissaoRepository;
+import br.com.sgpj.repository.CargoRepository;
+import br.com.sgpj.repository.PermissaoRepository;
+import br.com.sgpj.repository.UsuarioRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -27,17 +27,19 @@ import java.util.stream.Collectors;
 @Service
 public class CargoService {
 
-    public CargoService(CargoPersistenciaAdapter cargoPersistenciaAdapter, PermissaoPersistenciaAdapter permissaoPersistenciaAdapter, UsuarioPersistenciaAdapter usuarioPersistenciaAdapter, CargoPermissaoAdapter cargoPermissaoAdapter) {
-        this.cargoPersistenciaAdapter = cargoPersistenciaAdapter;
-        this.permissaoPersistenciaAdapter = permissaoPersistenciaAdapter;
-        this.usuarioPersistenciaAdapter = usuarioPersistenciaAdapter;
-        this.cargoPermissaoAdapter = cargoPermissaoAdapter;
+    private final CargoRepository cargoRepository;
+    private final PermissaoRepository permissaoRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final CargoPermissaoRepository cargoPermissaoRepository;
+
+    public CargoService(CargoRepository cargoRepository, PermissaoRepository permissaoRepository, UsuarioRepository usuarioRepository, CargoPermissaoRepository cargoPermissaoRepository) {
+        this.cargoRepository = cargoRepository;
+        this.permissaoRepository = permissaoRepository;
+        this.usuarioRepository = usuarioRepository;
+        this.cargoPermissaoRepository = cargoPermissaoRepository;
     }
 
-    private final CargoPersistenciaAdapter cargoPersistenciaAdapter;
-    private final PermissaoPersistenciaAdapter permissaoPersistenciaAdapter;
-    private final UsuarioPersistenciaAdapter usuarioPersistenciaAdapter;
-    private final CargoPermissaoAdapter cargoPermissaoAdapter;
+
 
     private static final Long CARGO_ADMIN_ID = 1L;
     private static final Long SEM_CARGO_ID = 2L;
@@ -47,8 +49,8 @@ public class CargoService {
 
     @Transactional(readOnly = true)
     public Page<CargoResponse> listarPaginado(Pageable pageable) {
-        Page<Long> idsPage = cargoPersistenciaAdapter.findAllIds(pageable);
-        List<Cargo> cargos = cargoPersistenciaAdapter.findAllWithPermissoesByIds(idsPage);
+        Page<Long> idsPage = cargoRepository.findAllIds(pageable);
+        List<Cargo> cargos = cargoRepository.findAllWithPermissoesByIds(idsPage.getContent());
 
         Map<Long, Cargo> cargoMap = cargos.stream()
                 .collect(Collectors.toMap(Cargo::getId, c -> c));
@@ -62,21 +64,21 @@ public class CargoService {
 
     @Transactional
     public CargoResponse criar(CriarCargoRequest request, String emailUsuario) {
-        if (cargoPersistenciaAdapter.existsByNome(request.nome())) {
+        if (cargoRepository.existsByNome(request.nome())) {
             throw new CargoJaExisteException("O cargo " + request.nome() + " já existe");
         }
 
-        Usuario criadoPor = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(emailUsuario);
-        Permissao semPermissoes = permissaoPersistenciaAdapter.buscarPermissaoPorId(SEM_PERMISSOES_ID);
+        Usuario criadoPor = usuarioRepository.findByEmail(emailUsuario);
+        Permissao semPermissoes = permissaoRepository.getReferenceById(SEM_PERMISSOES_ID);
 
         Cargo cargo = new Cargo();
         cargo.setNome(request.nome());
         cargo.setCriadoPor(criadoPor);
         cargo.setCriadoEm(LocalDateTime.now());
 
-        Cargo cargoSalvo = cargoPersistenciaAdapter.salvar(cargo);
+        Cargo cargoSalvo = cargoRepository.save(cargo);
 
-        cargoPermissaoAdapter.salvar(new CargoPermissao(
+        cargoPermissaoRepository.save(new CargoPermissao(
                 new CargoPermissaoId(cargoSalvo.getId(), SEM_PERMISSOES_ID),
                 cargoSalvo,
                 semPermissoes,
@@ -93,10 +95,10 @@ public class CargoService {
                                              AtribuirPermissoesRequest request,
                                              String emailUsuario) {
 
-        Cargo cargo = cargoPersistenciaAdapter.buscarCargoPorId(cargoId);
-        Usuario atribuidoPor = usuarioPersistenciaAdapter.buscarUsuarioPorEmail(emailUsuario);
+        Cargo cargo = cargoRepository.getReferenceById(cargoId);
+        Usuario atribuidoPor = usuarioRepository.findByEmail(emailUsuario);
 
-        cargoPermissaoAdapter.deleteAllById_CargoId(cargoId);
+        cargoPermissaoRepository.deleteAllById_CargoId(cargoId);
 
         List<Long> permissaoIds = request.permissaoIds();
 
@@ -108,15 +110,15 @@ public class CargoService {
 
         } else {
             for (Long permissaoId : permissaoIds) {
-                Permissao permissao = permissaoPersistenciaAdapter.buscarPermissaoPorId(permissaoId);
-                cargoPermissaoAdapter.salvar(new CargoPermissao(
+                Permissao permissao = permissaoRepository.getReferenceById(permissaoId);
+                cargoPermissaoRepository.save(new CargoPermissao(
                         new CargoPermissaoId(cargoId, permissaoId),
                         cargo, permissao, atribuidoPor, LocalDateTime.now()
                 ));
             }
         }
 
-        List<CargoPermissao> permissoes = cargoPermissaoAdapter.findAllById_CargoId(cargoId);
+        List<CargoPermissao> permissoes = cargoPermissaoRepository.findAllById_CargoId(cargoId);
         cargo.setPermissoes(permissoes);
 
         return CargoMapper.toResponse(cargo);
@@ -132,24 +134,24 @@ public class CargoService {
             throw new OperacaoInvalidaException("O cargo 'Sem Cargo' não pode ser excluído");
         }
 
-        if (!cargoPersistenciaAdapter.existsById(cargoId)) {
+        if (!cargoRepository.existsById(cargoId)) {
             throw new CargoNaoEncontradoException("Cargo não encontrado: " + cargoId);
         }
 
-        if (usuarioPersistenciaAdapter.existsByCargo(cargoId)) {
-            Cargo cargoPadrao = cargoPersistenciaAdapter.buscarCargoPorId(SEM_CARGO_ID);
+        if (usuarioRepository.existsByCargo_Id(cargoId)) {
+            Cargo cargoPadrao = cargoRepository.getReferenceById(SEM_CARGO_ID);
 
-            usuarioPersistenciaAdapter.findAllByCargo_Id(cargoId)
+            usuarioRepository.findAllByCargo_Id(cargoId)
                     .forEach(usuario -> usuario.setCargo(cargoPadrao));
         }
 
-        cargoPermissaoAdapter.deleteAllById_CargoId(cargoId);
-        cargoPersistenciaAdapter.deleteById(cargoId);
+        cargoPermissaoRepository.deleteAllById_CargoId(cargoId);
+        cargoRepository.deleteById(cargoId);
     }
 
     private void atribuirPermissaoEspecial(Long cargoId, Long permissaoId, Cargo cargo, Usuario atribuidoPor) {
-        Permissao permissao = permissaoPersistenciaAdapter.buscarPermissaoPorId(permissaoId);
-        cargoPermissaoAdapter.salvar(new CargoPermissao(
+        Permissao permissao = permissaoRepository.getReferenceById(permissaoId);
+        cargoPermissaoRepository.save(new CargoPermissao(
                 new CargoPermissaoId(cargoId, permissaoId),
                 cargo, permissao, atribuidoPor, LocalDateTime.now()
         ));

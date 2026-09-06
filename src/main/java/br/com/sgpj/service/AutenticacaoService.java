@@ -1,9 +1,10 @@
 package br.com.sgpj.service;
 
-import br.com.sgpj.adapter.database.UsuarioPersistenciaAdapter;
 import br.com.sgpj.dto.response.UsuarioDetalhesResponse;
 import br.com.sgpj.entity.Usuario;
+import br.com.sgpj.exception.ClienteNaoEncontradoException;
 import br.com.sgpj.exception.UsuarioNaoEncontradoException;
+import br.com.sgpj.repository.UsuarioRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,26 +17,23 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AutenticacaoService implements UserDetailsService {
 
-  private final UsuarioPersistenciaAdapter usuarioPersistenciaAdapter;
+  private final UsuarioRepository usuarioRepository;
 
   @Value("${jwt.secret}")
   private String jwtSecret;
 
-  public AutenticacaoService(UsuarioPersistenciaAdapter usuarioPersistenciaAdapter) {
-    this.usuarioPersistenciaAdapter = usuarioPersistenciaAdapter;
+  public AutenticacaoService(UsuarioRepository usuarioRepository) {
+    this.usuarioRepository = usuarioRepository;
   }
 
   // Metodo da interface implementada
   @Override
   @Transactional(readOnly = true) // mantém a sessão aberta durante o loadAuthorities
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-    Usuario usuario;
 
-    try {
-      usuario = usuarioPersistenciaAdapter.findByEmailWithPermissoes(username);
-    } catch (UsuarioNaoEncontradoException exception) {
-      throw new UsernameNotFoundException(String.format("usuário: %s não encontrado", username), exception);
-    }
+      Usuario usuario = usuarioRepository.findByEmailWithPermissoes(username)
+              .orElseThrow(() -> new UsuarioNaoEncontradoException(username));
+
 
     return new UsuarioDetalhesResponse(usuario);
   }

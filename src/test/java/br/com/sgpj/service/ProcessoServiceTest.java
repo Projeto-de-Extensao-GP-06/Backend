@@ -1,7 +1,6 @@
 package br.com.sgpj.service;
 
 import br.com.sgpj.adapter.api.DataJudAdapter;
-import br.com.sgpj.adapter.database.UsuarioPersistenciaAdapter;
 import br.com.sgpj.dto.request.ProcessoAppCriacaoRequest;
 import br.com.sgpj.dto.request.ProcessoAppUpdateRequest;
 import br.com.sgpj.dto.response.Processos.ProcessoAppCreateResponse;
@@ -22,7 +21,6 @@ import br.com.sgpj.entity.Processo.SiglaTribunal;
 import br.com.sgpj.entity.Processo.TipoAlteracao;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.entity.documentos.Documento;
-import br.com.sgpj.exception.AcessoNegadoException;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
 import br.com.sgpj.repository.ClienteRepository;
 import br.com.sgpj.repository.DocumentoRepository;

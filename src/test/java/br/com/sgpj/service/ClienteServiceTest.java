@@ -1,6 +1,5 @@
 package br.com.sgpj.service;
 
-import br.com.sgpj.adapter.database.ClientePersistenciaAdapter;
 import br.com.sgpj.dto.request.ClienteAtualizacaoRequest;
 import br.com.sgpj.dto.request.ClienteCriacaoRequest;
 import br.com.sgpj.dto.response.ClienteDetalhesResponse;
@@ -36,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -47,9 +47,6 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Testes do ClienteService")
 class ClienteServiceTest {
-
-    @Mock
-    private ClientePersistenciaAdapter clientePersistenciaAdapter;
     @Mock
     private ClienteRepository clienteRepository;
     @Mock
@@ -106,24 +103,24 @@ class ClienteServiceTest {
     class ListarTodos {
 
         @Test
-        @DisplayName("Deve retornar lista vazia quando não existir clientes")
+        @DisplayName("Deve retornar lista vazia quando nÃƒÆ’Ã‚Â£o existir clientes")
         void deveRetornarListaVaziaSeNaoExistirClientes() {
-            when(clientePersistenciaAdapter.listarTodos()).thenReturn(Collections.emptyList());
+            when(clienteRepository.findAll()).thenReturn(Collections.emptyList());
 
             List<ClienteListarResponse> resultado = clienteService.listarTodos();
 
             assertNotNull(resultado);
             assertTrue(resultado.isEmpty());
-            verify(clientePersistenciaAdapter, times(1)).listarTodos();
+            verify(clienteRepository, times(1)).findAll();
         }
 
         @Test
         @DisplayName("Deve retornar lista com clientes mapeados corretamente")
         void deveRetornarListaComClientesMapeados() {
-            Cliente cliente1 = criarClienteComStatus(1L, "João da Silva", "12345678901", "Ativo");
+            Cliente cliente1 = criarClienteComStatus(1L, "JoÃƒÆ’Ã‚Â£o da Silva", "12345678901", "Ativo");
             Cliente cliente2 = criarClienteComStatus(2L, "Empresa XYZ Ltda", "12345678000199", "Pendente");
 
-            when(clientePersistenciaAdapter.listarTodos()).thenReturn(List.of(cliente1, cliente2));
+            when(clienteRepository.findAll()).thenReturn(List.of(cliente1, cliente2));
 
             List<ClienteListarResponse> resultado = clienteService.listarTodos();
 
@@ -131,7 +128,7 @@ class ClienteServiceTest {
             assertEquals(2, resultado.size());
 
             assertEquals(1L, resultado.get(0).id());
-            assertEquals("João da Silva", resultado.get(0).nomeRazaoSocial());
+            assertEquals("JoÃƒÆ’Ã‚Â£o da Silva", resultado.get(0).nomeRazaoSocial());
             assertEquals("12345678901", resultado.get(0).cpfCnpj());
             assertEquals("contato@email.com", resultado.get(0).email());
             assertEquals("Ativo", resultado.get(0).statusNome());
@@ -140,11 +137,11 @@ class ClienteServiceTest {
             assertEquals("Empresa XYZ Ltda", resultado.get(1).nomeRazaoSocial());
             assertEquals("Pendente", resultado.get(1).statusNome());
 
-            verify(clientePersistenciaAdapter, times(1)).listarTodos();
+            verify(clienteRepository, times(1)).findAll();
         }
 
         @Test
-        @DisplayName("Deve retornar email nulo quando cliente não possui contato principal")
+        @DisplayName("Deve retornar email nulo quando cliente nÃƒÆ’Ã‚Â£o possui contato principal")
         void deveRetornarEmailNuloSemContatoPrincipal() {
             Cliente cliente = criarClienteComStatus(1L, "Maria", "98765432100", "Ativo");
             Contato contatoSecundario = new Contato();
@@ -152,7 +149,7 @@ class ClienteServiceTest {
             contatoSecundario.setPrincipal(false);
             cliente.setContatos(List.of(contatoSecundario));
 
-            when(clientePersistenciaAdapter.listarTodos()).thenReturn(List.of(cliente));
+            when(clienteRepository.findAll()).thenReturn(List.of(cliente));
 
             List<ClienteListarResponse> resultado = clienteService.listarTodos();
 
@@ -161,7 +158,7 @@ class ClienteServiceTest {
         }
 
         @Test
-        @DisplayName("Deve retornar status nulo quando cliente não possui status")
+        @DisplayName("Deve retornar status nulo quando cliente nÃƒÆ’Ã‚Â£o possui status")
         void deveRetornarStatusNuloSemStatus() {
             Cliente cliente = new Cliente();
             cliente.setId(1L);
@@ -169,7 +166,7 @@ class ClienteServiceTest {
             cliente.setStatusCliente(null);
             cliente.setContatos(null);
 
-            when(clientePersistenciaAdapter.listarTodos()).thenReturn(List.of(cliente));
+            when(clienteRepository.findAll()).thenReturn(List.of(cliente));
 
             List<ClienteListarResponse> resultado = clienteService.listarTodos();
 
@@ -186,17 +183,17 @@ class ClienteServiceTest {
         @Test
         @DisplayName("Deve retornar detalhes do cliente quando encontrado")
         void deveRetornarDetalhesDoClienteQuandoEncontrado() {
-            Cliente cliente = criarClienteComStatus(1L, "João da Silva", "12345678901", "Ativo");
+            Cliente cliente = criarClienteComStatus(1L, "JoÃƒÆ’Ã‚Â£o da Silva", "12345678901", "Ativo");
             cliente.setRg("123456789");
 
             doNothing().when(authorizationUtil).verificarAcessoCliente(1L);
-            when(clientePersistenciaAdapter.buscarPorId(1L)).thenReturn(cliente);
+            when(clienteRepository.findByIdComDetalhes(1L)).thenReturn(Optional.of(cliente));
 
             ClienteDetalhesResponse resultado = clienteService.buscarPorId(1L);
 
             assertNotNull(resultado);
             assertEquals(1L, resultado.id());
-            assertEquals("João da Silva", resultado.nomeRazaoSocial());
+            assertEquals("JoÃƒÆ’Ã‚Â£o da Silva", resultado.nomeRazaoSocial());
             assertEquals("12345678901", resultado.cpfCnpj());
             assertEquals("123456789", resultado.rg());
             assertNotNull(resultado.status());
@@ -207,15 +204,14 @@ class ClienteServiceTest {
             assertTrue(resultado.contatos().get(0).principal());
 
             verify(authorizationUtil, times(1)).verificarAcessoCliente(1L);
-            verify(clientePersistenciaAdapter, times(1)).buscarPorId(1L);
+            verify(clienteRepository, times(1)).findByIdComDetalhes(1L);
         }
 
         @Test
-        @DisplayName("Deve lançar exceção quando cliente não for encontrado")
+        @DisplayName("Deve lanÃƒÆ’Ã‚Â§ar exceÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o quando cliente nÃƒÆ’Ã‚Â£o for encontrado")
         void deveLancarExcecaoQuandoClienteNaoEncontrado() {
             doNothing().when(authorizationUtil).verificarAcessoCliente(999L);
-            when(clientePersistenciaAdapter.buscarPorId(999L))
-                    .thenThrow(new ClienteNaoEncontradoException(999L));
+            when(clienteRepository.findByIdComDetalhes(999L)).thenReturn(Optional.empty());
 
             ClienteNaoEncontradoException exception = assertThrows(
                     ClienteNaoEncontradoException.class,
@@ -224,11 +220,11 @@ class ClienteServiceTest {
 
             assertTrue(exception.getMessage().contains("999"));
             verify(authorizationUtil, times(1)).verificarAcessoCliente(999L);
-            verify(clientePersistenciaAdapter, times(1)).buscarPorId(999L);
+            verify(clienteRepository, times(1)).findByIdComDetalhes(999L);
         }
 
         @Test
-        @DisplayName("Deve lançar exceção quando acesso for negado")
+        @DisplayName("Deve lanÃƒÆ’Ã‚Â§ar exceÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o quando acesso for negado")
         void deveLancarExcecaoQuandoAcessoNegado() {
             doThrow(new AcessoNegadoException("Acesso negado ao cliente"))
                     .when(authorizationUtil).verificarAcessoCliente(1L);
@@ -240,11 +236,11 @@ class ClienteServiceTest {
 
             assertEquals("Acesso negado ao cliente", exception.getMessage());
             verify(authorizationUtil, times(1)).verificarAcessoCliente(1L);
-            verify(clientePersistenciaAdapter, never()).buscarPorId(anyLong());
+            verify(clienteRepository, never()).findByIdComDetalhes(anyLong());
         }
 
         @Test
-        @DisplayName("Deve retornar detalhes com endereço e status nulos quando não informados")
+        @DisplayName("Deve retornar detalhes com endereÃƒÆ’Ã‚Â§o e status nulos quando nÃƒÆ’Ã‚Â£o informados")
         void deveRetornarDetalhesComCamposNulos() {
             Cliente cliente = new Cliente();
             cliente.setId(1L);
@@ -254,7 +250,7 @@ class ClienteServiceTest {
             cliente.setContatos(null);
 
             doNothing().when(authorizationUtil).verificarAcessoCliente(1L);
-            when(clientePersistenciaAdapter.buscarPorId(1L)).thenReturn(cliente);
+            when(clienteRepository.findByIdComDetalhes(1L)).thenReturn(Optional.of(cliente));
 
             ClienteDetalhesResponse resultado = clienteService.buscarPorId(1L);
 
@@ -275,39 +271,39 @@ class ClienteServiceTest {
         @Test
         @DisplayName("Deve retornar clientes filtrados por status")
         void deveRetornarClientesFiltradosPorStatus() {
-            Cliente cliente = criarClienteComStatus(1L, "João", "12345678901", "Ativo");
+            Cliente cliente = criarClienteComStatus(1L, "JoÃƒÆ’Ã‚Â£o", "12345678901", "Ativo");
 
-            when(clientePersistenciaAdapter.listarPorStatus("Ativo")).thenReturn(List.of(cliente));
+            when(clienteRepository.findByStatusCliente_NomeIgnoreCase("Ativo")).thenReturn(List.of(cliente));
 
             List<ClienteListarResponse> resultado = clienteService.listarPorStatus("Ativo");
 
             assertNotNull(resultado);
             assertEquals(1, resultado.size());
-            assertEquals("João", resultado.get(0).nomeRazaoSocial());
+            assertEquals("JoÃƒÆ’Ã‚Â£o", resultado.get(0).nomeRazaoSocial());
             assertEquals("Ativo", resultado.get(0).statusNome());
 
-            verify(clientePersistenciaAdapter, times(1)).listarPorStatus("Ativo");
+            verify(clienteRepository, times(1)).findByStatusCliente_NomeIgnoreCase("Ativo");
         }
 
         @Test
-        @DisplayName("Deve retornar lista vazia quando não houver clientes com o status informado")
+        @DisplayName("Deve retornar lista vazia quando nÃƒÆ’Ã‚Â£o houver clientes com o status informado")
         void deveRetornarListaVaziaParaStatusInexistente() {
-            when(clientePersistenciaAdapter.listarPorStatus("Inexistente")).thenReturn(Collections.emptyList());
+            when(clienteRepository.findByStatusCliente_NomeIgnoreCase("Inexistente")).thenReturn(Collections.emptyList());
 
             List<ClienteListarResponse> resultado = clienteService.listarPorStatus("Inexistente");
 
             assertNotNull(resultado);
             assertTrue(resultado.isEmpty());
-            verify(clientePersistenciaAdapter, times(1)).listarPorStatus("Inexistente");
+            verify(clienteRepository, times(1)).findByStatusCliente_NomeIgnoreCase("Inexistente");
         }
 
         @Test
-        @DisplayName("Deve retornar múltiplos clientes com mesmo status")
+        @DisplayName("Deve retornar mÃƒÆ’Ã‚Âºltiplos clientes com mesmo status")
         void deveRetornarMultiplosClientesComMesmoStatus() {
             Cliente cliente1 = criarClienteComStatus(1L, "Cliente A", "11111111111", "Ativo");
             Cliente cliente2 = criarClienteComStatus(2L, "Cliente B", "22222222222", "Ativo");
 
-            when(clientePersistenciaAdapter.listarPorStatus("Ativo")).thenReturn(List.of(cliente1, cliente2));
+            when(clienteRepository.findByStatusCliente_NomeIgnoreCase("Ativo")).thenReturn(List.of(cliente1, cliente2));
 
             List<ClienteListarResponse> resultado = clienteService.listarPorStatus("Ativo");
 
@@ -322,17 +318,17 @@ class ClienteServiceTest {
         @Test
         @DisplayName("Deve retornar clientes ao pesquisar por nome")
         void deveRetornarClientesAoPesquisarPorNome() {
-            Cliente cliente = criarClienteComStatus(1L, "João da Silva", "12345678901", "Ativo");
+            Cliente cliente = criarClienteComStatus(1L, "JoÃƒÆ’Ã‚Â£o da Silva", "12345678901", "Ativo");
 
-            when(clientePersistenciaAdapter.pesquisarPorNomeOuCpfCnpj("João")).thenReturn(List.of(cliente));
+            when(clienteRepository.findByNomeRazaoSocialContainingIgnoreCaseOrCpfCnpjContaining("JoÃƒÆ’Ã‚Â£o", "JoÃƒÆ’Ã‚Â£o")).thenReturn(List.of(cliente));
 
-            List<ClienteListarResponse> resultado = clienteService.pesquisarPorNomeOuCpfCnpj("João");
+            List<ClienteListarResponse> resultado = clienteService.pesquisarPorNomeOuCpfCnpj("JoÃƒÆ’Ã‚Â£o");
 
             assertNotNull(resultado);
             assertEquals(1, resultado.size());
-            assertEquals("João da Silva", resultado.get(0).nomeRazaoSocial());
+            assertEquals("JoÃƒÆ’Ã‚Â£o da Silva", resultado.get(0).nomeRazaoSocial());
 
-            verify(clientePersistenciaAdapter, times(1)).pesquisarPorNomeOuCpfCnpj("João");
+            verify(clienteRepository, times(1)).findByNomeRazaoSocialContainingIgnoreCaseOrCpfCnpjContaining("JoÃƒÆ’Ã‚Â£o", "JoÃƒÆ’Ã‚Â£o");
         }
 
         @Test
@@ -340,7 +336,7 @@ class ClienteServiceTest {
         void deveRetornarClientesAoPesquisarPorCpfCnpj() {
             Cliente cliente = criarClienteComStatus(1L, "Empresa XYZ", "12345678000199", "Ativo");
 
-            when(clientePersistenciaAdapter.pesquisarPorNomeOuCpfCnpj("12345678000199"))
+            when(clienteRepository.findByNomeRazaoSocialContainingIgnoreCaseOrCpfCnpjContaining("12345678000199", "12345678000199"))
                     .thenReturn(List.of(cliente));
 
             List<ClienteListarResponse> resultado = clienteService.pesquisarPorNomeOuCpfCnpj("12345678000199");
@@ -351,32 +347,32 @@ class ClienteServiceTest {
         }
 
         @Test
-        @DisplayName("Deve retornar lista vazia quando não encontrar resultados")
+        @DisplayName("Deve retornar lista vazia quando nÃƒÆ’Ã‚Â£o encontrar resultados")
         void deveRetornarListaVaziaQuandoNaoEncontrar() {
-            when(clientePersistenciaAdapter.pesquisarPorNomeOuCpfCnpj("TermoInexistente"))
+            when(clienteRepository.findByNomeRazaoSocialContainingIgnoreCaseOrCpfCnpjContaining("TermoInexistente", "TermoInexistente"))
                     .thenReturn(Collections.emptyList());
 
             List<ClienteListarResponse> resultado = clienteService.pesquisarPorNomeOuCpfCnpj("TermoInexistente");
 
             assertNotNull(resultado);
             assertTrue(resultado.isEmpty());
-            verify(clientePersistenciaAdapter, times(1)).pesquisarPorNomeOuCpfCnpj("TermoInexistente");
+            verify(clienteRepository, times(1)).findByNomeRazaoSocialContainingIgnoreCaseOrCpfCnpjContaining("TermoInexistente", "TermoInexistente");
         }
 
         @Test
-        @DisplayName("Deve retornar múltiplos clientes quando pesquisa coincide com vários registros")
+        @DisplayName("Deve retornar mÃƒÆ’Ã‚Âºltiplos clientes quando pesquisa coincide com vÃƒÆ’Ã‚Â¡rios registros")
         void deveRetornarMultiplosResultados() {
             Cliente cliente1 = criarClienteComStatus(1L, "Silva Advogados", "11111111111", "Ativo");
-            Cliente cliente2 = criarClienteComStatus(2L, "José Silva", "22222222222", "Pendente");
+            Cliente cliente2 = criarClienteComStatus(2L, "JosÃƒÆ’Ã‚Â© Silva", "22222222222", "Pendente");
 
-            when(clientePersistenciaAdapter.pesquisarPorNomeOuCpfCnpj("Silva"))
+            when(clienteRepository.findByNomeRazaoSocialContainingIgnoreCaseOrCpfCnpjContaining("Silva", "Silva"))
                     .thenReturn(List.of(cliente1, cliente2));
 
             List<ClienteListarResponse> resultado = clienteService.pesquisarPorNomeOuCpfCnpj("Silva");
 
             assertEquals(2, resultado.size());
             assertEquals("Silva Advogados", resultado.get(0).nomeRazaoSocial());
-            assertEquals("José Silva", resultado.get(1).nomeRazaoSocial());
+            assertEquals("JosÃƒÆ’Ã‚Â© Silva", resultado.get(1).nomeRazaoSocial());
         }
     }
 
@@ -385,34 +381,34 @@ class ClienteServiceTest {
     class PesquisarComFiltros {
 
         @Test
-        @DisplayName("Deve retornar página de clientes filtrada corretamente")
+        @DisplayName("Deve retornar pÃƒÆ’Ã‚Â¡gina de clientes filtrada corretamente")
         void deveRetornarPaginaDeClientesComFiltros() {
-            Cliente cliente1 = criarClienteComStatus(1L, "João da Silva", "12345678901", "Ativo");
+            Cliente cliente1 = criarClienteComStatus(1L, "JoÃƒÆ’Ã‚Â£o da Silva", "12345678901", "Ativo");
             Cliente cliente2 = criarClienteComStatus(2L, "Empresa ABC", "12345678000199", "Ativo");
 
             Pageable pageable = PageRequest.of(0, 10);
             Page<Cliente> paginaCliente = new PageImpl<>(List.of(cliente1, cliente2), pageable, 2);
 
-            when(clientePersistenciaAdapter.pesquisarComFiltros("termo", "Ativo", "PF", pageable))
+            when(clienteRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable)))
                     .thenReturn(paginaCliente);
 
             Page<ClienteListarResponse> resultado = clienteService.pesquisarComFiltros("termo", "Ativo", "PF", pageable);
 
             assertNotNull(resultado);
             assertEquals(2, resultado.getTotalElements());
-            assertEquals("João da Silva", resultado.getContent().get(0).nomeRazaoSocial());
+            assertEquals("JoÃƒÆ’Ã‚Â£o da Silva", resultado.getContent().get(0).nomeRazaoSocial());
             assertEquals("Empresa ABC", resultado.getContent().get(1).nomeRazaoSocial());
 
-            verify(clientePersistenciaAdapter, times(1)).pesquisarComFiltros("termo", "Ativo", "PF", pageable);
+            verify(clienteRepository, times(1)).findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable));
         }
 
         @Test
-        @DisplayName("Deve retornar página vazia quando nenhum cliente corresponder aos filtros")
+        @DisplayName("Deve retornar pÃƒÆ’Ã‚Â¡gina vazia quando nenhum cliente corresponder aos filtros")
         void deveRetornarPaginaVaziaSemResultados() {
             Pageable pageable = PageRequest.of(0, 10);
             Page<Cliente> paginaVazia = new PageImpl<>(Collections.emptyList(), pageable, 0);
 
-            when(clientePersistenciaAdapter.pesquisarComFiltros("inexistente", "Todos", "Todos", pageable))
+            when(clienteRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable)))
                     .thenReturn(paginaVazia);
 
             Page<ClienteListarResponse> resultado = clienteService.pesquisarComFiltros("inexistente", "Todos", "Todos", pageable);
@@ -421,7 +417,7 @@ class ClienteServiceTest {
             assertTrue(resultado.isEmpty());
             assertEquals(0, resultado.getTotalElements());
 
-            verify(clientePersistenciaAdapter, times(1)).pesquisarComFiltros("inexistente", "Todos", "Todos", pageable);
+            verify(clienteRepository, times(1)).findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable));
         }
     }
 
@@ -433,28 +429,28 @@ class ClienteServiceTest {
         @DisplayName("Deve criar cliente com sucesso")
         void deveCriarClienteComSucesso() {
             ClienteCriacaoRequest request = new ClienteCriacaoRequest(
-                    "João da Silva", "12345678901", true, "123456789", 1L, null, null
+                    "JoÃƒÆ’Ã‚Â£o da Silva", "12345678901", true, "123456789", 1L, null, null
             );
 
             StatusCliente statusCliente = new StatusCliente(1L, "Ativo");
-            Cliente clienteSalvo = criarClienteComStatus(1L, "João da Silva", "12345678901", "Ativo");
+            Cliente clienteSalvo = criarClienteComStatus(1L, "JoÃƒÆ’Ã‚Â£o da Silva", "12345678901", "Ativo");
             when(clienteRepository.existsByCpfCnpj("12345678901")).thenReturn(false);
             when(statusClienteRepository.findById(1L)).thenReturn(Optional.of(statusCliente));
-            when(clientePersistenciaAdapter.salvar(any(Cliente.class))).thenReturn(clienteSalvo);
-            when(clientePersistenciaAdapter.buscarPorId(1L)).thenReturn(clienteSalvo);
+            when(clienteRepository.save(any(Cliente.class))).thenReturn(clienteSalvo);
+            when(clienteRepository.findByIdComDetalhes(1L)).thenReturn(Optional.of(clienteSalvo));
 
             ClienteDetalhesResponse resultado = clienteService.criar(request);
 
             assertNotNull(resultado);
-            assertEquals("João da Silva", resultado.nomeRazaoSocial());
+            assertEquals("JoÃƒÆ’Ã‚Â£o da Silva", resultado.nomeRazaoSocial());
             verifyNoInteractions(oneDriveService);
         }
 
         @Test
-        @DisplayName("Deve lançar exceção quando CPF/CNPJ já existir")
+        @DisplayName("Deve lanÃƒÆ’Ã‚Â§ar exceÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o quando CPF/CNPJ jÃƒÆ’Ã‚Â¡ existir")
         void deveLancarExcecaoQuandoCpfCnpjJaExistir() {
             ClienteCriacaoRequest request = new ClienteCriacaoRequest(
-                    "João da Silva", "12345678901", true, "123456789", 1L, null, null
+                    "JoÃƒÆ’Ã‚Â£o da Silva", "12345678901", true, "123456789", 1L, null, null
             );
 
             when(clienteRepository.existsByCpfCnpj("12345678901")).thenReturn(true);
@@ -462,14 +458,14 @@ class ClienteServiceTest {
             assertThrows(ClienteJaExistenteException.class, () -> clienteService.criar(request));
 
             verifyNoInteractions(oneDriveService);
-            verify(clientePersistenciaAdapter, never()).salvar(any(Cliente.class));
+            verify(clienteRepository, never()).save(any(Cliente.class));
         }
 
         @Test
-        @DisplayName("Deve criar cliente com endereço")
+        @DisplayName("Deve criar cliente com endereÃƒÆ’Ã‚Â§o")
         void deveCriarClienteComEndereco() {
             ClienteCriacaoRequest.EnderecoRequest enderecoReq = new ClienteCriacaoRequest.EnderecoRequest(
-                    "01001000", "Praça da Sé", "100", "Sé", "São Paulo", "SP", "Sala 101"
+                    "01001000", "PraÃƒÆ’Ã‚Â§a da SÃƒÆ’Ã‚Â©", "100", "SÃƒÆ’Ã‚Â©", "SÃƒÆ’Ã‚Â£o Paulo", "SP", "Sala 101"
             );
             ClienteCriacaoRequest request = new ClienteCriacaoRequest(
                     "Maria Santos", "98765432100", true, null, 1L, enderecoReq, null
@@ -481,8 +477,8 @@ class ClienteServiceTest {
             when(clienteRepository.existsByCpfCnpj("98765432100")).thenReturn(false);
             when(statusClienteRepository.findById(1L)).thenReturn(Optional.of(statusCliente));
             when(enderecoRepository.save(any(Endereco.class))).thenAnswer(inv -> inv.getArgument(0));
-            when(clientePersistenciaAdapter.salvar(any(Cliente.class))).thenReturn(clienteSalvo);
-            when(clientePersistenciaAdapter.buscarPorId(1L)).thenReturn(clienteSalvo);
+            when(clienteRepository.save(any(Cliente.class))).thenReturn(clienteSalvo);
+            when(clienteRepository.findByIdComDetalhes(1L)).thenReturn(Optional.of(clienteSalvo));
 
             ClienteDetalhesResponse resultado = clienteService.criar(request);
 
@@ -505,9 +501,9 @@ class ClienteServiceTest {
 
             when(clienteRepository.existsByCpfCnpj("12345678000199")).thenReturn(false);
             when(statusClienteRepository.findById(1L)).thenReturn(Optional.of(statusCliente));
-            when(clientePersistenciaAdapter.salvar(any(Cliente.class))).thenReturn(clienteSalvo);
+            when(clienteRepository.save(any(Cliente.class))).thenReturn(clienteSalvo);
             when(contatoRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
-            when(clientePersistenciaAdapter.buscarPorId(1L)).thenReturn(clienteSalvo);
+            when(clienteRepository.findByIdComDetalhes(1L)).thenReturn(Optional.of(clienteSalvo));
 
             ClienteDetalhesResponse resultado = clienteService.criar(request);
 
@@ -516,10 +512,10 @@ class ClienteServiceTest {
         }
 
         @Test
-        @DisplayName("Deve lançar exceção quando status não for encontrado")
+        @DisplayName("Deve lanÃƒÆ’Ã‚Â§ar exceÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o quando status nÃƒÆ’Ã‚Â£o for encontrado")
         void deveLancarExcecaoQuandoStatusNaoEncontrado() {
             ClienteCriacaoRequest request = new ClienteCriacaoRequest(
-                    "João", "12345678901", true, null, 999L, null, null
+                    "JoÃƒÆ’Ã‚Â£o", "12345678901", true, null, 999L, null, null
             );
 
             when(clienteRepository.existsByCpfCnpj("12345678901")).thenReturn(false);
@@ -536,18 +532,18 @@ class ClienteServiceTest {
     class Atualizar {
 
         @Test
-        @DisplayName("Deve atualizar cliente sem renomear pasta quando nome e CPF não mudaram")
+        @DisplayName("Deve atualizar cliente sem renomear pasta quando nome e CPF nÃƒÆ’Ã‚Â£o mudaram")
         void deveAtualizarSemRenomearPasta() {
-            Cliente clienteExistente = criarClienteComStatus(1L, "João da Silva", "12345678901", "Ativo");
+            Cliente clienteExistente = criarClienteComStatus(1L, "JoÃƒÆ’Ã‚Â£o da Silva", "12345678901", "Ativo");
             StatusCliente statusCliente = new StatusCliente(1L, "Ativo");
 
             ClienteAtualizacaoRequest request = new ClienteAtualizacaoRequest(
-                    "João da Silva", "12345678901", "999999999", 1L, null, null
+                    "JoÃƒÆ’Ã‚Â£o da Silva", "12345678901", "999999999", 1L, null, null
             );
 
-            when(clientePersistenciaAdapter.buscarPorId(1L)).thenReturn(clienteExistente);
+            when(clienteRepository.findByIdComDetalhes(1L)).thenReturn(Optional.of(clienteExistente));
             when(statusClienteRepository.findById(1L)).thenReturn(Optional.of(statusCliente));
-            when(clientePersistenciaAdapter.salvar(any(Cliente.class))).thenReturn(clienteExistente);
+            when(clienteRepository.save(any(Cliente.class))).thenReturn(clienteExistente);
 
             ClienteDetalhesResponse resultado = clienteService.atualizar(1L, request);
 
@@ -558,16 +554,16 @@ class ClienteServiceTest {
         @Test
         @DisplayName("Deve atualizar cliente quando nome mudar")
         void deveAtualizarQuandoNomeMudar() {
-            Cliente clienteExistente = criarClienteComStatus(1L, "João da Silva", "12345678901", "Ativo");
+            Cliente clienteExistente = criarClienteComStatus(1L, "JoÃƒÆ’Ã‚Â£o da Silva", "12345678901", "Ativo");
             StatusCliente statusCliente = new StatusCliente(1L, "Ativo");
 
             ClienteAtualizacaoRequest request = new ClienteAtualizacaoRequest(
-                    "João Silva Santos", "12345678901", "123456789", 1L, null, null
+                    "JoÃƒÆ’Ã‚Â£o Silva Santos", "12345678901", "123456789", 1L, null, null
             );
 
-            when(clientePersistenciaAdapter.buscarPorId(1L)).thenReturn(clienteExistente);
+            when(clienteRepository.findByIdComDetalhes(1L)).thenReturn(Optional.of(clienteExistente));
             when(statusClienteRepository.findById(1L)).thenReturn(Optional.of(statusCliente));
-            when(clientePersistenciaAdapter.salvar(any(Cliente.class))).thenReturn(clienteExistente);
+            when(clienteRepository.save(any(Cliente.class))).thenReturn(clienteExistente);
 
             ClienteDetalhesResponse resultado = clienteService.atualizar(1L, request);
 
@@ -578,17 +574,17 @@ class ClienteServiceTest {
         @Test
         @DisplayName("Deve atualizar cliente quando CPF/CNPJ mudar")
         void deveAtualizarQuandoCpfMudar() {
-            Cliente clienteExistente = criarClienteComStatus(1L, "João da Silva", "12345678901", "Ativo");
+            Cliente clienteExistente = criarClienteComStatus(1L, "JoÃƒÆ’Ã‚Â£o da Silva", "12345678901", "Ativo");
             StatusCliente statusCliente = new StatusCliente(1L, "Ativo");
 
             ClienteAtualizacaoRequest request = new ClienteAtualizacaoRequest(
-                    "João da Silva", "99988877766", "123456789", 1L, null, null
+                    "JoÃƒÆ’Ã‚Â£o da Silva", "99988877766", "123456789", 1L, null, null
             );
 
-            when(clientePersistenciaAdapter.buscarPorId(1L)).thenReturn(clienteExistente);
+            when(clienteRepository.findByIdComDetalhes(1L)).thenReturn(Optional.of(clienteExistente));
             when(clienteRepository.existsByCpfCnpj("99988877766")).thenReturn(false);
             when(statusClienteRepository.findById(1L)).thenReturn(Optional.of(statusCliente));
-            when(clientePersistenciaAdapter.salvar(any(Cliente.class))).thenReturn(clienteExistente);
+            when(clienteRepository.save(any(Cliente.class))).thenReturn(clienteExistente);
 
             clienteService.atualizar(1L, request);
 
@@ -596,50 +592,50 @@ class ClienteServiceTest {
         }
 
         @Test
-        @DisplayName("Deve atualizar cliente quando CPF/CNPJ antigo é nulo")
+        @DisplayName("Deve atualizar cliente quando CPF/CNPJ antigo ÃƒÆ’Ã‚Â© nulo")
         void deveAtualizarQuandoCpfAntigoNulo() {
-            Cliente clienteExistente = criarClienteComStatus(1L, "João da Silva", null, "Ativo");
+            Cliente clienteExistente = criarClienteComStatus(1L, "JoÃƒÆ’Ã‚Â£o da Silva", null, "Ativo");
             StatusCliente statusCliente = new StatusCliente(1L, "Ativo");
 
             ClienteAtualizacaoRequest request = new ClienteAtualizacaoRequest(
-                    "João da Silva", "12345678901", "123456789", 1L, null, null
+                    "JoÃƒÆ’Ã‚Â£o da Silva", "12345678901", "123456789", 1L, null, null
             );
 
-            when(clientePersistenciaAdapter.buscarPorId(1L)).thenReturn(clienteExistente);
+            when(clienteRepository.findByIdComDetalhes(1L)).thenReturn(Optional.of(clienteExistente));
             when(clienteRepository.existsByCpfCnpj("12345678901")).thenReturn(false);
             when(statusClienteRepository.findById(1L)).thenReturn(Optional.of(statusCliente));
-            when(clientePersistenciaAdapter.salvar(any(Cliente.class))).thenReturn(clienteExistente);
+            when(clienteRepository.save(any(Cliente.class))).thenReturn(clienteExistente);
 
             ClienteDetalhesResponse resultado = clienteService.atualizar(1L, request);
 
             assertNotNull(resultado);
             assertEquals("12345678901", clienteExistente.getCpfCnpj());
-            verify(clientePersistenciaAdapter).salvar(clienteExistente);
+            verify(clienteRepository).save(clienteExistente);
             verifyNoInteractions(oneDriveService);
         }
 
         @Test
-        @DisplayName("Deve lançar exceção quando CPF/CNPJ já pertence a outro cliente")
+        @DisplayName("Deve lanÃƒÆ’Ã‚Â§ar exceÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o quando CPF/CNPJ jÃƒÆ’Ã‚Â¡ pertence a outro cliente")
         void deveLancarExcecaoQuandoCpfJaPertenceAOutro() {
-            Cliente clienteExistente = criarClienteComStatus(1L, "João da Silva", "12345678901", "Ativo");
+            Cliente clienteExistente = criarClienteComStatus(1L, "JoÃƒÆ’Ã‚Â£o da Silva", "12345678901", "Ativo");
 
             ClienteAtualizacaoRequest request = new ClienteAtualizacaoRequest(
-                    "João da Silva", "99999999999", null, 1L, null, null
+                    "JoÃƒÆ’Ã‚Â£o da Silva", "99999999999", null, 1L, null, null
             );
 
-            when(clientePersistenciaAdapter.buscarPorId(1L)).thenReturn(clienteExistente);
+            when(clienteRepository.findByIdComDetalhes(1L)).thenReturn(Optional.of(clienteExistente));
             when(clienteRepository.existsByCpfCnpj("99999999999")).thenReturn(true);
 
             assertThrows(ClienteJaExistenteException.class, () -> clienteService.atualizar(1L, request));
 
             verifyNoInteractions(oneDriveService);
-            verify(clientePersistenciaAdapter, never()).salvar(any());
+            verify(clienteRepository, never()).save(any());
         }
 
         @Test
-        @DisplayName("Deve atualizar endereço do cliente")
+        @DisplayName("Deve atualizar endereÃƒÆ’Ã‚Â§o do cliente")
         void deveAtualizarEndereco() {
-            Cliente clienteExistente = criarClienteComStatus(1L, "João", "12345678901", "Ativo");
+            Cliente clienteExistente = criarClienteComStatus(1L, "JoÃƒÆ’Ã‚Â£o", "12345678901", "Ativo");
             clienteExistente.setEndereco(new Endereco());
             StatusCliente statusCliente = new StatusCliente(1L, "Ativo");
 
@@ -647,13 +643,13 @@ class ClienteServiceTest {
                     "02002000", "Rua Nova", "200", "Centro", "Rio de Janeiro", "RJ", null
             );
             ClienteAtualizacaoRequest request = new ClienteAtualizacaoRequest(
-                    "João", "12345678901", null, 1L, enderecoReq, null
+                    "JoÃƒÆ’Ã‚Â£o", "12345678901", null, 1L, enderecoReq, null
             );
 
-            when(clientePersistenciaAdapter.buscarPorId(1L)).thenReturn(clienteExistente);
+            when(clienteRepository.findByIdComDetalhes(1L)).thenReturn(Optional.of(clienteExistente));
             when(statusClienteRepository.findById(1L)).thenReturn(Optional.of(statusCliente));
             when(enderecoRepository.save(any(Endereco.class))).thenAnswer(inv -> inv.getArgument(0));
-            when(clientePersistenciaAdapter.salvar(any())).thenReturn(clienteExistente);
+            when(clienteRepository.save(any())).thenReturn(clienteExistente);
 
             clienteService.atualizar(1L, request);
 
@@ -663,20 +659,20 @@ class ClienteServiceTest {
         @Test
         @DisplayName("Deve atualizar contatos - remover antigos e salvar novos")
         void deveAtualizarContatos() {
-            Cliente clienteExistente = criarClienteComStatus(1L, "João", "12345678901", "Ativo");
+            Cliente clienteExistente = criarClienteComStatus(1L, "JoÃƒÆ’Ã‚Â£o", "12345678901", "Ativo");
             StatusCliente statusCliente = new StatusCliente(1L, "Ativo");
 
             ClienteAtualizacaoRequest.ContatoRequest contatoReq = new ClienteAtualizacaoRequest.ContatoRequest(
                     "Novo Contato", "novo@email.com", "(11) 88888-8888", "Engenheiro", true
             );
             ClienteAtualizacaoRequest request = new ClienteAtualizacaoRequest(
-                    "João", "12345678901", null, 1L, null, List.of(contatoReq)
+                    "JoÃƒÆ’Ã‚Â£o", "12345678901", null, 1L, null, List.of(contatoReq)
             );
 
-            when(clientePersistenciaAdapter.buscarPorId(1L)).thenReturn(clienteExistente);
+            when(clienteRepository.findByIdComDetalhes(1L)).thenReturn(Optional.of(clienteExistente));
             when(statusClienteRepository.findById(1L)).thenReturn(Optional.of(statusCliente));
             when(contatoRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
-            when(clientePersistenciaAdapter.salvar(any())).thenReturn(clienteExistente);
+            when(clienteRepository.save(any())).thenReturn(clienteExistente);
 
             clienteService.atualizar(1L, request);
 
@@ -693,7 +689,7 @@ class ClienteServiceTest {
         @Test
         @DisplayName("Deve deletar cliente e dados associados em cascata")
         void deveDeletarClienteComSucesso() {
-            Cliente cliente = criarClienteComStatus(1L, "João da Silva", "12345678901", "Ativo");
+            Cliente cliente = criarClienteComStatus(1L, "JoÃƒÆ’Ã‚Â£o da Silva", "12345678901", "Ativo");
             Endereco endereco = new Endereco();
             endereco.setId(2L);
             cliente.setEndereco(endereco);
@@ -717,7 +713,7 @@ class ClienteServiceTest {
             ProcessoDocumento vinculoDocumento = new ProcessoDocumento();
             vinculoDocumento.setDocumento(documento);
 
-            when(clientePersistenciaAdapter.buscarPorId(1L)).thenReturn(cliente);
+            when(clienteRepository.findByIdComDetalhes(1L)).thenReturn(Optional.of(cliente));
             when(processoAppRepository.findByCliente(cliente)).thenReturn(List.of(processo));
             when(processoDocumentoRepository.findByProcessoAppId(30L)).thenReturn(List.of(vinculoProcesso));
             when(caminhoRepository.findByClienteId(1L)).thenReturn(List.of(caminho));
@@ -732,7 +728,7 @@ class ClienteServiceTest {
             verify(processoDocumentoRepository).deleteAll(List.of(vinculoDocumento));
             verify(documentoRepository).deleteAll(List.of(documento));
             verify(contatoRepository).deleteAll(anyList());
-            verify(clientePersistenciaAdapter).deletar(1L);
+            verify(clienteRepository).delete(cliente);
             verify(oneDriveService).excluirPasta(10L);
             verify(enderecoRepository).delete(endereco);
         }
@@ -746,7 +742,7 @@ class ClienteServiceTest {
             cliente.setCpfCnpj("98765432100");
             cliente.setContatos(null);
 
-            when(clientePersistenciaAdapter.buscarPorId(1L)).thenReturn(cliente);
+            when(clienteRepository.findByIdComDetalhes(1L)).thenReturn(Optional.of(cliente));
             when(processoAppRepository.findByCliente(cliente)).thenReturn(Collections.emptyList());
             when(caminhoRepository.findByClienteId(1L)).thenReturn(Collections.emptyList());
 
@@ -755,7 +751,7 @@ class ClienteServiceTest {
             verify(contatoRepository, never()).deleteAll(anyList());
             verify(processoAppRepository, never()).deleteAll(anyList());
             verify(documentoRepository, never()).deleteAll(anyList());
-            verify(clientePersistenciaAdapter).deletar(1L);
+            verify(clienteRepository).delete(cliente);
             verifyNoInteractions(oneDriveService);
         }
 
@@ -767,22 +763,21 @@ class ClienteServiceTest {
             caminho.setId(20L);
             caminho.setCaminho("pedro-11122233344/processo");
 
-            when(clientePersistenciaAdapter.buscarPorId(1L)).thenReturn(cliente);
+            when(clienteRepository.findByIdComDetalhes(1L)).thenReturn(Optional.of(cliente));
             when(processoAppRepository.findByCliente(cliente)).thenReturn(Collections.emptyList());
             when(caminhoRepository.findByClienteId(1L)).thenReturn(List.of(caminho));
             when(documentoRepository.findByPadraoArmazenamentoId(20L)).thenReturn(Collections.emptyList());
 
             clienteService.deletar(1L);
 
-            verify(clientePersistenciaAdapter).deletar(1L);
+            verify(clienteRepository).delete(cliente);
             verify(oneDriveService).excluirPasta(20L);
         }
 
         @Test
-        @DisplayName("Deve lançar exceção quando cliente não for encontrado para deletar")
+        @DisplayName("Deve lanÃƒÆ’Ã‚Â§ar exceÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o quando cliente nÃƒÆ’Ã‚Â£o for encontrado para deletar")
         void deveLancarExcecaoQuandoClienteNaoEncontrado() {
-            when(clientePersistenciaAdapter.buscarPorId(999L))
-                    .thenThrow(new ClienteNaoEncontradoException(999L));
+            when(clienteRepository.findByIdComDetalhes(999L)).thenReturn(Optional.empty());
 
             assertThrows(ClienteNaoEncontradoException.class, () -> clienteService.deletar(999L));
 

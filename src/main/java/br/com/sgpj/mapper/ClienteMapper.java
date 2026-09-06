@@ -42,32 +42,12 @@ public class ClienteMapper {
             );
         }
 
-        ClienteDetalhesResponse.EnderecoDto enderecoDto = null;
-        if (cliente.getEndereco() != null) {
-            var e = cliente.getEndereco();
-            enderecoDto = new ClienteDetalhesResponse.EnderecoDto(
-                    e.getId(),
-                    e.getCep(),
-                    e.getLogradouro(),
-                    e.getNumero(),
-                    e.getBairro(),
-                    e.getCidade(),
-                    e.getEstado(),
-                    e.getComplemento()
-            );
-        }
+        ClienteDetalhesResponse.EnderecoDto enderecoDto = EnderecoMapper.toDto(cliente.getEndereco());
 
         List<ClienteDetalhesResponse.ContatoDto> contatosDto = Collections.emptyList();
         if (cliente.getContatos() != null) {
             contatosDto = cliente.getContatos().stream()
-                    .map(c -> new ClienteDetalhesResponse.ContatoDto(
-                            c.getId(),
-                            c.getNome(),
-                            c.getEmail(),
-                            c.getTelefone(),
-                            c.getProfissao(),
-                            c.getPrincipal()
-                    ))
+                    .map(ContatoMapper::toDto)
                     .toList();
         }
 

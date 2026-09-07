@@ -4,6 +4,8 @@ import br.com.sgpj.dto.request.UsuarioAtualizacaoRequest;
 import br.com.sgpj.dto.response.UsuarioListarResponse;
 import br.com.sgpj.entity.Cargo;
 import br.com.sgpj.entity.Usuario;
+import br.com.sgpj.exception.CargoNaoEncontradoException;
+import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.mapper.UsuarioMapper;
 import br.com.sgpj.repository.CargoRepository;
 import br.com.sgpj.repository.UsuarioRepository;
@@ -28,13 +30,17 @@ public class UpdateUsuario {
             Long id
     ) {
 
+        if (!usuarioRepository.existsById(id)) {
+            throw new UsuarioNaoEncontradoException(id);
+        }
+
         Usuario usuarioAtual =
                 usuarioRepository.getReferenceById(id);
 
         Cargo cargo = cargoRepository
                 .findById(request.cargoId())
                 .orElseThrow(() ->
-                        new IllegalArgumentException("Cargo não encontrado.")
+                        new CargoNaoEncontradoException("Cargo não encontrado: " + request.cargoId())
                 );
 
         Usuario usuarioEditado =

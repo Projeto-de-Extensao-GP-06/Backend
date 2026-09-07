@@ -1,254 +1,114 @@
 package br.com.sgpj.service;
 
-import jakarta.mail.Address;
-import jakarta.mail.BodyPart;
-import jakarta.mail.MessagingException;
-import jakarta.mail.Multipart;
-import jakarta.mail.Session;
-import jakarta.mail.internet.MimeMessage;
-import jakarta.mail.internet.MimeMultipart;
 import br.com.sgpj.exception.EmailSendException;
+import br.com.sgpj.service.useCases.email.RenderEmailBody;
+import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.Arrays;
+import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("EmailService")
+@DisplayName("Testes do EmailService")
 class EmailServiceTest {
 
     @Mock
     private JavaMailSender mailSender;
 
-    @InjectMocks
+    @Mock
+    private RenderEmailBody renderEmailBody;
+
     private EmailService emailService;
 
-    private MimeMessage mimeMessage;
-
-    private static final String EMAIL_DESTINATARIO = "usuario@teste.com";
-    private static final String NOME_USUARIO       = "João Silva";
-    private static final String OTP_TESTE          = "123456";
-    private static final String REMETENTE          = "noreply@sgpj.com";
+    private static final String REMETENTE = "nao-responda@sgpj.com.br";
 
     @BeforeEach
     void setUp() {
-        // Injeta o remetente via @Value
-        ReflectionTestUtils.setField(emailService, "remetente", REMETENTE);
+        // remetente agora é injetado direto no construtor — sem precisar de reflexão
+        emailService = new EmailService(mailSender, renderEmailBody, REMETENTE);
 
-        // Retorna uma MimeMessage real para que o MimeMessageHelper consiga populá-la.
-        // Session null é suficiente para testes unitários sem SMTP.
-        mimeMessage = new MimeMessage((Session) null);
-        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
+        jakarta.mail.Session session = jakarta.mail.Session.getInstance(new Properties());
+        MimeMessage mimeMessage = new MimeMessage(session);
+        lenient().when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
     }
-
-    // =========================================================================
-    // Método sendEmail (baixo nível)
-    // =========================================================================
-
-    @Nested
-    @DisplayName("sendEmail")
-    class SendEmail {
-
-        @Test
-        @DisplayName("deve chamar mailSender.send exatamente uma vez")
-        void deveChamarMailSenderUmaVez() {
-            emailService.sendEmail(EMAIL_DESTINATARIO, "Assunto", "Corpo");
-
-            verify(mailSender, times(1)).send(mimeMessage);
-        }
-
-        @Test
-        @DisplayName("deve configurar o destinatário corretamente")
-        void deveConfigurarDestinatario() throws Exception {
-            emailService.sendEmail(EMAIL_DESTINATARIO, "Assunto", "Corpo");
-
-            String[] destinatarios = Arrays.stream(mimeMessage.getAllRecipients())
-                    .map(Address::toString)
-                    .toArray(String[]::new);
-            assertArrayEquals(new String[]{EMAIL_DESTINATARIO}, destinatarios);
-        }
-
-        @Test
-        @DisplayName("deve configurar o remetente corretamente")
-        void deveConfigurarRemetente() throws Exception {
-            emailService.sendEmail(EMAIL_DESTINATARIO, "Assunto", "Corpo");
-
-            assertEquals(REMETENTE, mimeMessage.getFrom()[0].toString());
-        }
-
-        @Test
-        @DisplayName("deve configurar o assunto corretamente")
-        void deveConfigurarAssunto() throws Exception {
-            String assunto = "Assunto de Teste";
-
-            emailService.sendEmail(EMAIL_DESTINATARIO, assunto, "Corpo");
-
-            assertEquals(assunto, mimeMessage.getSubject());
-        }
-
-        @Test
-        @DisplayName("deve configurar o corpo corretamente")
-        void deveConfigurarCorpo() throws Exception {
-            String corpo = "<p>Este é o corpo do email de teste</p>";
-
-            emailService.sendEmail(EMAIL_DESTINATARIO, "Assunto", corpo);
-
-            assertTrue(extrairConteudo(mimeMessage).contains(corpo));
-        }
-
-        @Test
-        @DisplayName("deve lançar EmailSendException quando MimeMessageHelper lança MessagingException")
-        void deveLancarEmailSendExceptionQuandoOcorreMessagingException() throws Exception {
-            // Força MessagingException no construtor do MimeMessageHelper:
-            // com multipart=true, o helper chama mimeMessage.setContent(Multipart)
-            // antes de qualquer outra operação — é o ponto mais confiável para injetar a falha.
-            MimeMessage mensagemFalha = spy(new MimeMessage((Session) null));
-            doThrow(new MessagingException("Erro de conexão simulado"))
-                    .when(mensagemFalha).setContent(any(Multipart.class));
-            when(mailSender.createMimeMessage()).thenReturn(mensagemFalha);
-
-            EmailSendException excecao = assertThrows(EmailSendException.class,
-                    () -> emailService.sendEmail(EMAIL_DESTINATARIO, "Assunto", "Corpo"));
-
-            assertTrue(excecao.getMessage().startsWith("Erro ao enviar email. Detalhes:"));
-            assertTrue(excecao.getMessage().contains("Erro de conexão simulado"));
-        }
-    }
-
-    // =========================================================================
-    // Método sendForgotPasswordOtp
-    // =========================================================================
-
     @Nested
     @DisplayName("sendForgotPasswordOtp")
-    class SendForgotPasswordOtp {
+    class SendForgotPasswordOtpTest {
 
         @Test
-        @DisplayName("deve chamar mailSender.send exatamente uma vez")
-        void deveChamarMailSenderUmaVez() {
-            emailService.sendForgotPasswordOtp(EMAIL_DESTINATARIO, NOME_USUARIO, OTP_TESTE);
+        @DisplayName("Deve renderizar o template correto e enviar o email")
+        void deveRenderizarEEnviarEmailDeRecuperacaoDeSenha() {
+            RenderEmailBody.EmailContent conteudo = new RenderEmailBody.EmailContent(
+                    "Código de verificação para recuperação de senha", "<p>corpo</p>");
+            when(renderEmailBody.renderForgotPasswordOtp("João", "123456")).thenReturn(conteudo);
 
-            verify(mailSender, times(1)).send(mimeMessage);
-        }
+            emailService.sendForgotPasswordOtp("joao@sgpj.com.br", "João", "123456");
 
-        @Test
-        @DisplayName("deve enviar com o assunto correto")
-        void deveEnviarComAssuntoCorreto() throws Exception {
-            emailService.sendForgotPasswordOtp(EMAIL_DESTINATARIO, NOME_USUARIO, OTP_TESTE);
-
-            assertEquals("Código de verificação para recuperação de senha", mimeMessage.getSubject());
-        }
-
-        @Test
-        @DisplayName("deve incluir o nome do usuário no corpo")
-        void deveIncluirNomeUsuarioNoCorpo() throws Exception {
-            emailService.sendForgotPasswordOtp(EMAIL_DESTINATARIO, NOME_USUARIO, OTP_TESTE);
-
-            assertTrue(extrairConteudo(mimeMessage).contains(NOME_USUARIO));
-        }
-
-        @Test
-        @DisplayName("deve incluir o OTP no corpo")
-        void deveIncluirOtpNoCorpo() throws Exception {
-            emailService.sendForgotPasswordOtp(EMAIL_DESTINATARIO, NOME_USUARIO, OTP_TESTE);
-
-            assertTrue(extrairConteudo(mimeMessage).contains(OTP_TESTE));
-        }
-
-        @Test
-        @DisplayName("deve incluir aviso de validade de 15 minutos no corpo")
-        void deveIncluirAvisoValidadeNoCorpo() throws Exception {
-            emailService.sendForgotPasswordOtp(EMAIL_DESTINATARIO, NOME_USUARIO, OTP_TESTE);
-
-            String conteudo = extrairConteudo(mimeMessage);
-            assertTrue(conteudo.contains("15 minutos"));
-            assertTrue(conteudo.contains("3 tentativas"));
+            verify(renderEmailBody).renderForgotPasswordOtp("João", "123456");
+            verify(mailSender).send(any(MimeMessage.class));
         }
     }
-
-    // =========================================================================
-    // Método sendSetPasswordOtp
-    // =========================================================================
 
     @Nested
     @DisplayName("sendSetPasswordOtp")
-    class SendSetPasswordOtp {
+    class SendSetPasswordOtpTest {
 
         @Test
-        @DisplayName("deve chamar mailSender.send exatamente uma vez")
-        void deveChamarMailSenderUmaVez() {
-            emailService.sendSetPasswordOtp(EMAIL_DESTINATARIO, NOME_USUARIO, OTP_TESTE);
+        @DisplayName("Deve renderizar o template correto e enviar o email")
+        void deveRenderizarEEnviarEmailDeDefinicaoDeSenha() {
+            RenderEmailBody.EmailContent conteudo = new RenderEmailBody.EmailContent(
+                    "Código de verificação para definição de senha", "<p>corpo</p>");
+            when(renderEmailBody.renderSetPasswordOtp("Maria", "654321")).thenReturn(conteudo);
 
-            verify(mailSender, times(1)).send(mimeMessage);
-        }
+            emailService.sendSetPasswordOtp("maria@sgpj.com.br", "Maria", "654321");
 
-        @Test
-        @DisplayName("deve enviar com o assunto correto")
-        void deveEnviarComAssuntoCorreto() throws Exception {
-            emailService.sendSetPasswordOtp(EMAIL_DESTINATARIO, NOME_USUARIO, OTP_TESTE);
-
-            assertEquals("Código de verificação para definição de senha", mimeMessage.getSubject());
-        }
-
-        @Test
-        @DisplayName("deve incluir o nome do usuário no corpo")
-        void deveIncluirNomeUsuarioNoCorpo() throws Exception {
-            emailService.sendSetPasswordOtp(EMAIL_DESTINATARIO, NOME_USUARIO, OTP_TESTE);
-
-            assertTrue(extrairConteudo(mimeMessage).contains(NOME_USUARIO));
-        }
-
-        @Test
-        @DisplayName("deve incluir o OTP no corpo")
-        void deveIncluirOtpNoCorpo() throws Exception {
-            emailService.sendSetPasswordOtp(EMAIL_DESTINATARIO, NOME_USUARIO, OTP_TESTE);
-
-            assertTrue(extrairConteudo(mimeMessage).contains(OTP_TESTE));
+            verify(renderEmailBody).renderSetPasswordOtp("Maria", "654321");
+            verify(mailSender).send(any(MimeMessage.class));
         }
     }
 
-    // =========================================================================
-    // Utilitário — extrai todo o texto de um MimeMessage (suporte a multipart)
-    // =========================================================================
+    @Nested
+    @DisplayName("buildEmail")
+    class BuildEmailTest {
 
-    /**
-     * Extrai recursivamente o conteúdo textual de um {@link MimeMessage},
-     * suportando mensagens simples e {@code multipart/alternative} geradas
-     * pelo {@link org.springframework.mail.javamail.MimeMessageHelper}.
-     */
-    private String extrairConteudo(MimeMessage message) throws Exception {
-        Object content = message.getContent();
-        if (content instanceof String texto) {
-            return texto;
-        }
-        if (content instanceof MimeMultipart multipart) {
-            return extrairDeMultipart(multipart);
-        }
-        return "";
-    }
+        @Test
+        @DisplayName("Deve montar a mensagem com remetente, destinatário, assunto e corpo HTML corretos")
+        void deveMontarMensagemComDadosCorretos() throws Exception {
+            emailService.buildEmail("destino@sgpj.com.br", "Assunto de teste", "<p>Olá</p>");
 
-    private String extrairDeMultipart(MimeMultipart multipart) throws Exception {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < multipart.getCount(); i++) {
-            BodyPart part = multipart.getBodyPart(i);
-            Object content = part.getContent();
-            if (content instanceof MimeMultipart nested) {
-                sb.append(extrairDeMultipart(nested));
-            } else {
-                sb.append(content.toString());
-            }
+            org.mockito.ArgumentCaptor<MimeMessage> captor =
+                    org.mockito.ArgumentCaptor.forClass(MimeMessage.class);
+            verify(mailSender).send(captor.capture());
+
+            MimeMessage enviado = captor.getValue();
+            assertEquals("Assunto de teste", enviado.getSubject());
+            assertEquals(REMETENTE, ((jakarta.mail.internet.InternetAddress) enviado.getFrom()[0]).getAddress());
+            assertEquals("destino@sgpj.com.br",
+                    ((jakarta.mail.internet.InternetAddress) enviado.getAllRecipients()[0]).getAddress());
+            assertTrue(enviado.getContentType().contains("text"));
         }
-        return sb.toString();
+
+        @Test
+        @DisplayName("Deve lançar EmailSendException quando ocorrer uma MessagingException ao montar o email")
+        void deveLancarEmailSendExceptionEmFalhaDeEnvio() {
+            // Um endereço contendo quebra de linha é rejeitado pelo parser de endereços do Jakarta Mail,
+            // simulando uma falha real de MessagingException (e também uma tentativa de header injection).
+            String destinatarioInvalido = "invalido\ninjection@sgpj.com.br";
+
+            EmailSendException ex = assertThrows(EmailSendException.class,
+                    () -> emailService.buildEmail(destinatarioInvalido, "Assunto", "<p>corpo</p>"));
+
+            assertTrue(ex.getMessage().contains("Erro ao enviar email"));
+            verify(mailSender, never()).send(any(MimeMessage.class));
+        }
     }
 }

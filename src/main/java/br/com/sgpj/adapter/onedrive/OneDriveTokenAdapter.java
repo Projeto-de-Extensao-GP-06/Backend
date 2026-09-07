@@ -2,15 +2,14 @@ package br.com.sgpj.adapter.onedrive;
 
 import br.com.sgpj.entity.onedrive.MicrosoftTokenConfig;
 import br.com.sgpj.exception.OneDriveErroException;
-import br.com.sgpj.repository.MicrosoftTokenRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
@@ -20,13 +19,21 @@ import org.springframework.web.client.RestTemplate;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Optional;
+
+/**
+ * Adapter focado apenas nas operações de token do OneDrive.
+ * - exchangeCodeForToken
+ * - refreshToken
+ * - persistTokens (delegado à porta)
+ * 
+ * Não mantém estado mutável exceto para o RestTemplate e configurações.
+ */
 
 @Component
 public class OneDriveTokenAdapter {
 
     public static final String MICROSOFT_GRAPH_SCOPE = "offline_access Files.ReadWrite.All";
-    private static final long TOKEN_CONFIG_ID = 1L;
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Value("${microsoft.client-id}")
     private String clientId;
@@ -40,34 +47,41 @@ public class OneDriveTokenAdapter {
     @Value("${microsoft.redirect-uri}")
     private String redirectUri;
 
-    private String accessToken;
-    private LocalDateTime expiresAt;
-
-    private final MicrosoftTokenRepository tokenRepository;
+    private final OneDriveTokenPort tokenPort;
+    private final OneDriveTokenCache tokenCache;
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
 
-    @Autowired
-    public OneDriveTokenAdapter(MicrosoftTokenRepository tokenRepository) {
-        this(tokenRepository, new RestTemplate());
-    }
-
-    OneDriveTokenAdapter(MicrosoftTokenRepository tokenRepository, RestTemplate restTemplate) {
-        this.tokenRepository = tokenRepository;
+    public OneDriveTokenAdapter(OneDriveTokenPort tokenPort,
+                                OneDriveTokenCache tokenCache,
+                                RestTemplate restTemplate,
+                                ObjectMapper objectMapper) {
+        this.tokenPort = tokenPort;
+        this.tokenCache = tokenCache;
         this.restTemplate = restTemplate;
+        this.objectMapper = objectMapper;
     }
 
-
-    //  Retorna um access token válido. Renova automaticamente se expirado.
-    public synchronized String getAccessToken() {
-        if (accessToken != null && expiresAt != null
-                && LocalDateTime.now().isBefore(expiresAt.minusMinutes(5))) {
-            return accessToken;
+    /**
+     * Retorna um access token válido, usando cache quando possível.
+     */
+    public String getAccessToken() {
+        Optional<OneDriveTokenCache.CachedToken> maybe = tokenCache.get();
+        if (maybe.isPresent()) {
+            OneDriveTokenCache.CachedToken cached = maybe.get();
+            if (LocalDateTime.now().isBefore(cached.expiresAt().minusMinutes(5))) {
+                return cached.accessToken();
+            }
         }
-        return renovarToken();
+        // cache expired or missing -> refresh via port stored refresh token
+        return refreshToken();
     }
 
-    public synchronized void trocarCodigoPorToken(String code) {
-        MicrosoftTokenConfig registro = obterOuCriarRegistroToken();
+    /**
+     * Troca o código de autorização por tokens e persiste.
+     */
+    public void exchangeCodeForToken(String code) {
+        MicrosoftTokenConfig registro = tokenPort.createOrGetDefault();
 
         MultiValueMap<String, String> body = criarCorpoRequisicaoPadrao();
         body.add("code", code);
@@ -81,11 +95,14 @@ public class OneDriveTokenAdapter {
                 "Erro ao trocar o código de autorização do OneDrive."
         );
 
-        atualizarCacheEPersistirTokens(registro, response);
+        persistTokens(registro, response);
     }
 
-    private String renovarToken() {
-        MicrosoftTokenConfig registro = tokenRepository.findById(TOKEN_CONFIG_ID)
+    /**
+     * Usa refresh token persistido para renovar access token.
+     */
+    public String refreshToken() {
+        MicrosoftTokenConfig registro = tokenPort.findTokenConfig()
                 .orElseThrow(() -> new OneDriveErroException(
                         "Refresh token não encontrado no banco. Execute o login do OneDrive em /api-onedrive/auth/login."));
 
@@ -101,8 +118,8 @@ public class OneDriveTokenAdapter {
                 "Erro ao renovar o token do OneDrive."
         );
 
-        atualizarCacheEPersistirTokens(registro, response);
-        return this.accessToken;
+        persistTokens(registro, response);
+        return (String) response.get("access_token");
     }
 
     private MultiValueMap<String, String> criarCorpoRequisicaoPadrao() {
@@ -144,11 +161,10 @@ public class OneDriveTokenAdapter {
         }
     }
 
-    private void atualizarCacheEPersistirTokens(MicrosoftTokenConfig registro, Map<String, Object> response) {
-        this.accessToken = obterCampoObrigatorio(response, "access_token");
-        this.expiresAt = LocalDateTime.now().plusSeconds(
-                Long.parseLong(obterCampoObrigatorio(response, "expires_in"))
-        );
+    private void persistTokens(MicrosoftTokenConfig registro, Map<String, Object> response) {
+        String accessToken = obterCampoObrigatorio(response, "access_token");
+        long expiresIn = Long.parseLong(obterCampoObrigatorio(response, "expires_in"));
+        LocalDateTime expiresAt = LocalDateTime.now().plusSeconds(expiresIn);
 
         String novoRefreshToken = (String) response.get("refresh_token");
         if (novoRefreshToken == null || novoRefreshToken.isBlank()) {
@@ -156,18 +172,11 @@ public class OneDriveTokenAdapter {
         }
 
         registro.setRefreshToken(novoRefreshToken);
-
         registro.setDataCriacao(LocalDateTime.now());
-        tokenRepository.save(registro);
-    }
+        tokenPort.save(registro);
 
-    private MicrosoftTokenConfig obterOuCriarRegistroToken() {
-        return tokenRepository.findById(TOKEN_CONFIG_ID)
-                .orElseGet(() -> {
-                    MicrosoftTokenConfig config = new MicrosoftTokenConfig();
-                    config.setId(TOKEN_CONFIG_ID);
-                    return config;
-                });
+        // Atualiza cache
+        tokenCache.put(new OneDriveTokenCache.CachedToken(accessToken, expiresAt));
     }
 
     private String obterCampoObrigatorio(Map<String, Object> response, String campo) {
@@ -190,7 +199,7 @@ public class OneDriveTokenAdapter {
         }
 
         try {
-            Map<String, Object> body = OBJECT_MAPPER.readValue(responseBody, new TypeReference<>() {});
+            Map<String, Object> body = objectMapper.readValue(responseBody, new TypeReference<>() {});
             Object description = body.get("error_description");
             if (description != null && !description.toString().isBlank()) {
                 return description.toString();

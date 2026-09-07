@@ -10,6 +10,9 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import br.com.sgpj.service.otp.OtpRateLimiter;
+import br.com.sgpj.service.otp.AttemptPolicy;
+
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -23,23 +26,23 @@ import java.util.concurrent.ConcurrentMap;
 public class OtpService {
 
     private static final int EXPIRE_MINS = 15;
-    private static final int MAX_TENTATIVAS = 3;
-    private static final int MAX_OTP_GENERATION_PER_MINUTE = 2;
-    private static final int MAX_OTP_GENERATION_PER_HOUR = 5;
 
     private final SecureRandom secureRandom = new SecureRandom();
     private final OtpRepository otpRepository;
     private final OtpHashUtil otpHashUtil;
-    private final ConcurrentMap<String, OtpGenerationHistory> otpGenerationHistory = new ConcurrentHashMap<>();
+    private final OtpRateLimiter otpRateLimiter;
+    private final AttemptPolicy attemptPolicy;
 
-    public OtpService(OtpRepository otpRepository, OtpHashUtil otpHashUtil) {
+    public OtpService(OtpRepository otpRepository, OtpHashUtil otpHashUtil, OtpRateLimiter otpRateLimiter, AttemptPolicy attemptPolicy) {
         this.otpRepository = otpRepository;
         this.otpHashUtil = otpHashUtil;
+        this.otpRateLimiter = otpRateLimiter;
+        this.attemptPolicy = attemptPolicy;
     }
 
     public String generateOtp(String email) {
-        checkOtpGenerationRateLimit(email);
-        
+        otpRateLimiter.checkGenerationAllowed(email);
+
         String otp = String.format("%06d", secureRandom.nextInt(1000000));
         LocalDateTime expiryTime = LocalDateTime.now().plusMinutes(EXPIRE_MINS);
 
@@ -48,52 +51,12 @@ public class OtpService {
         Otp usuarioOtp = new Otp(email, hashedOtp, expiryTime);
         otpRepository.save(usuarioOtp);
 
-        // Record this OTP generation
-        recordOtpGeneration(email);
+        // Record this OTP generation in the rate limiter
+        otpRateLimiter.recordGeneration(email);
 
         return otp;
     }
 
-    /**
-     * Checks if the email has exceeded the OTP generation rate limit.
-     * 
-     * @param email Email address to check
-     * @throws OtpGenerationLimitExceededException if rate limit is exceeded
-     */
-    private void checkOtpGenerationRateLimit(String email) {
-        String key = email.toLowerCase().trim();
-        OtpGenerationHistory history = otpGenerationHistory.computeIfAbsent(key, k -> new OtpGenerationHistory());
-        
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime minuteWindowStart = now.minusMinutes(1);
-        LocalDateTime hourWindowStart = now.minusHours(1);
-        
-        int minuteCount = history.cleanupAndCount(minuteWindowStart);
-        int hourCount = history.cleanupAndCount(hourWindowStart);
-        
-        if (minuteCount >= MAX_OTP_GENERATION_PER_MINUTE) {
-            throw new OtpGenerationLimitExceededException(
-                "Limite de geração de OTP por minuto excedido. Tente novamente em 1 minuto.");
-        }
-        
-        if (hourCount >= MAX_OTP_GENERATION_PER_HOUR) {
-            throw new OtpGenerationLimitExceededException(
-                "Limite de geração de OTP por hora excedido. Tente novamente mais tarde.");
-        }
-    }
-
-    /**
-     * Records an OTP generation for rate limiting purposes.
-     * 
-     * @param email Email address
-     */
-    private void recordOtpGeneration(String email) {
-        String key = email.toLowerCase().trim();
-        OtpGenerationHistory history = otpGenerationHistory.get(key);
-        if (history != null) {
-            history.addGeneration(LocalDateTime.now());
-        }
-    }
 
     /**
      * Inner class to track OTP generation history for rate limiting.
@@ -123,6 +86,10 @@ public class OtpService {
 
         Otp otp = otpRepository.findByEmail(email);
 
+        if (otp == null) {
+            return false;
+        }
+
         if (otp.isExpired()) {
             removeOtp(email);
             return false;
@@ -134,13 +101,10 @@ public class OtpService {
             return true;
         }
 
-        otp.registrarTentativaIncorreta();
+        // Delega controle de tentativas para a política
+        attemptPolicy.registerFailedAttempt(otp);
 
-        if (otp.excedeuLimiteDeTentativas(MAX_TENTATIVAS)) {
-            removeOtp(email);
-            throw new LimiteTentativasExcedidoException("Número máximo de tentativas alcançado. Solicite um novo código.");
-        }
-
+        // Se não lançar, persiste a entidade atualizada
         otpRepository.save(otp);
         return false;
     }
@@ -149,23 +113,5 @@ public class OtpService {
         otpRepository.deleteByEmail(email);
     }
 
-    // Método que roda a cada 10min para limpar OTPs expiradas
-    @Scheduled(cron = "0 */10 * * * *")
-    public void executeCleanup() {
-        otpRepository.deleteByExpiraEmBefore(LocalDateTime.now());
-        cleanupOtpGenerationHistory();
-    }
-
-    /**
-     * Cleans up old OTP generation history to prevent memory leaks.
-     * Removes entries older than 1 hour.
-     */
-    private void cleanupOtpGenerationHistory() {
-        LocalDateTime cutoff = LocalDateTime.now().minusHours(1);
-        otpGenerationHistory.entrySet().removeIf(entry -> {
-            OtpGenerationHistory history = entry.getValue();
-            history.cleanupAndCount(cutoff);
-            return history.isEmpty();
-        });
-    }
 }
+

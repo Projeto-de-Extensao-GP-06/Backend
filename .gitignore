@@ -3,12 +3,13 @@ target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+!**/src/main/resources/application.properties
 
 ### Environment Variables ###
 .env
 .env.local
 .env.*.local
-application.properties
+
 
 ### STS ###
 .apt_generated

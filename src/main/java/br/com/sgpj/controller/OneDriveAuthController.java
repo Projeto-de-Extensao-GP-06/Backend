@@ -79,7 +79,7 @@ public class OneDriveAuthController {
         }
 
         validarCode(code);
-        tokenAdapter.trocarCodigoPorToken(code);
+        tokenAdapter.exchangeCodeForToken(code);
 
         return ResponseEntity.ok(Map.of(
                 "message", "OneDrive reconectado com sucesso.",

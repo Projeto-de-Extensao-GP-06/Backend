@@ -1,4 +1,4 @@
-package br.com.sgpj.specification;
+package br.com.sgpj.service.useCases.cliente;
 
 import br.com.sgpj.entity.Cliente;
 import jakarta.persistence.criteria.JoinType;

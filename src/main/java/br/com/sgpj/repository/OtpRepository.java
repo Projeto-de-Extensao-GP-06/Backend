@@ -12,4 +12,9 @@ public interface OtpRepository extends JpaRepository<Otp, String> {
     @Modifying
     @Transactional
     void deleteByExpiraEmBefore(LocalDateTime horario);
+
+    Otp findByEmail(String email);
+
+    @Transactional
+    void deleteByEmail(String email);
 }

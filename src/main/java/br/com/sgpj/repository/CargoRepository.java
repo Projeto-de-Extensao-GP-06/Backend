@@ -25,7 +25,7 @@ public interface CargoRepository extends JpaRepository<Cargo, Long> {
         """)
     List<Cargo> findAllWithPermissoesByIds(@Param("ids") List<Long> ids);
 
-    Optional<Cargo> findByNome(String nomeCargo);
+    Cargo findByNome(String nomeCargo);
 
     boolean existsByNome(String nomeCargo);
 }

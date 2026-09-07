@@ -1,0 +1,63 @@
+package br.com.sgpj.service.useCases.cargo;
+
+import br.com.sgpj.dto.request.AtribuirPermissoesRequest;
+import br.com.sgpj.dto.response.CargoResponse;
+import br.com.sgpj.entity.*;
+import br.com.sgpj.mapper.CargoMapper;
+import br.com.sgpj.repository.CargoPermissaoRepository;
+import br.com.sgpj.repository.CargoRepository;
+import br.com.sgpj.repository.PermissaoRepository;
+import br.com.sgpj.repository.UsuarioRepository;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Component
+public class UpdateCargo {
+
+    private final CargoRepository cargoRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final CargoPermissaoRepository cargoPermissaoRepository;
+    private final PermissaoRepository permissaoRepository;
+    private final AtribuirPermissaoEspecial atribuirPermissaoEspecial;
+
+    public UpdateCargo(CargoRepository cargoRepository, UsuarioRepository usuarioRepository, CargoPermissaoRepository cargoPermissaoRepository, PermissaoRepository permissaoRepository, AtribuirPermissaoEspecial atribuirPermissaoEspecial) {
+        this.cargoRepository = cargoRepository;
+        this.usuarioRepository = usuarioRepository;
+        this.cargoPermissaoRepository = cargoPermissaoRepository;
+        this.permissaoRepository = permissaoRepository;
+        this.atribuirPermissaoEspecial = atribuirPermissaoEspecial;
+    }
+
+    public CargoResponse atualizarPermissoesCargo(Long cargoId, AtribuirPermissoesRequest request, String emailUsuario){
+        Cargo cargo = cargoRepository.getReferenceById(cargoId);
+        Usuario atribuidoPor = usuarioRepository.findByEmail(emailUsuario);
+
+        cargoPermissaoRepository.deleteAllById_CargoId(cargoId);
+
+        List<Long> permissaoIds = request.permissaoIds();
+
+        if (permissaoIds.isEmpty()) {
+            atribuirPermissaoEspecial.execute(cargoId, ConstantesValidation.SEM_PERMISSOES_ID, cargo, atribuidoPor);
+
+        } else if (permissaoIds.size() == ConstantesValidation.TOTAL_PERMISSOES_NORMAIS) {
+            atribuirPermissaoEspecial.execute(cargoId, ConstantesValidation.TODAS_PERMISSOES_ID, cargo, atribuidoPor);
+
+        } else {
+            for (Long permissaoId : permissaoIds) {
+                Permissao permissao = permissaoRepository.getReferenceById(permissaoId);
+                cargoPermissaoRepository.save(new CargoPermissao(
+                        new CargoPermissaoId(cargoId, permissaoId),
+                        cargo, permissao, atribuidoPor, LocalDateTime.now()
+                ));
+            }
+        }
+
+        List<CargoPermissao> permissoes = cargoPermissaoRepository.findAllById_CargoId(cargoId);
+        cargo.setPermissoes(permissoes);
+
+        return CargoMapper.toResponse(cargo);
+    }
+
+}

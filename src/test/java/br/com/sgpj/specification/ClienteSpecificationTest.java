@@ -1,6 +1,7 @@
 package br.com.sgpj.specification;
 
 import br.com.sgpj.entity.Cliente;
+import br.com.sgpj.service.useCases.cliente.ClienteSpecification;
 import jakarta.persistence.criteria.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

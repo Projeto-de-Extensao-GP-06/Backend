@@ -1,13 +1,13 @@
 package br.com.sgpj.mapper;
 
 
+import br.com.sgpj.dto.response.DataJudApiResponse;
 import br.com.sgpj.dto.response.MovimentacaoOficialResponse;
 import br.com.sgpj.dto.response.Processos.ProcessoApiCreateResponse;
 import br.com.sgpj.dto.response.Processos.ProcessoApiResponse;
 import br.com.sgpj.entity.Processo.MovimentacoesOficiais;
 import br.com.sgpj.entity.Processo.ProcessoApi;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import br.com.sgpj.exception.DataJudIntegrationException;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -16,50 +16,103 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Mapper que converte resposta DTO da API DataJud para entidades de domínio.
+ * 
+ * Responsável por:
+ * - Extrair dados do DTO estruturado
+ * - Transformar tipos de dados
+ * - Validar dados obrigatórios
+ */
 public class ProcessoApiMapper {
 
-    public static ProcessoApi toEntity(JSONObject json){
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+    private static final int HISTORICO_MOVIMENTACOES = 10;
+
+    /**
+     * Converte resposta DTO da API DataJud para entidade ProcessoApi.
+     *
+     * @param dataJudResponse DTO com resposta da API DataJud
+     * @return ProcessoApi mapeado
+     * @throws DataJudIntegrationException se não houver dados ou estrutura inválida
+     */
+    public static ProcessoApi toEntity(DataJudApiResponse dataJudResponse) {
+        if (!dataJudResponse.temResultados()) {
+            throw new DataJudIntegrationException(
+                "Nenhum resultado encontrado na resposta DataJud"
+            );
+        }
+
+        // Extrai o primeiro resultado
+        DataJudApiResponse.Hit resultado = dataJudResponse.getPrimeiroResultado();
+        DataJudApiResponse.Source source = resultado._source();
 
         ProcessoApi processoApi = new ProcessoApi();
 
-        JSONObject main = json.getJSONObject("hits").getJSONArray("hits").getJSONObject(0).getJSONObject("_source");
+        // Mapeia dados básicos
+        processoApi.setNumeroCnj(source.numeroProcesso());
+        processoApi.setTribunalTramitacao(source.tribunal());
+        processoApi.setInstancia(source.segmento());
+        processoApi.setAssunto(source.ramo());
+        processoApi.setNivelSigilo(0); // Valor padrão
+        processoApi.setOrgaoJulgador(source.magistrado() != null ? source.magistrado() : "Não informado");
 
-        processoApi.setNumeroCnj(main.getString("numeroProcesso"));
-        processoApi.setClasseProcessual(main.getJSONObject("classe").getString("nome"));
-        processoApi.setSistemaTribunal(main.getJSONObject("sistema").getString("nome"));
-        processoApi.setFormato(main.getJSONObject("formato").getString("nome"));
-        processoApi.setTribunalTramitacao(main.getString("tribunal"));
-        processoApi.setInstancia(main.getString("grau"));
-        processoApi.setAssunto(main.getJSONArray("assuntos").getJSONObject(0).getString("nome"));
-
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
-        processoApi.setDataAjuizamento(LocalDateTime.parse(main.getString("dataAjuizamento"), formatter));
-
-        processoApi.setNivelSigilo(main.getInt("nivelSigilo"));
-        processoApi.setOrgaoJulgador(main.getJSONObject("orgaoJulgador").getString("nome"));
-
-
-        JSONArray movimentos = main.getJSONArray("movimentos");
-        List<MovimentacoesOficiais> movimentacoes = new ArrayList<>();
-
-        for (int i = 0; i < movimentos.length(); i++) {
-            JSONObject movimentoJson = movimentos.getJSONObject(i);
-
-            MovimentacoesOficiais movimentacao = new MovimentacoesOficiais();
-            movimentacao.setCodigo(movimentoJson.getInt("codigo"));
-            movimentacao.setDescricao(movimentoJson.getString("nome"));
-            movimentacao.setDataHoraMovimentacao(
-                    Instant.parse(movimentoJson.getString("dataHora")).atZone(ZoneId.systemDefault()).toLocalDateTime()
-            );
-            movimentacao.setProcessoApi(processoApi);
-
-            movimentacoes.add(movimentacao);
+        // Mapeia data de ajuizamento
+        try {
+            if (source.dataProcesso() != null && !source.dataProcesso().isBlank()) {
+                processoApi.setDataAjuizamento(
+                    LocalDateTime.parse(source.dataProcesso(), FORMATTER)
+                );
+            }
+        } catch (Exception e) {
+            // Se falhar ao parsear data, deixa como null
+            processoApi.setDataAjuizamento(null);
         }
 
-        int inicio = Math.max(0, movimentacoes.size() - 10);
+        // Mapeia movimentações
+        List<MovimentacoesOficiais> movimentacoes = mapearMovimentacoes(source.movimentacoes(), processoApi);
+        
+        // Mantém apenas as últimas 10 movimentações
+        int inicio = Math.max(0, movimentacoes.size() - HISTORICO_MOVIMENTACOES);
         processoApi.setMovimentacoes(movimentacoes.subList(inicio, movimentacoes.size()));
 
         return processoApi;
+    }
+
+    /**
+     * Mapeia lista de movimentações do DTO para entidades de domínio.
+     */
+    private static List<MovimentacoesOficiais> mapearMovimentacoes(
+            List<DataJudApiResponse.Movimentacao> movimentacoesDto,
+            ProcessoApi processoApi
+    ) {
+        List<MovimentacoesOficiais> movimentacoes = new ArrayList<>();
+
+        if (movimentacoesDto != null) {
+            for (DataJudApiResponse.Movimentacao mov : movimentacoesDto) {
+                try {
+                    MovimentacoesOficiais movimentacao = new MovimentacoesOficiais();
+                    movimentacao.setCodigo(0); // DataJud pode não fornecer código
+                    movimentacao.setDescricao(mov.tipo() != null ? mov.tipo() : mov.descricao());
+                    
+                    if (mov.data() != null) {
+                        movimentacao.setDataHoraMovimentacao(
+                            Instant.parse(mov.data())
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDateTime()
+                        );
+                    }
+                    
+                    movimentacao.setProcessoApi(processoApi);
+                    movimentacoes.add(movimentacao);
+                } catch (Exception e) {
+                    // Ignora movimentações com erro de parsing
+                    continue;
+                }
+            }
+        }
+
+        return movimentacoes;
     }
 
     public static ProcessoApiCreateResponse toCreateResponse(ProcessoApi processoApi) {
@@ -119,7 +172,6 @@ public class ProcessoApiMapper {
         if (movimentacoes == null) {
             return List.of();
         }
-
 
         return movimentacoes.stream()
                 .map(movimentacao -> new MovimentacaoOficialResponse(

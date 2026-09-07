@@ -22,22 +22,24 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("AuthorizationUtil - Testes")
+@DisplayName("Testes do AuthorizationUtil")
 class AuthorizationUtilTest {
 
     @Mock
     private UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter;
-    
+
     @Mock
     private UsuarioRepository usuarioRepository;
-    
+
     @Mock
     private ClienteRepository clienteRepository;
-    
+
     @Mock
     private ProcessoAppRepository processoAppRepository;
 
     private AuthorizationUtil authorizationUtil;
+
+    private Usuario usuarioLogado;
 
     @BeforeEach
     void setUp() {
@@ -47,6 +49,8 @@ class AuthorizationUtilTest {
                 clienteRepository,
                 processoAppRepository
         );
+
+        usuarioLogado = new Usuario(1L, "logado@sgpj.com.br", "senha");
     }
 
     @Nested
@@ -54,38 +58,25 @@ class AuthorizationUtilTest {
     class GetUsuarioLogadoTest {
 
         @Test
-        @DisplayName("Deve retornar usuário logado quando encontrado")
+        @DisplayName("Deve retornar o usuário quando o email do token existir no repositório")
         void deveRetornarUsuarioLogado() {
-            String email = "usuario@teste.com";
-            Usuario usuario = new Usuario();
-            usuario.setId(1L);
-            usuario.setEmail(email);
-            usuario.setNome("Usuário Teste");
-
-            when(usuarioAutenticacaoAdapter.obterEmailUsuarioLogado()).thenReturn(email);
-            when(usuarioRepository.findByEmail(email)).thenReturn(Optional.of(usuario));
+            when(usuarioAutenticacaoAdapter.obterEmailUsuarioLogado()).thenReturn("logado@sgpj.com.br");
+            when(usuarioRepository.findByEmail("logado@sgpj.com.br")).thenReturn(usuarioLogado);
 
             Usuario resultado = authorizationUtil.getUsuarioLogado();
 
-            assertNotNull(resultado);
-            assertEquals(1L, resultado.getId());
-            assertEquals(email, resultado.getEmail());
-            verify(usuarioAutenticacaoAdapter).obterEmailUsuarioLogado();
-            verify(usuarioRepository).findByEmail(email);
+            assertEquals(usuarioLogado, resultado);
         }
 
         @Test
-        @DisplayName("Deve lançar exceção quando usuário não for encontrado")
+        @DisplayName("Deve lançar AcessoNegadoException quando o usuário não for encontrado")
         void deveLancarExcecaoQuandoUsuarioNaoEncontrado() {
-            String email = "naoexiste@teste.com";
+            when(usuarioAutenticacaoAdapter.obterEmailUsuarioLogado()).thenReturn("inexistente@sgpj.com.br");
+            when(usuarioRepository.findByEmail("inexistente@sgpj.com.br")).thenReturn(null);
 
-            when(usuarioAutenticacaoAdapter.obterEmailUsuarioLogado()).thenReturn(email);
-            when(usuarioRepository.findByEmail(email)).thenReturn(Optional.empty());
-
-            assertThrows(AcessoNegadoException.class, () -> authorizationUtil.getUsuarioLogado());
-            
-            verify(usuarioAutenticacaoAdapter).obterEmailUsuarioLogado();
-            verify(usuarioRepository).findByEmail(email);
+            AcessoNegadoException ex = assertThrows(AcessoNegadoException.class,
+                    () -> authorizationUtil.getUsuarioLogado());
+            assertEquals("Usuário não encontrado", ex.getMessage());
         }
     }
 
@@ -94,45 +85,25 @@ class AuthorizationUtilTest {
     class VerificarAcessoClienteTest {
 
         @Test
-        @DisplayName("Deve permitir acesso quando cliente existe (atualmente permite todos)")
-        void devePermitirAcessoCliente() {
-            Long clienteId = 1L;
-            String email = "usuario@teste.com";
-            Usuario usuario = new Usuario();
-            usuario.setId(1L);
-            usuario.setEmail(email);
-            
-            Cliente cliente = new Cliente();
-            cliente.setId(clienteId);
-            cliente.setNomeRazaoSocial("Cliente Teste");
+        @DisplayName("Não deve lançar exceção quando o cliente existir (acesso sempre liberado)")
+        void naoDeveLancarExcecaoQuandoClienteExiste() {
+            when(usuarioAutenticacaoAdapter.obterEmailUsuarioLogado()).thenReturn("logado@sgpj.com.br");
+            when(usuarioRepository.findByEmail("logado@sgpj.com.br")).thenReturn(usuarioLogado);
+            when(clienteRepository.findById(10L)).thenReturn(Optional.of(mock(Cliente.class)));
 
-            when(usuarioAutenticacaoAdapter.obterEmailUsuarioLogado()).thenReturn(email);
-            when(usuarioRepository.findByEmail(email)).thenReturn(Optional.of(usuario));
-            when(clienteRepository.findById(clienteId)).thenReturn(Optional.of(cliente));
-
-            assertDoesNotThrow(() -> authorizationUtil.verificarAcessoCliente(clienteId));
-            
-            verify(usuarioAutenticacaoAdapter).obterEmailUsuarioLogado();
-            verify(usuarioRepository).findByEmail(email);
-            verify(clienteRepository).findById(clienteId);
+            assertDoesNotThrow(() -> authorizationUtil.verificarAcessoCliente(10L));
         }
 
         @Test
-        @DisplayName("Deve lançar exceção quando cliente não existe")
+        @DisplayName("Deve lançar AcessoNegadoException quando o cliente não existir")
         void deveLancarExcecaoQuandoClienteNaoExiste() {
-            Long clienteId = 999L;
-            String email = "usuario@teste.com";
-            Usuario usuario = new Usuario();
-            usuario.setId(1L);
-            usuario.setEmail(email);
+            when(usuarioAutenticacaoAdapter.obterEmailUsuarioLogado()).thenReturn("logado@sgpj.com.br");
+            when(usuarioRepository.findByEmail("logado@sgpj.com.br")).thenReturn(usuarioLogado);
+            when(clienteRepository.findById(99L)).thenReturn(Optional.empty());
 
-            when(usuarioAutenticacaoAdapter.obterEmailUsuarioLogado()).thenReturn(email);
-            when(usuarioRepository.findByEmail(email)).thenReturn(Optional.of(usuario));
-            when(clienteRepository.findById(clienteId)).thenReturn(Optional.empty());
-
-            assertThrows(AcessoNegadoException.class, () -> authorizationUtil.verificarAcessoCliente(clienteId));
-            
-            verify(clienteRepository).findById(clienteId);
+            AcessoNegadoException ex = assertThrows(AcessoNegadoException.class,
+                    () -> authorizationUtil.verificarAcessoCliente(99L));
+            assertEquals("Cliente não encontrado", ex.getMessage());
         }
     }
 
@@ -141,91 +112,59 @@ class AuthorizationUtilTest {
     class VerificarAcessoProcessoTest {
 
         @Test
-        @DisplayName("Deve permitir acesso quando usuário é responsável pelo processo")
-        void devePermitirAcessoQuandoUsuarioResponsavel() {
-            Long processoId = 1L;
-            String email = "responsavel@teste.com";
-            Usuario usuario = new Usuario();
-            usuario.setId(1L);
-            usuario.setEmail(email);
-            
-            ProcessoApp processo = new ProcessoApp();
-            processo.setId(processoId);
-            processo.setUsuarioResponsavel(usuario);
+        @DisplayName("Não deve lançar exceção quando o usuário logado for o responsável pelo processo")
+        void naoDeveLancarExcecaoQuandoUsuarioEhResponsavel() {
+            ProcessoApp processo = mock(ProcessoApp.class);
+            when(processo.getUsuarioResponsavel()).thenReturn(usuarioLogado);
 
-            when(usuarioAutenticacaoAdapter.obterEmailUsuarioLogado()).thenReturn(email);
-            when(usuarioRepository.findByEmail(email)).thenReturn(Optional.of(usuario));
-            when(processoAppRepository.findById(processoId)).thenReturn(Optional.of(processo));
+            when(usuarioAutenticacaoAdapter.obterEmailUsuarioLogado()).thenReturn("logado@sgpj.com.br");
+            when(usuarioRepository.findByEmail("logado@sgpj.com.br")).thenReturn(usuarioLogado);
+            when(processoAppRepository.findById(5L)).thenReturn(Optional.of(processo));
 
-            assertDoesNotThrow(() -> authorizationUtil.verificarAcessoProcesso(processoId));
-            
-            verify(usuarioAutenticacaoAdapter).obterEmailUsuarioLogado();
-            verify(usuarioRepository).findByEmail(email);
-            verify(processoAppRepository).findById(processoId);
+            assertDoesNotThrow(() -> authorizationUtil.verificarAcessoProcesso(5L));
         }
 
         @Test
-        @DisplayName("Deve negar acesso quando usuário não é responsável pelo processo")
-        void deveNegarAcessoQuandoUsuarioNaoResponsavel() {
-            Long processoId = 1L;
-            String email = "outro@teste.com";
-            Usuario usuarioLogado = new Usuario();
-            usuarioLogado.setId(2L);
-            usuarioLogado.setEmail(email);
-            
-            Usuario usuarioResponsavel = new Usuario();
-            usuarioResponsavel.setId(1L);
-            usuarioResponsavel.setEmail("responsavel@teste.com");
-            
-            ProcessoApp processo = new ProcessoApp();
-            processo.setId(processoId);
-            processo.setUsuarioResponsavel(usuarioResponsavel);
+        @DisplayName("Deve lançar AcessoNegadoException quando o usuário logado não for o responsável")
+        void deveLancarExcecaoQuandoUsuarioNaoEhResponsavel() {
+            Usuario outroUsuario = new Usuario(2L, "outro@sgpj.com.br", "senha");
+            ProcessoApp processo = mock(ProcessoApp.class);
+            when(processo.getUsuarioResponsavel()).thenReturn(outroUsuario);
 
-            when(usuarioAutenticacaoAdapter.obterEmailUsuarioLogado()).thenReturn(email);
-            when(usuarioRepository.findByEmail(email)).thenReturn(Optional.of(usuarioLogado));
-            when(processoAppRepository.findById(processoId)).thenReturn(Optional.of(processo));
+            when(usuarioAutenticacaoAdapter.obterEmailUsuarioLogado()).thenReturn("logado@sgpj.com.br");
+            when(usuarioRepository.findByEmail("logado@sgpj.com.br")).thenReturn(usuarioLogado);
+            when(processoAppRepository.findById(5L)).thenReturn(Optional.of(processo));
 
-            assertThrows(AcessoNegadoException.class, () -> authorizationUtil.verificarAcessoProcesso(processoId));
-            
-            verify(processoAppRepository).findById(processoId);
+            AcessoNegadoException ex = assertThrows(AcessoNegadoException.class,
+                    () -> authorizationUtil.verificarAcessoProcesso(5L));
+            assertEquals("Acesso negado ao processo", ex.getMessage());
         }
 
         @Test
-        @DisplayName("Deve negar acesso quando processo não tem responsável")
-        void deveNegarAcessoQuandoProcessoSemResponsavel() {
-            Long processoId = 1L;
-            String email = "usuario@teste.com";
-            Usuario usuario = new Usuario();
-            usuario.setId(1L);
-            usuario.setEmail(email);
-            
-            ProcessoApp processo = new ProcessoApp();
-            processo.setId(processoId);
-            processo.setUsuarioResponsavel(null);
+        @DisplayName("Deve lançar AcessoNegadoException quando o processo não tiver responsável")
+        void deveLancarExcecaoQuandoProcessoSemResponsavel() {
+            ProcessoApp processo = mock(ProcessoApp.class);
+            when(processo.getUsuarioResponsavel()).thenReturn(null);
 
-            when(usuarioAutenticacaoAdapter.obterEmailUsuarioLogado()).thenReturn(email);
-            when(usuarioRepository.findByEmail(email)).thenReturn(Optional.of(usuario));
-            when(processoAppRepository.findById(processoId)).thenReturn(Optional.of(processo));
+            when(usuarioAutenticacaoAdapter.obterEmailUsuarioLogado()).thenReturn("logado@sgpj.com.br");
+            when(usuarioRepository.findByEmail("logado@sgpj.com.br")).thenReturn(usuarioLogado);
+            when(processoAppRepository.findById(7L)).thenReturn(Optional.of(processo));
 
-            assertThrows(AcessoNegadoException.class, () -> authorizationUtil.verificarAcessoProcesso(processoId));
+            AcessoNegadoException ex = assertThrows(AcessoNegadoException.class,
+                    () -> authorizationUtil.verificarAcessoProcesso(7L));
+            assertEquals("Acesso negado ao processo", ex.getMessage());
         }
 
         @Test
-        @DisplayName("Deve lançar exceção quando processo não existe")
-        void deveLancarExcecaoQuandoProcessoNaoExiste() {
-            Long processoId = 999L;
-            String email = "usuario@teste.com";
-            Usuario usuario = new Usuario();
-            usuario.setId(1L);
-            usuario.setEmail(email);
+        @DisplayName("Deve lançar AcessoNegadoException quando o processo não for encontrado")
+        void deveLancarExcecaoQuandoProcessoNaoEncontrado() {
+            when(usuarioAutenticacaoAdapter.obterEmailUsuarioLogado()).thenReturn("logado@sgpj.com.br");
+            when(usuarioRepository.findByEmail("logado@sgpj.com.br")).thenReturn(usuarioLogado);
+            when(processoAppRepository.findById(123L)).thenReturn(Optional.empty());
 
-            when(usuarioAutenticacaoAdapter.obterEmailUsuarioLogado()).thenReturn(email);
-            when(usuarioRepository.findByEmail(email)).thenReturn(Optional.of(usuario));
-            when(processoAppRepository.findById(processoId)).thenReturn(Optional.empty());
-
-            assertThrows(AcessoNegadoException.class, () -> authorizationUtil.verificarAcessoProcesso(processoId));
-            
-            verify(processoAppRepository).findById(processoId);
+            AcessoNegadoException ex = assertThrows(AcessoNegadoException.class,
+                    () -> authorizationUtil.verificarAcessoProcesso(123L));
+            assertEquals("Processo não encontrado", ex.getMessage());
         }
     }
 }

@@ -1,6 +1,5 @@
 package br.com.sgpj.service;
 
-import br.com.sgpj.adapter.database.UsuarioPersistenciaAdapter;
 import br.com.sgpj.dto.request.HistoricoProcessoRequest;
 import br.com.sgpj.dto.response.Processos.HistoricoProcessoResponse;
 import br.com.sgpj.entity.Processo.HistoricoProcesso;
@@ -8,13 +7,11 @@ import br.com.sgpj.entity.Processo.ProcessoApp;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
 import br.com.sgpj.mapper.HistoricoProcessoMapper;
-import br.com.sgpj.repository.FaseProcessoRepository;
 import br.com.sgpj.repository.HistoricoProcessoRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.TipoAlteracaoRepository;
 import org.springframework.stereotype.Service;
 
-import javax.swing.text.html.Option;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;

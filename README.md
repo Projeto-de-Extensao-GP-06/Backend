@@ -155,23 +155,69 @@ Após aprovação:
 
 ---
 
-## Exemplo de como criar um arquivo .env
+## Exemplo de como criar um arquivo application.properties.example
 ```text
 spring.application.name=sgpj
 
-spring.web.error.include-message=always
-spring.web.error.include-binding-errors=always
+spring.web.error.include-message=never
+spring.web.error.include-binding-errors=never
+
+# Security configuration
+# Set to true in production to enforce secret validation
+security.validate-secrets=false
 
 spring.datasource.url=jdbc:mysql://${DB_HOST:localhost}:3306/${DB_NAME:sgpj}
-spring.datasource.username=
-spring.datasource.password=
+spring.datasource.username=${DB_USERNAME:app_sgpj}
+spring.datasource.password=${DB_PASSWORD}
 spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
 
 spring.jpa.show-sql=true
-spring.jpa.hibernate.ddl-auto=update
 
 jwt.validity=${JWT_VALIDITY:3600}
-jwt.secret=${}
+jwt.secret=${JWT_SECRET}
+cookie.secure=${COOKIE_SECURE:false}
+
+
+# Configurações para autenticação com Microsoft (Graph API)
+microsoft.client-id=${CLIENT_ID}
+microsoft.client-secret=${CLIENT_SECRET}
+microsoft.tenant-id=${TENANT_ID:common}
+microsoft.redirect-uri=${REDIRECT_URI:http://localhost:8080/login/oauth2/code/azure}
+
+spring.servlet.multipart.max-file-size=250MB
+spring.servlet.multipart.max-request-size=260MB
+
+# Configurações para API DataJud
+datajud.api-key=${DATAJUD_API_KEY}
+
+# CONFIGURAÇÃO DE DESENVOLVIMENTO (Usando mailpit)
+spring.mail.host=localhost
+spring.mail.port=1025
+spring.mail.properties.mail.smtp.auth=false
+spring.mail.properties.mail.smtp.starttls.enable=false
+spring.mail.username.from=nao-responda@sgpj.com.br
+
+# CONFIGURAÇÃO DE PRODUÇÃO
+#spring.mail.host=smtp.gmail.com
+#spring.mail.port=587
+#spring.mail.username=sistema.sgpj@gmail.com
+#spring.mail.password=zkkx yxzy njgw pwpc
+#spring.mail.properties.mail.smtp.auth=true
+#spring.mail.properties.mail.smtp.starttls.enable=true
+#spring.mail.properties.mail.smtp.starttls.required=true
+#spring.mail.properties.mail.smtp.connectiontimeout=5000
+#spring.mail.properties.mail.smtp.timeout=5000
+#spring.mail.properties.mail.smtp.writetimeout=5000
+#spring.mail.username.from=sistema.sgpj@gmail.com
+
+#Configuracao OTLP
+otel.service.name=sgpj-backend
+otel.exporter.otlp.endpoint=${OTEL_EXPORTER_OTLP_ENDPOINT:http://observability:4318}
+otel.exporter.otlp.protocol=http/protobuf
+otel.traces.exporter=otlp
+otel.metrics.exporter=none
+otel.logs.exporter=none
+
 ```
 
 ---

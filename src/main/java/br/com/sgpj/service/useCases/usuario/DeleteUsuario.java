@@ -3,7 +3,9 @@ package br.com.sgpj.service.useCases.usuario;
 import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
 import br.com.sgpj.entity.Cargo;
 import br.com.sgpj.entity.Usuario;
+import br.com.sgpj.exception.CargoNaoEncontradoException;
 import br.com.sgpj.exception.UsuarioAutoExclusaoException;
+import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.repository.CargoRepository;
 import br.com.sgpj.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
@@ -33,10 +35,18 @@ public class DeleteUsuario {
         Usuario usuarioLogado =
                 usuarioRepository.findByEmail(email);
 
+        if (usuarioLogado == null) {
+            throw new UsuarioNaoEncontradoException(email);
+        }
+
         if (usuarioLogado.getId().equals(id)) {
             throw new UsuarioAutoExclusaoException(
                     "Não é possível excluir o próprio usuário."
             );
+        }
+
+        if (!usuarioRepository.existsById(id)) {
+            throw new UsuarioNaoEncontradoException(id);
         }
 
         Usuario usuario =
@@ -46,6 +56,12 @@ public class DeleteUsuario {
 
         Cargo semCargo =
                 cargoRepository.findByNome("Sem Cargo");
+
+        if (semCargo == null) {
+            throw new CargoNaoEncontradoException(
+                    "Cargo padrão 'Sem Cargo' não encontrado. Verifique a configuração do sistema."
+            );
+        }
 
         usuario.setCargo(semCargo);
 

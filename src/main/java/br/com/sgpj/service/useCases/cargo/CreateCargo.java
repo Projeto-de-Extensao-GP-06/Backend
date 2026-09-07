@@ -5,6 +5,7 @@ import br.com.sgpj.dto.response.CargoResponse;
 import br.com.sgpj.dto.response.PermissaoResponse;
 import br.com.sgpj.entity.*;
 import br.com.sgpj.exception.CargoJaExisteException;
+import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.repository.CargoPermissaoRepository;
 import br.com.sgpj.repository.CargoRepository;
 import br.com.sgpj.repository.PermissaoRepository;
@@ -35,6 +36,9 @@ public class CreateCargo {
         }
 
         Usuario criadoPor = usuarioRepository.findByEmail(emailUsuario);
+        if (criadoPor == null) {
+            throw new UsuarioNaoEncontradoException(emailUsuario);
+        }
         Permissao semPermissoes = permissaoRepository.getReferenceById(ConstantesValidation.SEM_PERMISSOES_ID);
 
         Cargo cargo = new Cargo();

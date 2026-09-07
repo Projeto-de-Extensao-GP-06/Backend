@@ -3,6 +3,9 @@ package br.com.sgpj.service.useCases.cargo;
 import br.com.sgpj.dto.request.AtribuirPermissoesRequest;
 import br.com.sgpj.dto.response.CargoResponse;
 import br.com.sgpj.entity.*;
+import br.com.sgpj.exception.CargoNaoEncontradoException;
+import br.com.sgpj.exception.PermissaoNaoEncontradaException;
+import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.mapper.CargoMapper;
 import br.com.sgpj.repository.CargoPermissaoRepository;
 import br.com.sgpj.repository.CargoRepository;
@@ -31,8 +34,15 @@ public class UpdateCargo {
     }
 
     public CargoResponse atualizarPermissoesCargo(Long cargoId, AtribuirPermissoesRequest request, String emailUsuario){
+        if (!cargoRepository.existsById(cargoId)) {
+            throw new CargoNaoEncontradoException("Cargo não encontrado: " + cargoId);
+        }
         Cargo cargo = cargoRepository.getReferenceById(cargoId);
+
         Usuario atribuidoPor = usuarioRepository.findByEmail(emailUsuario);
+        if (atribuidoPor == null) {
+            throw new UsuarioNaoEncontradoException(emailUsuario);
+        }
 
         cargoPermissaoRepository.deleteAllById_CargoId(cargoId);
 
@@ -46,6 +56,9 @@ public class UpdateCargo {
 
         } else {
             for (Long permissaoId : permissaoIds) {
+                if (!permissaoRepository.existsById(permissaoId)) {
+                    throw new PermissaoNaoEncontradaException("Permissão não encontrada: " + permissaoId);
+                }
                 Permissao permissao = permissaoRepository.getReferenceById(permissaoId);
                 cargoPermissaoRepository.save(new CargoPermissao(
                         new CargoPermissaoId(cargoId, permissaoId),

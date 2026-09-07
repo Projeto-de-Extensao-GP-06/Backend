@@ -8,6 +8,7 @@ import br.com.sgpj.entity.Endereco;
 import br.com.sgpj.entity.StatusCliente;
 import br.com.sgpj.exception.ClienteJaExistenteException;
 import br.com.sgpj.exception.ClienteNaoEncontradoException;
+import br.com.sgpj.exception.StatusClienteNaoEncontradoException;
 import br.com.sgpj.mapper.ClienteMapper;
 import br.com.sgpj.mapper.ContatoMapper;
 import br.com.sgpj.mapper.EnderecoMapper;
@@ -43,7 +44,7 @@ public class CreateCliente {
         }
 
         StatusCliente statusCliente = statusClienteRepository.findById(request.statusClienteId())
-                .orElseThrow(() -> new IllegalArgumentException("Status do cliente não encontrado com id: " + request.statusClienteId()));
+                .orElseThrow(() -> new StatusClienteNaoEncontradoException(request.statusClienteId()));
 
         Endereco endereco = request.endereco() != null ? montarEndereco(request) : null;
         Cliente clienteSalvo = montarCliente(request, statusCliente, endereco);

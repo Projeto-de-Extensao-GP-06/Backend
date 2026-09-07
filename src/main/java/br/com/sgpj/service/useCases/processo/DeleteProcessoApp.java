@@ -1,6 +1,7 @@
 package br.com.sgpj.service.useCases.processo;
 
 import br.com.sgpj.entity.Processo.ProcessoApp;
+import br.com.sgpj.exception.ObjetoNaoEncontradoException;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import org.springframework.stereotype.Component;
 
@@ -17,7 +18,7 @@ public class DeleteProcessoApp {
 
     public void deletarProcesso(Long id) {
         if (!processoAppRepository.existsById(id)) {
-            throw new RuntimeException("Processo não encontrado para o ID: " + id);
+            throw new ObjetoNaoEncontradoException("Processo não encontrado para o ID: " + id);
         }
         processoAppRepository.deleteById(id);
     }

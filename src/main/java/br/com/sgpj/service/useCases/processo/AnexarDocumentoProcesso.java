@@ -7,6 +7,7 @@ import br.com.sgpj.entity.Processo.ProcessoDocumentoId;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.entity.documentos.Documento;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
+import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.mapper.ProcessoDocumentoMapper;
 import br.com.sgpj.repository.DocumentoRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
@@ -39,6 +40,9 @@ public class AnexarDocumentoProcesso {
         Documento documento = documentoRepository.findById(documentoId)
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Documento não encontrado: " + documentoId));
 
+        if (!usuarioRepository.existsById(usuarioId)) {
+            throw new UsuarioNaoEncontradoException(usuarioId);
+        }
         Usuario usuario = usuarioRepository.getReferenceById(usuarioId);
         ProcessoDocumentoId processoDocumentoId = new ProcessoDocumentoId(documento.getId(), processo.getId());
 

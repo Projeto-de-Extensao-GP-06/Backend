@@ -19,7 +19,7 @@ public enum TemplateForgotPassword {
                 <body style="margin: 0; padding: 0; font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background-color: #f5f5f5;">
                     <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
                         <!-- Header -->
-                        <div style="background: linear-gradient(135deg, #0f2951 0%, #1a3a52 100%); padding: 32px 24px; text-align: left;">
+                        <div style="background: linear-gradient(135deg, #0f2951 0%%, #1a3a52 100%%); padding: 32px 24px; text-align: left;">
                             <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600; letter-spacing: -0.5px; font-family: 'Playfair Display', serif;">SGPJ</h1>
                         </div>
 

@@ -6,6 +6,7 @@ import br.com.sgpj.dto.response.AutenticacaoUsuarioResponse;
 import br.com.sgpj.dto.response.UsuarioTokenResponse;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.UsuarioInativoException;
+import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.mapper.UsuarioMapper;
 import br.com.sgpj.repository.UsuarioRepository;
 import org.springframework.security.core.Authentication;
@@ -29,6 +30,10 @@ public class AutenticarUsuario {
 
         Usuario usuario =
                 usuarioRepository.findByEmail(request.email());
+
+        if (usuario == null) {
+            throw new UsuarioNaoEncontradoException(request.email());
+        }
 
         if (!usuario.isAtivo()) {
             throw new UsuarioInativoException(

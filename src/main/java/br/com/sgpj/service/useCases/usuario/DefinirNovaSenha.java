@@ -3,6 +3,7 @@ package br.com.sgpj.service.useCases.usuario;
 import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
 import br.com.sgpj.dto.request.DefinirNovaSenhaRequest;
 import br.com.sgpj.entity.Usuario;
+import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.repository.UsuarioRepository;
 import br.com.sgpj.service.OtpService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -43,6 +44,10 @@ public class DefinirNovaSenha {
 
         Usuario usuario =
                 usuarioRepository.findByEmail(email);
+
+        if (usuario == null) {
+            throw new UsuarioNaoEncontradoException(email);
+        }
 
         String senhaCriptografada =
                 passwordEncoder.encode(request.senha());

@@ -2,6 +2,7 @@ package br.com.sgpj.service.useCases.usuario;
 
 import br.com.sgpj.dto.response.UsuarioListarResponse;
 import br.com.sgpj.entity.Usuario;
+import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.mapper.UsuarioMapper;
 import br.com.sgpj.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
@@ -50,6 +51,9 @@ public class ReadUsuario {
     }
 
     public Usuario obterPorId(Long id) {
+        if (!usuarioRepository.existsById(id)) {
+            throw new UsuarioNaoEncontradoException(id);
+        }
         return usuarioRepository.getReferenceById(id);
     }
 }

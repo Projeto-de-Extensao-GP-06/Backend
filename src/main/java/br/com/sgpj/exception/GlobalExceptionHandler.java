@@ -37,6 +37,11 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
+    @ExceptionHandler(StatusClienteNaoEncontradoException.class)
+    public ResponseEntity<Map<String, Object>> handleStatusClienteNaoEncontrado(StatusClienteNaoEncontradoException ex) {
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
     @ExceptionHandler(ClienteJaExistenteException.class)
     public ResponseEntity<Map<String, Object>> handleClienteJaExistente(ClienteJaExistenteException ex) {
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage());

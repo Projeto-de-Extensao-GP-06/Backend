@@ -3,6 +3,7 @@ package br.com.sgpj.service.useCases.usuario;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.PasswordConflictException;
 import br.com.sgpj.exception.UsuarioInativoException;
+import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.repository.UsuarioRepository;
 import br.com.sgpj.service.EmailService;
 import br.com.sgpj.service.OtpService;
@@ -31,6 +32,10 @@ public class EnviarRedefinirSenhaOtp {
 
         Usuario usuario =
                 usuarioRepository.findByEmail(email);
+
+        if (usuario == null) {
+            throw new UsuarioNaoEncontradoException(email);
+        }
 
         if (!usuario.isAtivo()) {
             throw new UsuarioInativoException(

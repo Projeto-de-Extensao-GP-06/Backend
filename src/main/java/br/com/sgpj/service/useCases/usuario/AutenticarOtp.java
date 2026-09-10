@@ -74,7 +74,8 @@ public class AutenticarOtp {
 
         UsuarioTokenResponse tokenResponse = UsuarioMapper.toTokenDto(
                 usuario,
-                token
+                token,
+                "no-refresh-token"
         );
 
         return new AutenticacaoUsuarioResponse(usuario, tokenResponse);

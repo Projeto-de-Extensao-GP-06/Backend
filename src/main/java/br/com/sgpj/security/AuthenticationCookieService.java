@@ -11,8 +11,6 @@ import java.time.Duration;
 @Service
 public class AuthenticationCookieService {
 
-    private static final String COOKIE_NAME = "authToken";
-
     private final boolean cookieSecure;
 
     public AuthenticationCookieService(
@@ -24,14 +22,16 @@ public class AuthenticationCookieService {
     public void adicionar(
             HttpServletResponse response,
             String token,
-            Duration duracao
+            Duration duracao,
+            String nomeCookie,
+            String path
     ) {
         ResponseCookie cookie = ResponseCookie
-                .from(COOKIE_NAME, token)
+                .from(nomeCookie, token)
                 .httpOnly(true)
                 .secure(cookieSecure)
                 .sameSite("Strict")
-                .path("/")
+                .path(path)
                 .maxAge(duracao)
                 .build();
 
@@ -41,7 +41,7 @@ public class AuthenticationCookieService {
         );
     }
 
-    public void remover(HttpServletResponse response) {
-        adicionar(response, "", Duration.ZERO);
+    public void remover(HttpServletResponse response, String nomeCookie, String path) {
+        adicionar(response, "", Duration.ZERO, nomeCookie, path);
     }
 }

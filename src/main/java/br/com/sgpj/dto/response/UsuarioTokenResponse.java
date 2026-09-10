@@ -7,6 +7,7 @@
          String nome,
          String email,
          String token,
+         String refreshToken,
          UsuarioSessaoResponse.CargoDto cargo,
          List<String> permissoes
  ) {

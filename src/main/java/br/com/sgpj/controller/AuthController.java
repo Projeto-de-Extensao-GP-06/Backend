@@ -4,6 +4,7 @@ import br.com.sgpj.dto.request.DefinirNovaSenhaRequest;
 import br.com.sgpj.dto.request.EnviarOtpRequest;
 import br.com.sgpj.dto.request.UsuarioLoginRequest;
 import br.com.sgpj.dto.request.ValidarOtpRequest;
+import br.com.sgpj.dto.response.RefreshTokenResponse;
 import br.com.sgpj.dto.response.UsuarioSessaoResponse;
 import br.com.sgpj.dto.response.UsuarioTokenResponse;
 
@@ -13,6 +14,7 @@ import br.com.sgpj.security.RateLimiter;
 import br.com.sgpj.security.TokenBlacklistService;
 import br.com.sgpj.config.jwt.GerenciadorTokenJwt;
 
+import br.com.sgpj.service.RefreshTokenService;
 import br.com.sgpj.service.UsuarioService;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -22,7 +24,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -30,12 +34,19 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Duration;
 
 @RestController
-@RequestMapping("/usuarios")
+@RequiredArgsConstructor
+@RequestMapping("/auth")
 @Tag(name = "Autenticação")
 public class AuthController {
 
+    private static final String ACCESS_TOKEN_COOKIE = "authToken";
+    private static final String REFRESH_TOKEN_COOKIE = "refreshToken";
+
     @Value("${jwt.validity}")
     private long jwtValidity;
+
+    @Value("${jwt.refresh.validity}")
+    private long jwtRefreshValidity;
 
     private final UsuarioService usuarioService;
 
@@ -43,20 +54,7 @@ public class AuthController {
     private final AuthenticationCookieService cookieService;
     private final GerenciadorTokenJwt gerenciadorTokenJwt;
     private final TokenBlacklistService tokenBlacklistService;
-
-    public AuthController(
-            UsuarioService usuarioService,
-            RateLimiter rateLimiter,
-            AuthenticationCookieService cookieService,
-            GerenciadorTokenJwt gerenciadorTokenJwt,
-            TokenBlacklistService tokenBlacklistService
-    ) {
-        this.usuarioService = usuarioService;
-        this.rateLimiter = rateLimiter;
-        this.cookieService = cookieService;
-        this.gerenciadorTokenJwt = gerenciadorTokenJwt;
-        this.tokenBlacklistService = tokenBlacklistService;
-    }
+    private final RefreshTokenService refreshTokenService;
 
     @PostMapping("/login")
     public ResponseEntity<UsuarioSessaoResponse> login(
@@ -76,10 +74,22 @@ public class AuthController {
         UsuarioTokenResponse autenticado =
                 usuarioService.autenticar(request);
 
+        // Adiciona access token
         cookieService.adicionar(
                 response,
                 autenticado.token(),
-                Duration.ofSeconds(jwtValidity)
+                Duration.ofSeconds(jwtValidity),
+                ACCESS_TOKEN_COOKIE,
+                "/"
+        );
+
+        // Adiciona refresh token
+        cookieService.adicionar(
+                response,
+                autenticado.refreshToken(),
+                Duration.ofSeconds(jwtRefreshValidity),
+                REFRESH_TOKEN_COOKIE,
+                "/auth"
         );
 
         return ResponseEntity.ok(
@@ -90,6 +100,7 @@ public class AuthController {
     @PostMapping("/logout")
     @SecurityRequirement(name = "Bearer")
     public ResponseEntity<Void> logout(
+            @CookieValue(name = REFRESH_TOKEN_COOKIE, required = false) String refreshToken,
             HttpServletRequest request,
             HttpServletResponse response
     ) {
@@ -101,9 +112,43 @@ public class AuthController {
             tokenBlacklistService.blacklistToken(token);
         }
 
-        cookieService.remover(response);
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            refreshTokenService.revogarToken(refreshToken);
+        }
+
+        cookieService.remover(response, ACCESS_TOKEN_COOKIE, "/");
+        cookieService.remover(response, REFRESH_TOKEN_COOKIE, "/auth");
 
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/refresh-token")
+    @PreAuthorize("permitAll()")
+    public ResponseEntity<Void> refreshToken(@CookieValue(name = REFRESH_TOKEN_COOKIE, required = false) String refreshToken,
+                                             HttpServletResponse response) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        RefreshTokenResponse novosTokens = refreshTokenService.validarERotacionar(refreshToken);
+
+        cookieService.adicionar(
+                response,
+                novosTokens.accessToken(),
+                Duration.ofSeconds(jwtValidity),
+                ACCESS_TOKEN_COOKIE,
+                "/"
+        );
+
+        cookieService.adicionar(
+                response,
+                novosTokens.refreshToken(),
+                Duration.ofSeconds(jwtRefreshValidity),
+                REFRESH_TOKEN_COOKIE,
+                "/auth"
+        );
+
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/enviar-redefinir-senha-otp")
@@ -176,7 +221,9 @@ public class AuthController {
         cookieService.adicionar(
                 response,
                 autenticado.token(),
-                Duration.ofMinutes(15)
+                Duration.ofMinutes(15),
+                ACCESS_TOKEN_COOKIE,
+                "/auth"
         );
 
         return ResponseEntity.ok(
@@ -202,7 +249,7 @@ public class AuthController {
             tokenBlacklistService.blacklistToken(token);
         }
 
-        cookieService.remover(response);
+        cookieService.remover(response, ACCESS_TOKEN_COOKIE, "/auth");
 
         return ResponseEntity.ok(
                 "Nova senha definida com sucesso!"

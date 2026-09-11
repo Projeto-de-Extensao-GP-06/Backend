@@ -125,9 +125,17 @@ public class AuthController {
     @PostMapping("/refresh-token")
     @PreAuthorize("permitAll()")
     public ResponseEntity<Void> refreshToken(@CookieValue(name = REFRESH_TOKEN_COOKIE, required = false) String refreshToken,
-                                             HttpServletResponse response) {
+                                             HttpServletResponse response,
+                                             HttpServletRequest request) {
         if (refreshToken == null || refreshToken.isBlank()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        String token =
+                gerenciadorTokenJwt.extrairTokenDaRequisicao(request);
+
+        if (token != null) {
+            tokenBlacklistService.blacklistToken(token);
         }
 
         RefreshTokenResponse novosTokens = refreshTokenService.validarERotacionar(refreshToken);

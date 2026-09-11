@@ -43,7 +43,7 @@ public class UsuarioMapper {
     return usuario;
   }
 
-  public static UsuarioTokenResponse toTokenDto(Usuario usuario, String token) {
+  public static UsuarioTokenResponse toTokenDto(Usuario usuario, String token, String refreshToken) {
     UsuarioSessaoResponse.CargoDto cargoDto = null;
     List<String> permissoes = Collections.emptyList();
 
@@ -65,6 +65,7 @@ public class UsuarioMapper {
             usuario.getNome(),
             usuario.getEmail(),
             token,
+            refreshToken,
             cargoDto,
             permissoes);
   }

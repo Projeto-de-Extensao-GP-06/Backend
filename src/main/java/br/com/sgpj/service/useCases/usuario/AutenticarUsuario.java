@@ -9,22 +9,26 @@ import br.com.sgpj.exception.UsuarioInativoException;
 import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.mapper.UsuarioMapper;
 import br.com.sgpj.repository.UsuarioRepository;
+import br.com.sgpj.service.RefreshTokenService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class AutenticarUsuario {
 
     private final UsuarioRepository usuarioRepository;
     private final UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter;
+    private final RefreshTokenService refreshTokenService;
 
-    public AutenticarUsuario(
-            UsuarioRepository usuarioRepository,
-            UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter
-    ) {
-        this.usuarioRepository = usuarioRepository;
-        this.usuarioAutenticacaoAdapter = usuarioAutenticacaoAdapter;
-    }
+//    public AutenticarUsuario(
+//            UsuarioRepository usuarioRepository,
+//            UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter
+//    ) {
+//        this.usuarioRepository = usuarioRepository;
+//        this.usuarioAutenticacaoAdapter = usuarioAutenticacaoAdapter;
+//    }
 
     public AutenticacaoUsuarioResponse executar(UsuarioLoginRequest request) {
 
@@ -52,7 +56,9 @@ public class AutenticarUsuario {
         String token =
                 usuarioAutenticacaoAdapter.gerarToken(authentication);
 
-        UsuarioTokenResponse tokenResponse = UsuarioMapper.toTokenDto(usuario, token);
+        String refreshToken = refreshTokenService.criarRefreshToken(usuario);
+
+        UsuarioTokenResponse tokenResponse = UsuarioMapper.toTokenDto(usuario, token, refreshToken);
 
         return new AutenticacaoUsuarioResponse(usuario, tokenResponse);
     }

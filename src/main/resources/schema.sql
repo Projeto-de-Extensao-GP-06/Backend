@@ -246,7 +246,7 @@ CREATE TABLE processo_dados_aplicacao (
                                           data_audiencia DATETIME,
 
                                           encerrado_suspenso_em              DATETIME,
-                                          encerrado_suspenso_por_usuario_id  INT,
+                                          encerrado_suspenso_por_usuario_id  BIGINT,
 
                                           motivo_status_processo_id          INT,
                                           justificativa_status               TEXT,

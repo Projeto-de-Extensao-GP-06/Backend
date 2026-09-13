@@ -6,6 +6,7 @@ import br.com.sgpj.dto.response.Processos.ProcessoAppResponse;
 import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Processo.HistoricoProcesso;
 import br.com.sgpj.entity.Processo.ProcessoApp;
+import br.com.sgpj.entity.Processo.StatusProcesso;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
 import br.com.sgpj.mapper.HistoricoProcessoMapper;
 import br.com.sgpj.mapper.ProcessoAppMapper;
@@ -20,8 +21,6 @@ import java.util.List;
 
 @Component
 public class ReadProcesso {
-
-    private static final String OBSERVACAO_SOLICITACAO_PREFIXO = "Solicitação enviada pelo formulário público. Estado: ";
 
     private final ProcessoAppRepository processoAppRepository;
     private final AuthorizationUtil authorizationUtil;
@@ -86,7 +85,6 @@ public class ReadProcesso {
         String queryNormalizada = (query == null || query.isBlank()) ? null : query.trim();
         List<ProcessoApp> processosEncontrados = processoAppRepository.buscaFiltro(queryNormalizada, faseId, tribunalId);
 
-
         List<ProcessoAppMiniResponse> processos = new ArrayList<>();
 
         for (ProcessoApp processo : processosEncontrados){
@@ -104,8 +102,7 @@ public class ReadProcesso {
     }
 
     private boolean isSolicitacaoAindaNaoAceita(ProcessoApp processo) {
-        return processo.getObservacao() != null
-                && processo.getObservacao().startsWith(OBSERVACAO_SOLICITACAO_PREFIXO)
-                && !Boolean.TRUE.equals(processo.getAtivo());
+        return processo.getStatus() == StatusProcesso.SOLICITACAO;
     }
 }
+

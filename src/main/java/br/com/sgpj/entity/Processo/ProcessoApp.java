@@ -34,20 +34,34 @@ public class ProcessoApp {
     @ManyToOne
     @JoinColumn(name = "fase_processo_id")
     private FaseProcesso faseProcesso;
+
     private LocalDateTime ultimaAtualizacao;
     private LocalDateTime dataHoraInicio;
-    private Boolean ativo;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private StatusProcesso status;
 
     private LocalDateTime dataAudiencia;
 
-    private LocalDateTime encerradoEm;
+    @Column(name = "encerrado_suspenso_em")
+    private LocalDateTime encerradoSuspensoEm;
+
     @ManyToOne
-    @JoinColumn(name = "encerrado_por_usuario_id")
-    private Usuario encerradoPorUsuario;
+    @JoinColumn(name = "encerrado_suspenso_por_usuario_id")
+    private Usuario encerradoSuspensoPorUsuario;
+
+    @ManyToOne
+    @JoinColumn(name = "motivo_status_processo_id")
+    private MotivoStatusProcesso motivoStatus;
+
+    @Column(name = "justificativa_status")
+    private String justificativa;
 
     @ManyToOne
     @JoinColumn(name = "sigla_tribunal_id")
     private SiglaTribunal siglaTribunal;
+
     private Double valorCausa;
 
     @OneToOne(cascade = CascadeType.ALL)
@@ -60,7 +74,7 @@ public class ProcessoApp {
     public ProcessoApp(){}
 
 
-    public ProcessoApp(Prioridade prioridade, Long id, String descricaoCaso, String observacao, Usuario usuarioResponsavel, Cliente cliente, FaseProcesso faseProcesso, LocalDateTime ultimaAtualizacao, LocalDateTime dataHoraInicio, Boolean ativo, LocalDateTime dataAudiencia, SiglaTribunal siglaTribunal, Double valorCausa) {
+    public ProcessoApp(Prioridade prioridade, Long id, String descricaoCaso, String observacao, Usuario usuarioResponsavel, Cliente cliente, FaseProcesso faseProcesso, LocalDateTime ultimaAtualizacao, LocalDateTime dataHoraInicio, StatusProcesso status, LocalDateTime dataAudiencia, SiglaTribunal siglaTribunal, Double valorCausa) {
         this.id = id;
         this.prioridade = prioridade;
         this.descricaoCaso = descricaoCaso;
@@ -70,13 +84,13 @@ public class ProcessoApp {
         this.faseProcesso = faseProcesso;
         this.ultimaAtualizacao = ultimaAtualizacao;
         this.dataHoraInicio = dataHoraInicio;
-        this.ativo = ativo;
+        this.status = status;
         this.dataAudiencia = dataAudiencia;
         this.siglaTribunal = siglaTribunal;
         this.valorCausa = valorCausa;
     }
 
-    public ProcessoApp(Long id, Usuario usuarioResponsavel, String descricaoCaso, String observacao, Prioridade prioridade, FaseProcesso faseProcesso, LocalDateTime ultimaAtualizacao, LocalDateTime dataHoraInicio, Boolean ativo, LocalDateTime dataAudiencia, SiglaTribunal siglaTribunal, ProcessoApi processoApi, Double valorCausa) {
+    public ProcessoApp(Long id, Usuario usuarioResponsavel, String descricaoCaso, String observacao, Prioridade prioridade, FaseProcesso faseProcesso, LocalDateTime ultimaAtualizacao, LocalDateTime dataHoraInicio, StatusProcesso status, LocalDateTime dataAudiencia, SiglaTribunal siglaTribunal, ProcessoApi processoApi, Double valorCausa) {
         this.id = id;
         this.usuarioResponsavel = usuarioResponsavel;
         this.descricaoCaso = descricaoCaso;
@@ -85,14 +99,14 @@ public class ProcessoApp {
         this.faseProcesso = faseProcesso;
         this.ultimaAtualizacao = ultimaAtualizacao;
         this.dataHoraInicio = dataHoraInicio;
-        this.ativo = ativo;
+        this.status = status;
         this.dataAudiencia = dataAudiencia;
         this.siglaTribunal = siglaTribunal;
         this.processoApi = processoApi;
         this.valorCausa = valorCausa;
     }
 
-    public ProcessoApp(Long id, Usuario usuarioResponsavel, String descricaoCaso, String observacao, Prioridade prioridade, FaseProcesso faseProcesso, LocalDateTime ultimaAtualizacao, LocalDateTime dataHoraInicio, Boolean ativo, SiglaTribunal siglaTribunal, ProcessoApi processoApi, Double valorCausa) {
+    public ProcessoApp(Long id, Usuario usuarioResponsavel, String descricaoCaso, String observacao, Prioridade prioridade, FaseProcesso faseProcesso, LocalDateTime ultimaAtualizacao, LocalDateTime dataHoraInicio, StatusProcesso status, SiglaTribunal siglaTribunal, ProcessoApi processoApi, Double valorCausa) {
         this.id = id;
         this.usuarioResponsavel = usuarioResponsavel;
         this.descricaoCaso = descricaoCaso;
@@ -101,7 +115,7 @@ public class ProcessoApp {
         this.faseProcesso = faseProcesso;
         this.ultimaAtualizacao = ultimaAtualizacao;
         this.dataHoraInicio = dataHoraInicio;
-        this.ativo = ativo;
+        this.status = status;
         this.siglaTribunal = siglaTribunal;
         this.processoApi = processoApi;
         this.valorCausa = valorCausa;
@@ -118,9 +132,11 @@ public class ProcessoApp {
     public FaseProcesso getFaseProcesso() {return faseProcesso;}
     public LocalDateTime getUltimaAtualizacao() {return ultimaAtualizacao;}
     public LocalDateTime getDataHoraInicio() {return dataHoraInicio;}
-    public Boolean getAtivo() {return ativo;}
-    public LocalDateTime getEncerradoEm() {return encerradoEm;}
-    public Usuario getEncerradoPorUsuario() {return encerradoPorUsuario;}
+    public StatusProcesso getStatus() {return status;}
+    public LocalDateTime getEncerradoSuspensoEm() {return encerradoSuspensoEm;}
+    public Usuario getEncerradoSuspensoPorUsuario() {return encerradoSuspensoPorUsuario;}
+    public MotivoStatusProcesso getMotivoStatus() {return motivoStatus;}
+    public String getJustificativa() {return justificativa;}
     public SiglaTribunal getSiglaTribunal() {return siglaTribunal;}
     public ProcessoApi getProcessoApi() {return processoApi;}
 
@@ -136,8 +152,10 @@ public class ProcessoApp {
     public void setFaseProcesso(FaseProcesso faseProcesso) {this.faseProcesso = faseProcesso;}
     public void setUltimaAtualizacao(LocalDateTime ultimaAtualizacao) {this.ultimaAtualizacao = ultimaAtualizacao;}
     public void setDataHoraInicio(LocalDateTime dataHoraInicio) {this.dataHoraInicio = dataHoraInicio;}
-    public void setAtivo(Boolean ativo) {this.ativo = ativo;}
-    public void setEncerradoEm(LocalDateTime encerradoEm) {this.encerradoEm = encerradoEm;}
-    public void setEncerradoPorUsuario(Usuario encerradoPorUsuario) {this.encerradoPorUsuario = encerradoPorUsuario;}
+    public void setStatus(StatusProcesso status) {this.status = status;}
+    public void setEncerradoSuspensoEm(LocalDateTime encerradoSuspensoEm) {this.encerradoSuspensoEm = encerradoSuspensoEm;}
+    public void setEncerradoSuspensoPorUsuario(Usuario encerradoSuspensoPorUsuario) {this.encerradoSuspensoPorUsuario = encerradoSuspensoPorUsuario;}
+    public void setMotivoStatus(MotivoStatusProcesso motivoStatus) {this.motivoStatus = motivoStatus;}
+    public void setJustificativa(String justificativa) {this.justificativa = justificativa;}
     public void setSiglaTribunal(SiglaTribunal siglaTribunal) {this.siglaTribunal = siglaTribunal;}
 }

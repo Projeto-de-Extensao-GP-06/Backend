@@ -28,7 +28,15 @@ public class ProcessoService {
     private final ListarDocumentosProcesso listarDocumentosProcesso;
     private final DeleteProcessoApp deleteProcessoApp;
 
-    public ProcessoService(CreateProcesso createProcesso, UsuarioRepository usuarioRepository, ProcessoAppRepository processoAppRepository, UpdateProcesso updateProcesso, ReadProcesso readProcesso, DocumentoRepository documentoRepository, ProcessoDocumentoRepository processoDocumentoRepository, AuthorizationUtil authorizationUtil, DeleteProcessoApp deleteProcessoApp) {
+    public ProcessoService(CreateProcesso createProcesso,
+                           UsuarioRepository usuarioRepository,
+                           ProcessoAppRepository processoAppRepository,
+                           UpdateProcesso updateProcesso,
+                           ReadProcesso readProcesso,
+                           DocumentoRepository documentoRepository,
+                           ProcessoDocumentoRepository processoDocumentoRepository,
+                           AuthorizationUtil authorizationUtil,
+                           DeleteProcessoApp deleteProcessoApp) {
         this.createProcesso = createProcesso;
         this.updateProcesso = updateProcesso;
         this.readProcesso = readProcesso;

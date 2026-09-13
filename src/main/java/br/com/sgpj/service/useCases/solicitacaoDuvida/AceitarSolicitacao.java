@@ -3,6 +3,7 @@ package br.com.sgpj.service.useCases.solicitacaoDuvida;
 import br.com.sgpj.dto.response.SolicitacaoClientePreenchimentoResponse;
 import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Processo.ProcessoApp;
+import br.com.sgpj.entity.Processo.StatusProcesso;
 import br.com.sgpj.entity.StatusCliente;
 import br.com.sgpj.entity.StatusClienteEnum;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
@@ -36,7 +37,7 @@ public class AceitarSolicitacao {
         cliente.setStatusCliente(buscarStatus(StatusClienteEnum.ATIVO));
         cliente.setDataHoraTransformacaoEmCliente(LocalDateTime.now());
         clienteRepository.save(cliente);
-        processoApp.setAtivo(true);
+        processoApp.setStatus(StatusProcesso.ATIVO);
         processoApp.setUltimaAtualizacao(LocalDateTime.now());
         processoAppRepository.save(processoApp);
 

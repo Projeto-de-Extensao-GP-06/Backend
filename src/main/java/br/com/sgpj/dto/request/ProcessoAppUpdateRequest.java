@@ -1,5 +1,6 @@
 package br.com.sgpj.dto.request;
 
+import br.com.sgpj.entity.Processo.StatusProcesso;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -25,8 +26,9 @@ public record ProcessoAppUpdateRequest(
         @Schema(description = "Id do nivel de prioridade do processo", example = "1")
         Long prioridadeId,
 
-        @NotNull(message = "O processo deve estar ativo ou inativo")
-        Boolean ativo,
+        @NotNull(message = "O status do processo é obrigatório")
+        @Schema(description = "Status do processo", example = "ATIVO", allowableValues = {"ATIVO", "SUSPENSO", "ENCERRADO"})
+        StatusProcesso status,
 
         @NotNull(message = "Id da fase do processo e obrigatorio")
         @Schema(description = "Id da fase do processo", example = "1")
@@ -35,6 +37,12 @@ public record ProcessoAppUpdateRequest(
         LocalDateTime dataAudiencia,
 
         @Schema(description = "Valor da causa em reais (R$)", example = "2500.00")
-        Double valorCausa
+        Double valorCausa,
+
+        @Schema(description = "Id do motivo de suspensão ou encerramento. Obrigatório quando status for SUSPENSO ou ENCERRADO.", example = "1")
+        Integer motivoStatusProcessoId,
+
+        @Schema(description = "Justificativa complementar (opcional)", example = "Aguardando documentação do cliente")
+        String justificativa
 ) {
 }

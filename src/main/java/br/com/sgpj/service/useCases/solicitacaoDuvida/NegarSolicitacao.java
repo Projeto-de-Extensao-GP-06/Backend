@@ -2,6 +2,7 @@ package br.com.sgpj.service.useCases.solicitacaoDuvida;
 
 import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Processo.ProcessoApp;
+import br.com.sgpj.entity.Processo.StatusProcesso;
 import br.com.sgpj.entity.StatusCliente;
 import br.com.sgpj.entity.StatusClienteEnum;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
@@ -33,7 +34,7 @@ public class NegarSolicitacao {
         cliente.setStatusCliente(buscarStatus(StatusClienteEnum.INATIVO));
         cliente.setDataHoraTransformacaoEmCliente(LocalDateTime.now());
         clienteRepository.save(cliente);
-        processoApp.setAtivo(false);
+        processoApp.setStatus(StatusProcesso.NEGADO);
         processoApp.setUltimaAtualizacao(LocalDateTime.now());
         processoAppRepository.save(processoApp);
     }

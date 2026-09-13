@@ -4,6 +4,7 @@ import br.com.sgpj.entity.Processo.FaseProcesso;
 import br.com.sgpj.entity.Processo.Prioridade;
 import br.com.sgpj.entity.Processo.ProcessoApi;
 import br.com.sgpj.entity.Processo.SiglaTribunal;
+import br.com.sgpj.entity.Processo.StatusProcesso;
 
 import java.time.LocalDateTime;
 
@@ -19,14 +20,16 @@ public record ProcessoAppUpdateResponse(
         FaseProcesso faseProcesso,
         LocalDateTime ultimaAtualizacao,
         LocalDateTime dataHoraInicio,
-        Boolean ativo,
+        StatusProcesso status,
         LocalDateTime dataAudiencia,
-        LocalDateTime dataHoraEncerramento,
-        Long encerradoPorUsuarioId,
-        String encerradoPorUsuarioNome,
+        LocalDateTime encerradoSuspensoEm,
+        Long encerradoSuspensoPorUsuarioId,
+        String encerradoSuspensoPorUsuarioNome,
+        Integer motivoStatusId,
+        String motivoStatusNome,
+        String justificativa,
         SiglaTribunal siglaTribunal,
         ProcessoApi processoApi,
         Double valorCausa
-
 ) {
 }

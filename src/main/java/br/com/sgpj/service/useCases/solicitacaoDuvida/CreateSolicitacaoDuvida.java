@@ -7,6 +7,7 @@ import br.com.sgpj.entity.Contato;
 import br.com.sgpj.entity.Processo.ProcessoApi;
 import br.com.sgpj.entity.Processo.ProcessoApp;
 import br.com.sgpj.entity.Processo.SiglaTribunal;
+import br.com.sgpj.entity.Processo.StatusProcesso;
 import br.com.sgpj.entity.SolicitacaoDuvida;
 import br.com.sgpj.entity.StatusCliente;
 import br.com.sgpj.entity.StatusClienteEnum;
@@ -78,7 +79,7 @@ public class CreateSolicitacaoDuvida {
         processoApp.setObservacao(OBSERVACAO_SOLICITACAO_PREFIXO + estado);
         processoApp.setDataHoraInicio(cliente.getDataHoraEnvioFormulario());
         processoApp.setUltimaAtualizacao(cliente.getDataHoraEnvioFormulario());
-        processoApp.setAtivo(false);
+        processoApp.setStatus(StatusProcesso.SOLICITACAO);
 
         if (numeroProcesso != null) {
             processoApp.setProcessoApi(buscarProcessoOficial(numeroProcesso, estado));

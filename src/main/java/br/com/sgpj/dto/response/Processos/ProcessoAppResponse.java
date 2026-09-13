@@ -3,6 +3,7 @@ package br.com.sgpj.dto.response.Processos;
 import br.com.sgpj.entity.Processo.FaseProcesso;
 import br.com.sgpj.entity.Processo.Prioridade;
 import br.com.sgpj.entity.Processo.SiglaTribunal;
+import br.com.sgpj.entity.Processo.StatusProcesso;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,11 +20,14 @@ public record ProcessoAppResponse(
         FaseProcesso faseProcesso,
         LocalDateTime ultimaAtualizacao,
         LocalDateTime dataHoraInicio,
-        Boolean ativo,
+        StatusProcesso status,
         LocalDateTime dataAudiencia,
-        LocalDateTime dataHoraEncerramento,
-        Long encerradoPorUsuarioId,
-        String encerradoPorUsuarioNome,
+        LocalDateTime encerradoSuspensoEm,
+        Long encerradoSuspensoPorUsuarioId,
+        String encerradoSuspensoPorUsuarioNome,
+        Integer motivoStatusId,
+        String motivoStatusNome,
+        String justificativa,
         SiglaTribunal siglaTribunal,
         Double valorCausa,
         ProcessoApiResponse processoApi,

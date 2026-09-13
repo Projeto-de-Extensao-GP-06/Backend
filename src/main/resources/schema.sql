@@ -241,7 +241,7 @@ CREATE TABLE processo_dados_aplicacao (
                                           ultima_atualizacao DATETIME,
                                           data_hora_inicio DATETIME,
 
-                                          status ENUM('ATIVO', 'SUSPENSO', 'ENCERRADO', 'SOLICITACAO') NOT NULL DEFAULT 'ATIVO',
+                                          status ENUM('ATIVO', 'SUSPENSO', 'ENCERRADO', 'SOLICITACAO', 'NEGADO') NOT NULL DEFAULT 'ATIVO',
 
                                           data_audiencia DATETIME,
 

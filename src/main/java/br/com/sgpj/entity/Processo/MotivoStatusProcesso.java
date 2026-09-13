@@ -1,9 +1,13 @@
 package br.com.sgpj.entity.Processo;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "motivo_status_processo")
+@Getter
+@Setter
 public class MotivoStatusProcesso {
 
     @Id

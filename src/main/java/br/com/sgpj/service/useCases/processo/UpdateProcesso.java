@@ -62,10 +62,22 @@ public class UpdateProcesso {
                 throw new OperacaoInvalidaException(
                         "O motivo é obrigatório ao suspender ou encerrar um processo.");
             }
+
             MotivoStatusProcesso motivo = motivoStatusProcessoRepository
                     .findById(processoAtualizar.motivoStatusProcessoId())
                     .orElseThrow(() -> new ObjetoNaoEncontradoException(
                             "Motivo de status não encontrado para o ID: " + processoAtualizar.motivoStatusProcessoId()));
+
+            boolean valido = motivo.getAplicavelA() == MotivoStatusProcesso.AplicavelA.AMBOS
+                    || (novoStatus == StatusProcesso.SUSPENSO
+                    && motivo.getAplicavelA() == MotivoStatusProcesso.AplicavelA.SUSPENSO)
+                    || (novoStatus == StatusProcesso.ENCERRADO
+                    && motivo.getAplicavelA() == MotivoStatusProcesso.AplicavelA.ENCERRADO);
+
+            if (!valido) {
+                throw new OperacaoInvalidaException(
+                        "O motivo selecionado não é aplicável ao status do processo.");
+            }
             processoEditado.setMotivoStatus(motivo);
             processoEditado.setEncerradoSuspensoEm(LocalDateTime.now());
             processoEditado.setEncerradoSuspensoPorUsuario(processoEncontrado.getUsuarioResponsavel());

@@ -4,5 +4,6 @@ public enum StatusProcesso {
     ATIVO,
     SUSPENSO,
     ENCERRADO,
-    SOLICITACAO
+    SOLICITACAO,
+    NEGADO
 }

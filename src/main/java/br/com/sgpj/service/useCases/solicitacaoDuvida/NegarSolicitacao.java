@@ -34,7 +34,7 @@ public class NegarSolicitacao {
         cliente.setStatusCliente(buscarStatus(StatusClienteEnum.INATIVO));
         cliente.setDataHoraTransformacaoEmCliente(LocalDateTime.now());
         clienteRepository.save(cliente);
-        processoApp.setStatus(StatusProcesso.ENCERRADO);
+        processoApp.setStatus(StatusProcesso.NEGADO);
         processoApp.setUltimaAtualizacao(LocalDateTime.now());
         processoAppRepository.save(processoApp);
     }

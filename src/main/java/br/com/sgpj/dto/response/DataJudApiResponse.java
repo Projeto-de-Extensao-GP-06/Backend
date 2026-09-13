@@ -1,62 +1,93 @@
 package br.com.sgpj.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.List;
 
 /**
- * DTO que encapsula a resposta bruta da API DataJud.
- * Mantém a estrutura JSON sem transformações.
- * 
- * Usado apenas como intermediate layer entre adapter HTTP e tradutor.
+ * DTO que encapsula a resposta bruta da API DataJud (CNJ).
+ * Mantém a estrutura JSON retornada pelo Elasticsearch do DataJud.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record DataJudApiResponse(
         Hits hits
 ) {
     /**
      * Estrutura de hits da resposta DataJud.
      */
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public record Hits(
-            int total,
+            Total total,
+            Double max_score,
             List<Hit> hits
+    ) {}
+
+    /**
+     * Total de registros retornados pelo Elasticsearch (DataJud).
+     */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Total(
+            int value,
+            String relation
     ) {}
 
     /**
      * Um documento individual da resposta.
      */
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public record Hit(
             String _index,
             String _id,
-            double _score,
+            Double _score,
             Source _source
     ) {}
 
     /**
-     * Dados do processo dentro de um documento.
+     * Dados do processo dentro de um documento retornado pelo DataJud.
      */
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public record Source(
             String numeroProcesso,
-            String dataProcesso,
-            String situacao,
-            String magistrado,
+            ItemNome classe,
+            ItemNome sistema,
+            ItemNome formato,
             String tribunal,
-            String segmento,
-            String ramo,
-            List<Movimentacao> movimentacoes
+            String grau,
+            String dataAjuizamento,
+            Integer nivelSigilo,
+            ItemNome orgaoJulgador,
+            List<ItemNome> assuntos,
+            List<Movimento> movimentos
     ) {}
 
     /**
-     * Movimentação de um processo.
+     * Representação genérica para objetos com código e nome (classe, sistema, formato, orgaoJulgador, assunto).
      */
-    public record Movimentacao(
-            String data,
-            String tipo,
-            String descricao
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record ItemNome(
+            Integer codigo,
+            String nome
+    ) {}
+
+    /**
+     * Movimentação de um processo no DataJud.
+     */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Movimento(
+            Integer codigo,
+            String nome,
+            String dataHora
     ) {}
 
     /**
      * Verifica se houve resultado na busca.
      */
     public boolean temResultados() {
-        return hits != null && hits.total > 0 && !hits.hits.isEmpty();
+        return hits != null
+                && hits.total != null
+                && hits.total.value > 0
+                && hits.hits != null
+                && !hits.hits.isEmpty();
     }
 
     /**

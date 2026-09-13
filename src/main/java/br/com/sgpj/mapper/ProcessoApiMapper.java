@@ -51,17 +51,24 @@ public class ProcessoApiMapper {
 
         // Mapeia dados básicos
         processoApi.setNumeroCnj(source.numeroProcesso());
+        processoApi.setClasseProcessual(source.classe() != null ? source.classe().nome() : null);
+        processoApi.setSistemaTribunal(source.sistema() != null ? source.sistema().nome() : null);
+        processoApi.setFormato(source.formato() != null ? source.formato().nome() : null);
         processoApi.setTribunalTramitacao(source.tribunal());
-        processoApi.setInstancia(source.segmento());
-        processoApi.setAssunto(source.ramo());
-        processoApi.setNivelSigilo(0); // Valor padrão
-        processoApi.setOrgaoJulgador(source.magistrado() != null ? source.magistrado() : "Não informado");
+        processoApi.setInstancia(source.grau());
+
+        if (source.assuntos() != null && !source.assuntos().isEmpty() && source.assuntos().get(0) != null) {
+            processoApi.setAssunto(source.assuntos().get(0).nome());
+        }
+
+        processoApi.setNivelSigilo(source.nivelSigilo() != null ? source.nivelSigilo() : 0);
+        processoApi.setOrgaoJulgador(source.orgaoJulgador() != null ? source.orgaoJulgador().nome() : "Não informado");
 
         // Mapeia data de ajuizamento
         try {
-            if (source.dataProcesso() != null && !source.dataProcesso().isBlank()) {
+            if (source.dataAjuizamento() != null && !source.dataAjuizamento().isBlank()) {
                 processoApi.setDataAjuizamento(
-                    LocalDateTime.parse(source.dataProcesso(), FORMATTER)
+                    LocalDateTime.parse(source.dataAjuizamento(), FORMATTER)
                 );
             }
         } catch (Exception e) {
@@ -70,7 +77,7 @@ public class ProcessoApiMapper {
         }
 
         // Mapeia movimentações
-        List<MovimentacoesOficiais> movimentacoes = mapearMovimentacoes(source.movimentacoes(), processoApi);
+        List<MovimentacoesOficiais> movimentacoes = mapearMovimentacoes(source.movimentos(), processoApi);
         
         // Mantém apenas as últimas 10 movimentações
         int inicio = Math.max(0, movimentacoes.size() - HISTORICO_MOVIMENTACOES);
@@ -83,21 +90,21 @@ public class ProcessoApiMapper {
      * Mapeia lista de movimentações do DTO para entidades de domínio.
      */
     private static List<MovimentacoesOficiais> mapearMovimentacoes(
-            List<DataJudApiResponse.Movimentacao> movimentacoesDto,
+            List<DataJudApiResponse.Movimento> movimentosDto,
             ProcessoApi processoApi
     ) {
         List<MovimentacoesOficiais> movimentacoes = new ArrayList<>();
 
-        if (movimentacoesDto != null) {
-            for (DataJudApiResponse.Movimentacao mov : movimentacoesDto) {
+        if (movimentosDto != null) {
+            for (DataJudApiResponse.Movimento mov : movimentosDto) {
                 try {
                     MovimentacoesOficiais movimentacao = new MovimentacoesOficiais();
-                    movimentacao.setCodigo(0); // DataJud pode não fornecer código
-                    movimentacao.setDescricao(mov.tipo() != null ? mov.tipo() : mov.descricao());
+                    movimentacao.setCodigo(mov.codigo() != null ? mov.codigo() : 0);
+                    movimentacao.setDescricao(mov.nome());
                     
-                    if (mov.data() != null) {
+                    if (mov.dataHora() != null) {
                         movimentacao.setDataHoraMovimentacao(
-                            Instant.parse(mov.data())
+                            Instant.parse(mov.dataHora())
                                 .atZone(ZoneId.systemDefault())
                                 .toLocalDateTime()
                         );

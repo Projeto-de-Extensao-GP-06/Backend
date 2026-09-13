@@ -36,6 +36,12 @@ CREATE TABLE tipo_alteracao (
                                 nome VARCHAR(70) NOT NULL UNIQUE
 );
 
+CREATE TABLE motivo_status_processo (
+                                id          INT AUTO_INCREMENT PRIMARY KEY,
+                                nome        VARCHAR(100) NOT NULL UNIQUE,
+                                aplicavel_a ENUM('SUSPENSO', 'ENCERRADO', 'AMBOS') NOT NULL
+);
+
 CREATE TABLE permissao (
                            id INT AUTO_INCREMENT PRIMARY KEY,
                            nome VARCHAR(150) NOT NULL UNIQUE
@@ -235,12 +241,15 @@ CREATE TABLE processo_dados_aplicacao (
                                           ultima_atualizacao DATETIME,
                                           data_hora_inicio DATETIME,
 
-                                          ativo TINYINT,
+                                          status ENUM('ATIVO', 'SUSPENSO', 'ENCERRADO') NOT NULL DEFAULT 'ATIVO',
 
                                           data_audiencia DATETIME,
 
-                                          encerrado_em DATETIME,
-                                          encerrado_por_usuario_id BIGINT,
+                                          encerrado_suspenso_em              DATETIME,
+                                          encerrado_suspenso_por_usuario_id  INT,
+
+                                          motivo_status_processo_id          INT,
+                                          justificativa_status               TEXT,
 
                                           sigla_tribunal_id INT,
 
@@ -260,8 +269,11 @@ CREATE TABLE processo_dados_aplicacao (
                                           FOREIGN KEY (fase_processo_id)
                                               REFERENCES fase_processo(id),
 
-                                          FOREIGN KEY (encerrado_por_usuario_id)
+                                          FOREIGN KEY (encerrado_suspenso_por_usuario_id)
                                               REFERENCES usuario(id),
+
+                                          FOREIGN KEY (motivo_status_processo_id)
+                                              REFERENCES motivo_status_processo(id),
 
                                           FOREIGN KEY (sigla_tribunal_id)
                                               REFERENCES sigla_tribunal(id),
@@ -403,6 +415,9 @@ CREATE INDEX idx_processo_app_fase
 CREATE INDEX idx_processo_app_api
     ON processo_dados_aplicacao(processo_dados_api_id);
 
+CREATE INDEX idx_processo_app_status
+    ON processo_dados_aplicacao(status);
+
 -- =========================================================
 -- INSERTS BASE
 -- =========================================================
@@ -513,6 +528,16 @@ INSERT INTO tipo_alteracao (nome) VALUES
                                       ('OBSERVAÇÃO'),
                                       ('ATUALIZAÇÃO DE DADOS'),
                                       ('ALTERAÇÃO DE RESPONSÁVEL');
+
+INSERT INTO motivo_status_processo (nome, aplicavel_a) VALUES
+                                   ('ACORDO',                  'ENCERRADO'),
+                                   ('SEM RESOLUÇÃO DO MÉRITO', 'ENCERRADO'),
+                                   ('PENHORA TOTAL',           'ENCERRADO'),
+                                   ('PAGAMENTO VOLUNTÁRIO',    'ENCERRADO'),
+                                   ('ACORDO PARCELADO',        'SUSPENSO'),
+                                   ('TRATATIVAS',              'SUSPENSO'),
+                                   ('AUSÊNCIA DE BENS',        'SUSPENSO'),
+                                   ('DETERMINAÇÃO JUDICIAL',   'SUSPENSO');
 
 
 

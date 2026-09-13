@@ -537,7 +537,8 @@ INSERT INTO motivo_status_processo (nome, aplicavel_a) VALUES
                                    ('ACORDO PARCELADO',        'SUSPENSO'),
                                    ('TRATATIVAS',              'SUSPENSO'),
                                    ('AUSÊNCIA DE BENS',        'SUSPENSO'),
-                                   ('DETERMINAÇÃO JUDICIAL',   'SUSPENSO');
+                                   ('DETERMINAÇÃO JUDICIAL',   'SUSPENSO'),
+                                   ('OUTROS',                  'AMBOS');
 
 
 

@@ -93,8 +93,7 @@ public class UpdateProcesso {
 
         if (processoEncontrado.getProcessoApi() == null) {
             if (processoAtualizar.numeroCnj() != null) {
-                ProcessoApi processoApi = processoApiGateway.buscarDadosOficiais(
-                        processoAtualizar.numeroCnj(), processoEncontrado.getSiglaTribunal());
+                ProcessoApi processoApi = processoApiGateway.buscarDadosOficiais(processoAtualizar.numeroCnj());
                 processoEditado.setProcessoApi(processoApi);
             }
         } else {

@@ -383,7 +383,7 @@ class UpdateProcessoTest {
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
             when(faseProcessoRepository.findById(1L)).thenReturn(Optional.of(faseProcesso));
-            when(processoApiGateway.buscarDadosOficiais("0000001-00.2026.8.26.0001", tribunal)).thenReturn(apiMock);
+            when(processoApiGateway.buscarDadosOficiais("0000001-00.2026.8.26.0001")).thenReturn(apiMock);
             when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> inv.getArgument(0));
 
             updateProcesso.atualizarProcesso(1L, request);
@@ -391,7 +391,7 @@ class UpdateProcessoTest {
             ArgumentCaptor<ProcessoApp> captor = ArgumentCaptor.forClass(ProcessoApp.class);
             verify(processoAppRepository).save(captor.capture());
             assertEquals(apiMock, captor.getValue().getProcessoApi());
-            verify(processoApiGateway).buscarDadosOficiais("0000001-00.2026.8.26.0001", tribunal);
+            verify(processoApiGateway).buscarDadosOficiais("0000001-00.2026.8.26.0001");
         }
 
         @Test
@@ -415,7 +415,7 @@ class UpdateProcessoTest {
             ArgumentCaptor<ProcessoApp> captor = ArgumentCaptor.forClass(ProcessoApp.class);
             verify(processoAppRepository).save(captor.capture());
             assertEquals(apiExistente, captor.getValue().getProcessoApi());
-            verify(processoApiGateway, never()).buscarDadosOficiais(any(), any());
+            verify(processoApiGateway, never()).buscarDadosOficiais(any());
         }
     }
 }

@@ -124,7 +124,6 @@ class SolicitacaoDuvidaControllerTest {
                 "maria@email.com",
                 true,
                 "11999999999",
-                "SP",
                 "10108901220228260292",
                 "Preciso de ajuda com meu processo",
                 true

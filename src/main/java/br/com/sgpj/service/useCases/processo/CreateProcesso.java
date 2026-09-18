@@ -29,8 +29,7 @@ public class CreateProcesso {
         this.processoAppRepository = processoAppRepository;
     }
 
-    public ProcessoAppCreateResponse criarProcesso(ProcessoAppCriacaoRequest novoProcesso, Usuario usuarioAutenticado) {
-        Usuario usuarioResponsavel = usuarioAutenticado;
+    public ProcessoAppCreateResponse criarProcesso(ProcessoAppCriacaoRequest novoProcesso, Usuario usuarioResponsavel) {
         Prioridade prioridade = prioridadeRepository.findById(novoProcesso.prioridadeId())
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Prioridade nao encontrada para o ID: " + novoProcesso.prioridadeId()));
         FaseProcesso faseProcesso = faseProcessoRepository.findById(novoProcesso.faseProcessoId())
@@ -43,7 +42,7 @@ public class CreateProcesso {
         ProcessoApp processoApp = ProcessoAppMapper.toCreateEntity(novoProcesso);
 
         if(novoProcesso.numeroProcesso() != null){
-            ProcessoApi processoApi = processoApiGateway.buscarDadosOficiais(novoProcesso.numeroProcesso(), siglaTribunal);
+            ProcessoApi processoApi = processoApiGateway.buscarDadosOficiais(novoProcesso.numeroProcesso());
             processoApp.setProcessoApi(processoApi);
         }
 

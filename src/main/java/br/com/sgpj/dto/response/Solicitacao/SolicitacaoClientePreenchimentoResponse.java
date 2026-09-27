@@ -1,4 +1,4 @@
-package br.com.sgpj.dto.response;
+package br.com.sgpj.dto.response.Solicitacao;
 
 import br.com.sgpj.dto.response.Processos.ProcessoApiCreateResponse;
 
@@ -12,6 +12,7 @@ public record SolicitacaoClientePreenchimentoResponse(
         String estado,
         String numeroProcesso,
         String descricao,
+        String comoConheceu,
         ProcessoApiCreateResponse processo
 ) {
 }

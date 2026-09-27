@@ -2,7 +2,7 @@ package br.com.sgpj.mapper;
 
 import br.com.sgpj.dto.request.ClienteAtualizacaoRequest;
 import br.com.sgpj.dto.request.ClienteCriacaoRequest;
-import br.com.sgpj.dto.response.ClienteDetalhesResponse;
+import br.com.sgpj.dto.response.Cliente.ClienteDetalhesResponse;
 import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Contato;
 

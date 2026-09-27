@@ -1,9 +1,9 @@
 package br.com.sgpj.service;
 
 import br.com.sgpj.dto.request.SolicitacaoDuvidaCriacaoRequest;
-import br.com.sgpj.dto.response.SolicitacaoClientePreenchimentoResponse;
-import br.com.sgpj.dto.response.SolicitacaoDuvidaDetalhesResponse;
-import br.com.sgpj.dto.response.SolicitacaoDuvidaListarResponse;
+import br.com.sgpj.dto.response.Solicitacao.SolicitacaoClientePreenchimentoResponse;
+import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaDetalhesResponse;
+import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaListarResponse;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.AceitarSolicitacao;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.CreateSolicitacaoDuvida;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.ListarSolicitacoesPendentes;

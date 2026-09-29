@@ -28,17 +28,17 @@ public class DashboardService {
         List<ProcessoApp> processos = processoAppRepository.findAll();
         List<Cliente> clientes = clienteRepository.findAll();
 
-
         List<ProcessoApp> solicitacoes = new ArrayList<>();
         List<AudienciasResponse> audiencia = new ArrayList<>();
 
         for (ProcessoApp processo : processos) {
-            if (processo.getCliente().getStatusCliente().equals("LEAD")) {
+            if (processo.getCliente() != null && processo.getCliente().getStatusCliente() != null
+                    && "LEAD".equalsIgnoreCase(processo.getCliente().getStatusCliente().getNome())) {
                 solicitacoes.add(processo);
             }
 
             if (processo.getDataAudiencia() != null && !processo.getDataAudiencia().isBefore(LocalDateTime.now())) {
-                audiencia.add(new AudienciasResponse(processo.getDataAudiencia(), processo.getFaseProcesso(), processo.getUsuarioResponsavel(), processo.getPrioridade()));
+                audiencia.add(new AudienciasResponse(processo.getId(), processo.getDataAudiencia(), processo.getFaseProcesso(), processo.getUsuarioResponsavel(), processo.getPrioridade(), processo.getCliente().getNomeRazaoSocial()));
             }
         }
 
@@ -52,4 +52,7 @@ public class DashboardService {
                 audiencia
         );
     }
+
+
+    // public Response buscar dados dashboard dependentes de filtro
 }

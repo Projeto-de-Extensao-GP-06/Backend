@@ -238,6 +238,21 @@ class ProcessoAppMapperTest {
             assertEquals("Cliente Teste", response.clientNomeRazaoSocial());
             assertEquals(StatusProcesso.ATIVO, response.status());
         }
+
+        @Test
+        @DisplayName("Deve mapear para ProcessoAppMiniResponse quando cliente for nulo")
+        void deveMapearQuandoClienteNulo() {
+            ProcessoApp processo = new ProcessoApp();
+            processo.setId(1L);
+            processo.setStatus(StatusProcesso.ATIVO);
+
+            ProcessoAppMiniResponse response = ProcessoAppMapper.toMiniResponse(processo);
+
+            assertNotNull(response);
+            assertEquals(1L, response.id());
+            assertNull(response.clienteId());
+            assertNull(response.clientNomeRazaoSocial());
+        }
     }
 
     @Nested

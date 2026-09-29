@@ -1,6 +1,6 @@
 package br.com.sgpj.service.useCases.solicitacaoDuvida;
 
-import br.com.sgpj.dto.response.SolicitacaoClientePreenchimentoResponse;
+import br.com.sgpj.dto.response.Solicitacao.SolicitacaoClientePreenchimentoResponse;
 import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Processo.ProcessoApp;
 import br.com.sgpj.entity.Processo.StatusProcesso;

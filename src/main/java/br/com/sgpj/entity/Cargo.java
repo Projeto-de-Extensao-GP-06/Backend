@@ -1,5 +1,6 @@
 package br.com.sgpj.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -17,12 +18,14 @@ public class Cargo {
 
     @ManyToOne
     @JoinColumn(name = "criado_por")
+    @JsonIgnore
     private Usuario criadoPor;
 
     @Column(nullable = false)
     private LocalDateTime criadoEm;
 
     @OneToMany(mappedBy = "cargo", fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<CargoPermissao> permissoes;
 
     // Constructors

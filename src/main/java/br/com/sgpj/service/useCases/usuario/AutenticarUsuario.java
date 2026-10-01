@@ -3,7 +3,7 @@ package br.com.sgpj.service.useCases.usuario;
 import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
 import br.com.sgpj.dto.request.UsuarioLoginRequest;
 import br.com.sgpj.dto.response.AutenticacaoUsuarioResponse;
-import br.com.sgpj.dto.response.UsuarioTokenResponse;
+import br.com.sgpj.dto.response.Usuario.UsuarioTokenResponse;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.mapper.UsuarioMapper;
 import br.com.sgpj.repository.UsuarioRepository;

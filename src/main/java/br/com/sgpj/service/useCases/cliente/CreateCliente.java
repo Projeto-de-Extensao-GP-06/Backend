@@ -1,7 +1,7 @@
 package br.com.sgpj.service.useCases.cliente;
 
 import br.com.sgpj.dto.request.ClienteCriacaoRequest;
-import br.com.sgpj.dto.response.ClienteDetalhesResponse;
+import br.com.sgpj.dto.response.Cliente.ClienteDetalhesResponse;
 import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Contato;
 import br.com.sgpj.entity.Endereco;
@@ -68,6 +68,7 @@ public class CreateCliente {
         cliente.setCpfCnpj(request.cpfCnpj());
         cliente.setPF(request.isPF());
         cliente.setRg(request.rg());
+        cliente.setComoConheceu(request.comoConheceu());
         cliente.setStatusCliente(statusCliente);
         cliente.setEndereco(endereco);
         cliente.setDataHoraEnvioFormulario(LocalDateTime.now());

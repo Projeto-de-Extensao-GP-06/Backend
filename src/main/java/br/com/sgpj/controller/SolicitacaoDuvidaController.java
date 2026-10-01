@@ -1,9 +1,9 @@
 package br.com.sgpj.controller;
 
 import br.com.sgpj.dto.request.SolicitacaoDuvidaCriacaoRequest;
-import br.com.sgpj.dto.response.SolicitacaoClientePreenchimentoResponse;
-import br.com.sgpj.dto.response.SolicitacaoDuvidaDetalhesResponse;
-import br.com.sgpj.dto.response.SolicitacaoDuvidaListarResponse;
+import br.com.sgpj.dto.response.Solicitacao.SolicitacaoClientePreenchimentoResponse;
+import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaDetalhesResponse;
+import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaListarResponse;
 import br.com.sgpj.security.IpAddressUtil;
 import br.com.sgpj.security.RateLimiter;
 import br.com.sgpj.service.SolicitacaoDuvidaService;

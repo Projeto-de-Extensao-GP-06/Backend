@@ -1,7 +1,6 @@
 package br.com.sgpj.service.useCases.solicitacaoDuvida;
 
-import br.com.sgpj.dto.response.SolicitacaoDuvidaListarResponse;
-import br.com.sgpj.entity.Processo.ProcessoApp;
+import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaListarResponse;
 import br.com.sgpj.entity.StatusClienteEnum;
 import br.com.sgpj.mapper.ProcessoAppToSolicitacaoDuvidaMapper;
 import br.com.sgpj.mapper.SolicitacaoDuvidaMapper;

@@ -29,6 +29,7 @@ public class ProcessoAppToSolicitacaoDuvidaMapper {
         solicitacao.setEstado(extrairEstado(processoApp.getObservacao()));
         solicitacao.setNumeroProcesso(processoApi != null ? processoApi.getNumeroCnj() : null);
         solicitacao.setDescricao(processoApp.getDescricaoCaso());
+        solicitacao.setComoConheceu(cliente.getComoConheceu());
         solicitacao.setAceitouTermos(true);
         solicitacao.setDataSolicitacao(processoApp.getDataHoraInicio());
         solicitacao.setDataResposta(cliente.getDataHoraTransformacaoEmCliente());

@@ -1,14 +1,13 @@
 package br.com.sgpj.service.useCases.usuario;
 
 import br.com.sgpj.entity.Usuario;
-import br.com.sgpj.exception.PasswordConflictException;
-import br.com.sgpj.exception.UsuarioInativoException;
-import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.repository.UsuarioRepository;
 import br.com.sgpj.service.EmailService;
 import br.com.sgpj.service.OtpService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 public class EnviarRedefinirSenhaOtp {
 
@@ -26,7 +25,7 @@ public class EnviarRedefinirSenhaOtp {
         this.emailService = emailService;
     }
 
-    public void executar(String email) {
+    public StatusEnvioOtp executar(String email) {
 
         validarEmail(email);
 
@@ -34,20 +33,21 @@ public class EnviarRedefinirSenhaOtp {
                 usuarioRepository.findByEmail(email);
 
         if (usuario == null) {
-            throw new UsuarioNaoEncontradoException(email);
+            log.warn("Falha ao enviar código de verificação para redefinição de senha. Motivo: email {} não encontrado.", email);
+            return StatusEnvioOtp.USUARIO_NAO_ENCONTRADO;
         }
 
         if (!usuario.isAtivo()) {
-            throw new UsuarioInativoException(
-                    "Este usuário está inativo. Contate um administrador."
-            );
+            log.warn("Falha ao enviar código de verificação para redefinição de senha. Motivo: usuário {} está inativo.", usuario.getId());
+            return StatusEnvioOtp.USUARIO_INATIVO;
         }
 
         if (!hasPassword(usuario)) {
-            throw new PasswordConflictException(
-                    "Essa conta ainda não realizou o primeiro acesso no sistema e não possui uma senha ativa."
-            );
+            log.warn("Falha ao enviar código de verificação para redefinição de senha. Motivo: usuário {} não possui senha ativa.", usuario.getId());
+            return StatusEnvioOtp.SENHA_NAO_CADASTRADA;
         }
+
+        log.info("Enviando código de verificação para usuário {}.", email);
 
         String otp =
                 otpService.generateOtp(email);
@@ -57,6 +57,8 @@ public class EnviarRedefinirSenhaOtp {
                 usuario.getNome(),
                 otp
         );
+
+        return StatusEnvioOtp.ENVIADO;
     }
 
     private void validarEmail(String email) {

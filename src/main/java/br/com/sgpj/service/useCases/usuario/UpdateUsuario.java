@@ -9,8 +9,10 @@ import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.mapper.UsuarioMapper;
 import br.com.sgpj.repository.CargoRepository;
 import br.com.sgpj.repository.UsuarioRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 public class UpdateUsuario {
 
@@ -31,6 +33,7 @@ public class UpdateUsuario {
     ) {
 
         if (!usuarioRepository.existsById(id)) {
+            log.warn("Usuário com ID {} não encontrado.", id);
             throw new UsuarioNaoEncontradoException(id);
         }
 

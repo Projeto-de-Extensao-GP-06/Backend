@@ -18,6 +18,7 @@ import br.com.sgpj.service.useCases.usuario.EnviarDefinirSenhaOtp;
 import br.com.sgpj.service.useCases.usuario.EnviarRedefinirSenhaOtp;
 import br.com.sgpj.service.useCases.usuario.ReadUsuario;
 import br.com.sgpj.service.useCases.usuario.ReativarUsuario;
+import br.com.sgpj.service.useCases.usuario.StatusEnvioOtp;
 import br.com.sgpj.service.useCases.usuario.UpdateUsuario;
 import br.com.sgpj.service.useCases.usuario.ValidarOtp;
 
@@ -140,16 +141,16 @@ public class UsuarioService {
   // OTP
   // =========================
 
-  public void enviarRedefinirSenhaOtp(String email) {
-    enviarRedefinirSenhaOtp.executar(email);
+  public StatusEnvioOtp enviarRedefinirSenhaOtp(String email) {
+    return enviarRedefinirSenhaOtp.executar(email);
   }
 
-  public void enviarDefinirSenhaOtp(String email) {
-    enviarDefinirSenhaOtp.executar(email);
+  public StatusEnvioOtp enviarDefinirSenhaOtp(String email) {
+    return enviarDefinirSenhaOtp.executar(email);
   }
 
-  public boolean validarOtp(ValidarOtpRequest request) {
-    return validarOtp.executar(request);
+  public void validarOtp(ValidarOtpRequest request) {
+    validarOtp.executar(request);
   }
 
   // =========================

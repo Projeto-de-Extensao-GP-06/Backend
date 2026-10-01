@@ -53,8 +53,13 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<Map<String, Object>> handleBadCredentials() {
-        return buildResponse(HttpStatus.UNAUTHORIZED, "E-mail ou senha inválidos");
+    public ResponseEntity<Map<String, Object>> handleBadCredentials(BadCredentialsException ex) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, "E-mail e/ou senha inválido(s)");
+    }
+
+    @ExceptionHandler(OtpInvalidaException.class)
+    public ResponseEntity<Map<String, Object>> handleOtpInvalida(OtpInvalidaException ex) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
     @ExceptionHandler(UsernameNotFoundException.class)

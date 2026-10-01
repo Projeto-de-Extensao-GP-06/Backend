@@ -8,8 +8,10 @@ import br.com.sgpj.exception.UsuarioAutoExclusaoException;
 import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.repository.CargoRepository;
 import br.com.sgpj.repository.UsuarioRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 public class DeleteUsuario {
 
@@ -36,6 +38,7 @@ public class DeleteUsuario {
                 usuarioRepository.findByEmail(email);
 
         if (usuarioLogado == null) {
+            log.warn("Usuário com email {} não encontrado.", email);
             throw new UsuarioNaoEncontradoException(email);
         }
 
@@ -46,6 +49,7 @@ public class DeleteUsuario {
         }
 
         if (!usuarioRepository.existsById(id)) {
+            log.warn("Usuário com ID {} não encontrado.", id);
             throw new UsuarioNaoEncontradoException(id);
         }
 

@@ -131,8 +131,7 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        String token =
-                gerenciadorTokenJwt.extrairTokenDaRequisicao(request);
+        String token = gerenciadorTokenJwt.extrairTokenDaRequisicao(request);
 
         if (token != null) {
             tokenBlacklistService.blacklistToken(token);
@@ -222,6 +221,8 @@ public class AuthController {
                 );
 
         rateLimiter.checkOtpRateLimit(identifier);
+
+        usuarioService.validarOtp(request);
 
         UsuarioTokenResponse autenticado =
                 usuarioService.autenticarOtp(request);

@@ -18,6 +18,7 @@ import br.com.sgpj.service.useCases.usuario.EnviarDefinirSenhaOtp;
 import br.com.sgpj.service.useCases.usuario.EnviarRedefinirSenhaOtp;
 import br.com.sgpj.service.useCases.usuario.ReadUsuario;
 import br.com.sgpj.service.useCases.usuario.ReativarUsuario;
+import br.com.sgpj.service.useCases.usuario.StatusEnvioOtp;
 import br.com.sgpj.service.useCases.usuario.UpdateUsuario;
 import br.com.sgpj.service.useCases.usuario.ValidarOtp;
 import org.junit.jupiter.api.DisplayName;
@@ -186,28 +187,32 @@ class UsuarioServiceTest {
     @Test
     @DisplayName("enviarRedefinirSenhaOtp delega para EnviarRedefinirSenhaOtp")
     void enviarRedefinirSenhaOtpDelega() {
-        usuarioService.enviarRedefinirSenhaOtp("x@x.com");
+        when(enviarRedefinirSenhaOtp.executar("x@x.com")).thenReturn(StatusEnvioOtp.ENVIADO);
 
+        StatusEnvioOtp res = usuarioService.enviarRedefinirSenhaOtp("x@x.com");
+
+        assertEquals(StatusEnvioOtp.ENVIADO, res);
         verify(enviarRedefinirSenhaOtp).executar("x@x.com");
     }
 
     @Test
     @DisplayName("enviarDefinirSenhaOtp delega para EnviarDefinirSenhaOtp")
     void enviarDefinirSenhaOtpDelega() {
-        usuarioService.enviarDefinirSenhaOtp("x@x.com");
+        when(enviarDefinirSenhaOtp.executar("x@x.com")).thenReturn(StatusEnvioOtp.ENVIADO);
 
+        StatusEnvioOtp res = usuarioService.enviarDefinirSenhaOtp("x@x.com");
+
+        assertEquals(StatusEnvioOtp.ENVIADO, res);
         verify(enviarDefinirSenhaOtp).executar("x@x.com");
     }
 
     @Test
-    @DisplayName("validarOtp delega para ValidarOtp e retorna boolean")
+    @DisplayName("validarOtp delega para ValidarOtp")
     void validarOtpDelega() {
         ValidarOtpRequest req = new ValidarOtpRequest("a", "1");
-        when(validarOtp.executar(req)).thenReturn(true);
 
-        boolean res = usuarioService.validarOtp(req);
+        usuarioService.validarOtp(req);
 
-        assertTrue(res);
         verify(validarOtp).executar(req);
     }
 

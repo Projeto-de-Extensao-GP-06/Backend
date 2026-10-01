@@ -97,6 +97,7 @@ class SolicitacaoDuvidaControllerTest {
                 "SP",
                 "10108901220228260292",
                 "Preciso de ajuda com meu processo",
+                "Instagram",
                 null
         ));
 

@@ -6,8 +6,9 @@ import br.com.sgpj.dto.request.UsuarioCriacaoRequest;
 import br.com.sgpj.dto.request.UsuarioLoginRequest;
 import br.com.sgpj.dto.request.ValidarOtpRequest;
 import br.com.sgpj.dto.response.AutenticacaoUsuarioResponse;
-import br.com.sgpj.dto.response.Usuario.UsuarioListarResponse;
-import br.com.sgpj.dto.response.Usuario.UsuarioTokenResponse;
+import br.com.sgpj.dto.response.UsuarioListarResponse;
+import br.com.sgpj.dto.response.UsuarioTokenResponse;
+import br.com.sgpj.dto.response.UsuarioSessaoResponse;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.service.useCases.usuario.AutenticarOtp;
 import br.com.sgpj.service.useCases.usuario.AutenticarUsuario;
@@ -127,6 +128,10 @@ public class UsuarioService {
   public UsuarioTokenResponse autenticar(UsuarioLoginRequest usuario) {
     AutenticacaoUsuarioResponse autenticacao = autenticarUsuario.executar(usuario);
     return autenticacao.tokenResponse();
+  }
+
+  public UsuarioSessaoResponse autenticar(String email) {
+    return autenticarUsuario.obterSessao(email);
   }
 
   public UsuarioTokenResponse autenticarOtp(

@@ -5,7 +5,6 @@ import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
 import br.com.sgpj.dto.response.OneDriveItemResponse;
 import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.documentos.CaminhoPadraoDeArmazenamento;
-import br.com.sgpj.exception.CaminhoJaExisteException;
 import br.com.sgpj.exception.ClienteNaoEncontradoException;
 import br.com.sgpj.exception.OneDriveErroException;
 import br.com.sgpj.repository.CaminhoPadraoDeArmazenamentoRepository;
@@ -52,6 +51,7 @@ class OneDriveServiceTest {
     @Mock private CaminhoPadraoDeArmazenamentoRepository caminhoRepository;
     @Mock private ProcessoAppRepository processoAppRepository;
     @Mock private ProcessoDocumentoRepository processoDocumentoRepository;
+    @Mock private RegistroHistoricoProcesso registroHistorico;
 
     @Mock private OneDriveGraphGateway graphGateway;
     @Mock private OneDriveDocumentManager documentManager;
@@ -69,7 +69,8 @@ class OneDriveServiceTest {
                 tipoDocumentoRepository,
                 caminhoRepository,
                 processoAppRepository,
-                processoDocumentoRepository
+                processoDocumentoRepository,
+                registroHistorico
         );
 
         ReflectionTestUtils.setField(oneDriveService, "graphGateway", graphGateway);
@@ -122,22 +123,27 @@ class OneDriveServiceTest {
             when(clienteRepository.findById(1L)).thenReturn(Optional.empty());
 
             assertThrows(ClienteNaoEncontradoException.class,
-                    () -> oneDriveService.criarPasta(1L, "0001234-56.2024.8.26.0100"));
+                    () -> oneDriveService.criarPasta(1L));
             verifyNoInteractions(graphGateway);
         }
 
         @Test
-        @DisplayName("Deve lançar CaminhoJaExisteException quando o caminho já existir")
-        void deveLancarExcecaoQuandoCaminhoJaExiste() {
+        @DisplayName("Deve reutilizar o caminho único já existente para o cliente")
+        void deveReutilizarCaminhoDoCliente() {
             Cliente cliente = new Cliente();
             cliente.setNomeRazaoSocial("Empresa X");
             cliente.setCpfCnpj("12345678000199");
             when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
-            when(caminhoRepository.existsByCaminho(anyString())).thenReturn(true);
+            when(caminhoRepository.findByClienteId(1L)).thenReturn(List.of(
+                    caminhoComId(2L, OneDrivePathHelper.gerarNomePasta(cliente))));
+            DriveItem pasta = new DriveItem();
+            pasta.setId("pasta-1");
+            when(graphGateway.garantirPasta(anyString(), anyString())).thenReturn(pasta);
 
-            assertThrows(CaminhoJaExisteException.class,
-                    () -> oneDriveService.criarPasta(1L, "0001234-56.2024.8.26.0100"));
-            verify(graphGateway, never()).criarPasta(anyString(), anyString());
+            OneDriveItemResponse resultado = oneDriveService.criarPasta(1L);
+
+            assertEquals("pasta-1", resultado.id());
+            verify(caminhoRepository, never()).save(any(CaminhoPadraoDeArmazenamento.class));
         }
 
         @Test
@@ -147,13 +153,13 @@ class OneDriveServiceTest {
             cliente.setNomeRazaoSocial("Empresa X");
             cliente.setCpfCnpj("12345678000199");
             when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
-            when(caminhoRepository.existsByCaminho(anyString())).thenReturn(false);
+            when(caminhoRepository.findByClienteId(1L)).thenReturn(List.of());
 
             DriveItem pastaCriada = new DriveItem();
             pastaCriada.setId("item-123");
-            when(graphGateway.criarPasta(anyString(), anyString())).thenReturn(pastaCriada);
+            when(graphGateway.garantirPasta(anyString(), anyString())).thenReturn(pastaCriada);
 
-            OneDriveItemResponse resultado = oneDriveService.criarPasta(1L, "0001234-56.2024.8.26.0100");
+            OneDriveItemResponse resultado = oneDriveService.criarPasta(1L);
 
             assertNotNull(resultado);
             assertEquals("item-123", resultado.id());
@@ -168,12 +174,12 @@ class OneDriveServiceTest {
             cliente.setNomeRazaoSocial("Empresa X");
             cliente.setCpfCnpj("12345678000199");
             when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
-            when(caminhoRepository.existsByCaminho(anyString())).thenReturn(false);
-            when(graphGateway.criarPasta(anyString(), anyString()))
+            when(caminhoRepository.findByClienteId(1L)).thenReturn(List.of());
+            when(graphGateway.garantirPasta(anyString(), anyString()))
                     .thenThrow(new RuntimeException("falha de rede"));
 
             assertThrows(OneDriveErroException.class,
-                    () -> oneDriveService.criarPasta(1L, "0001234-56.2024.8.26.0100"));
+                    () -> oneDriveService.criarPasta(1L));
             verify(caminhoRepository, never()).save(any());
         }
     }

@@ -6,16 +6,19 @@ import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Contato;
 import br.com.sgpj.entity.Endereco;
 import br.com.sgpj.entity.StatusCliente;
+import br.com.sgpj.entity.documentos.CaminhoPadraoDeArmazenamento;
 import br.com.sgpj.exception.ClienteJaExistenteException;
 import br.com.sgpj.exception.ClienteNaoEncontradoException;
 import br.com.sgpj.exception.StatusClienteNaoEncontradoException;
 import br.com.sgpj.mapper.ClienteMapper;
 import br.com.sgpj.mapper.ContatoMapper;
 import br.com.sgpj.mapper.EnderecoMapper;
+import br.com.sgpj.repository.CaminhoPadraoDeArmazenamentoRepository;
 import br.com.sgpj.repository.ClienteRepository;
 import br.com.sgpj.repository.ContatoRepository;
 import br.com.sgpj.repository.EnderecoRepository;
 import br.com.sgpj.repository.StatusClienteRepository;
+import br.com.sgpj.service.useCases.onedrive.OneDrivePathHelper;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,12 +32,18 @@ public class CreateCliente {
     private final EnderecoRepository enderecoRepository;
     private final StatusClienteRepository statusClienteRepository;
     private final ContatoRepository contatoRepository;
+    private final CaminhoPadraoDeArmazenamentoRepository caminhoRepository;
 
-    public CreateCliente(ClienteRepository clienteRepository, EnderecoRepository enderecoRepository, StatusClienteRepository statusClienteRepository, ContatoRepository contatoRepository) {
+    public CreateCliente(ClienteRepository clienteRepository,
+                         EnderecoRepository enderecoRepository,
+                         StatusClienteRepository statusClienteRepository,
+                         ContatoRepository contatoRepository,
+                         CaminhoPadraoDeArmazenamentoRepository caminhoRepository) {
         this.clienteRepository = clienteRepository;
         this.enderecoRepository = enderecoRepository;
         this.statusClienteRepository = statusClienteRepository;
         this.contatoRepository = contatoRepository;
+        this.caminhoRepository = caminhoRepository;
     }
 
     @Transactional
@@ -54,6 +63,16 @@ public class CreateCliente {
         }
 
         Long clienteId = clienteSalvo.getId();
+
+        // Cria o caminho padrão de armazenamento para o cliente (armazenamento unificado por cliente)
+        String nomeBase = OneDrivePathHelper.gerarNomePasta(clienteSalvo);
+        if (!caminhoRepository.existsByCaminho(nomeBase)) {
+            CaminhoPadraoDeArmazenamento novoCaminho = new CaminhoPadraoDeArmazenamento();
+            novoCaminho.setCliente(clienteSalvo);
+            novoCaminho.setCaminho(nomeBase);
+            caminhoRepository.save(novoCaminho);
+        }
+
         return ClienteMapper.toDetalhesDto(clienteRepository.findByIdComDetalhes(clienteId)
                 .orElseThrow(() -> new ClienteNaoEncontradoException(clienteId)));
     }

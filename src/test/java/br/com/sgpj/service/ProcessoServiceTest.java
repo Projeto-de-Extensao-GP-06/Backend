@@ -22,6 +22,7 @@ import br.com.sgpj.repository.UsuarioRepository;
 import br.com.sgpj.security.AuthorizationUtil;
 import br.com.sgpj.service.useCases.processo.CreateProcesso;
 import br.com.sgpj.service.useCases.processo.DeleteProcessoApp;
+import br.com.sgpj.service.useCases.processo.DeleteProcessoDocumento;
 import br.com.sgpj.service.useCases.processo.ReadProcesso;
 import br.com.sgpj.service.useCases.processo.UpdateProcesso;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +32,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -60,6 +64,9 @@ class ProcessoServiceTest {
     private DeleteProcessoApp deleteProcessoApp;
 
     @Mock
+    private DeleteProcessoDocumento deleteProcessoDocumento;
+
+    @Mock
     private UsuarioRepository usuarioRepository;
 
     @Mock
@@ -74,6 +81,9 @@ class ProcessoServiceTest {
     @Mock
     private AuthorizationUtil authorizationUtil;
 
+    @Mock
+    private RegistroHistoricoProcesso registroHistorico;
+
     private ProcessoService processoService;
 
     @BeforeEach
@@ -87,7 +97,9 @@ class ProcessoServiceTest {
                 documentoRepository,
                 processoDocumentoRepository,
                 authorizationUtil,
-                deleteProcessoApp
+                deleteProcessoApp,
+                deleteProcessoDocumento,
+                registroHistorico
         );
     }
 
@@ -118,13 +130,14 @@ class ProcessoServiceTest {
         @Test
         @DisplayName("Deve delegar listagem geral para ReadProcesso")
         void deveDelegarListagem() {
-            List<ProcessoAppMiniResponse> lista = List.of(mock(ProcessoAppMiniResponse.class));
-            when(readProcesso.listarProcessos()).thenReturn(lista);
+            Page<ProcessoAppMiniResponse> lista = new PageImpl<>(List.of(mock(ProcessoAppMiniResponse.class)));
+            PageRequest pageable = PageRequest.of(0, 20);
+            when(readProcesso.listarProcessos(pageable)).thenReturn(lista);
 
-            List<ProcessoAppMiniResponse> resultado = processoService.listarProcessos();
+            Page<ProcessoAppMiniResponse> resultado = processoService.listarProcessos(pageable);
 
             assertEquals(lista, resultado);
-            verify(readProcesso).listarProcessos();
+            verify(readProcesso).listarProcessos(pageable);
         }
 
         @Test

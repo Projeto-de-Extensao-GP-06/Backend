@@ -127,6 +127,7 @@ public class SecurityConfiguracao {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(URLS_PERMITIDAS).permitAll()  // rotas públicas
                         .requestMatchers(HttpMethod.POST, "/solicitacoes").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/auth/me").hasAuthority("SCOPE_GENERAL_USE")
                         .requestMatchers("/auth/definir-nova-senha").hasAuthority("SCOPE_SET_PASSWORD") // rota /definir-nova-senha exige claim set password
                         .anyRequest().hasAuthority("SCOPE_GENERAL_USE")  // todas as outras exigem token com claim general use
                 )

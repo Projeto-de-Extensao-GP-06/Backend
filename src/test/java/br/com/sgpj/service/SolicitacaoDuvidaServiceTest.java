@@ -15,6 +15,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -59,13 +63,19 @@ class SolicitacaoDuvidaServiceTest {
     @Test
     @DisplayName("listarPendentes deve delegar ao use case ListarSolicitacoesPendentes")
     void deveDelegarListagemDePendentesAoUseCase() {
-        List<SolicitacaoDuvidaListarResponse> lista = List.of(mock(SolicitacaoDuvidaListarResponse.class));
-        when(listarSolicitacoesPendentes.listarPendentes()).thenReturn(lista);
+        Pageable pageable = PageRequest.of(1, 2);
+        Page<SolicitacaoDuvidaListarResponse> pagina = new PageImpl<>(
+                List.of(mock(SolicitacaoDuvidaListarResponse.class)), pageable, 3);
+        when(listarSolicitacoesPendentes.listarPendentes(pageable)).thenReturn(pagina);
 
-        List<SolicitacaoDuvidaListarResponse> resultado = solicitacaoDuvidaService.listarPendentes();
+        Page<SolicitacaoDuvidaListarResponse> resultado = solicitacaoDuvidaService.listarPendentes(pageable);
 
-        assertEquals(lista, resultado);
-        verify(listarSolicitacoesPendentes).listarPendentes();
+        assertEquals(pagina, resultado);
+        assertEquals(1, resultado.getNumber());
+        assertEquals(2, resultado.getSize());
+        assertEquals(3, resultado.getTotalElements());
+        assertEquals(2, resultado.getTotalPages());
+        verify(listarSolicitacoesPendentes).listarPendentes(pageable);
     }
 
     @Test

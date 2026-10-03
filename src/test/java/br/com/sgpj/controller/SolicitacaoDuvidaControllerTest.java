@@ -14,11 +14,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,23 +58,39 @@ class SolicitacaoDuvidaControllerTest {
     @Test
     @DisplayName("GET deve retornar 200 com solicitações pendentes")
     void listarPendentesDeveRetornar200() {
-        when(service.listarPendentes()).thenReturn(List.of(criarListagem()));
+        Pageable pageable = PageRequest.of(0, 20,
+                Sort.by(Sort.Order.desc("dataHoraInicio"), Sort.Order.desc("id")));
+        Page<SolicitacaoDuvidaListarResponse> pagina = new PageImpl<>(List.of(criarListagem()), pageable, 21);
+        when(service.listarPendentes(pageable)).thenReturn(pagina);
 
-        ResponseEntity<List<SolicitacaoDuvidaListarResponse>> response = controller.listarPendentes();
+        ResponseEntity<Page<SolicitacaoDuvidaListarResponse>> response = controller.listarPendentes(pageable);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(1, response.getBody().size());
-        assertEquals("Maria Silva", response.getBody().getFirst().nomeCompleto());
+        assertEquals(1, response.getBody().getContent().size());
+        assertEquals("Maria Silva", response.getBody().getContent().getFirst().nomeCompleto());
+        assertEquals(0, response.getBody().getNumber());
+        assertEquals(20, response.getBody().getSize());
+        assertEquals(21, response.getBody().getTotalElements());
+        assertEquals(2, response.getBody().getTotalPages());
+        verify(service).listarPendentes(pageable);
     }
 
     @Test
-    @DisplayName("GET deve retornar 204 quando não houver solicitações pendentes")
-    void listarPendentesDeveRetornar204() {
-        when(service.listarPendentes()).thenReturn(Collections.emptyList());
+    @DisplayName("GET deve retornar 200 com página vazia e metadados")
+    void listarPendentesDeveRetornar200ComPaginaVazia() {
+        Pageable pageable = PageRequest.of(2, 5);
+        Page<SolicitacaoDuvidaListarResponse> paginaVazia = new PageImpl<>(List.of(), pageable, 0);
+        when(service.listarPendentes(pageable)).thenReturn(paginaVazia);
 
-        ResponseEntity<List<SolicitacaoDuvidaListarResponse>> response = controller.listarPendentes();
+        ResponseEntity<Page<SolicitacaoDuvidaListarResponse>> response = controller.listarPendentes(pageable);
 
-        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(0, response.getBody().getContent().size());
+        assertEquals(2, response.getBody().getNumber());
+        assertEquals(5, response.getBody().getSize());
+        assertEquals(0, response.getBody().getTotalElements());
+        assertEquals(0, response.getBody().getTotalPages());
+        verify(service).listarPendentes(pageable);
     }
 
     @Test
@@ -97,6 +117,7 @@ class SolicitacaoDuvidaControllerTest {
                 "SP",
                 "10108901220228260292",
                 "Preciso de ajuda com meu processo",
+                "Instagram",
                 null
         ));
 

@@ -9,10 +9,10 @@ import br.com.sgpj.service.useCases.solicitacaoDuvida.CreateSolicitacaoDuvida;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.ListarSolicitacoesPendentes;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.NegarSolicitacao;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.ReadSolicitacaoDuvida;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 public class SolicitacaoDuvidaService {
@@ -43,8 +43,8 @@ public class SolicitacaoDuvidaService {
 
     // READ OPERATIONS
     @Transactional(readOnly = true)
-    public List<SolicitacaoDuvidaListarResponse> listarPendentes() {
-        return listarSolicitacoesPendentes.listarPendentes();
+    public Page<SolicitacaoDuvidaListarResponse> listarPendentes(Pageable pageable) {
+        return listarSolicitacoesPendentes.listarPendentes(pageable);
     }
 
     @Transactional(readOnly = true)

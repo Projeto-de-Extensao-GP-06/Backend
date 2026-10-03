@@ -17,7 +17,7 @@ public interface ProcessoAppRepository extends JpaRepository<ProcessoApp, Long> 
 
     List<ProcessoApp> findByClienteId(Long clienteId);
 
-    List<ProcessoApp> findByCliente_StatusCliente_NomeIgnoreCaseOrderByDataHoraInicioDesc(String statusNome);
+    Page<ProcessoApp> findByCliente_StatusCliente_NomeIgnoreCase(String statusNome, Pageable pageable);
 
     @Query("""
             select p

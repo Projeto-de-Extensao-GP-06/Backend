@@ -39,3 +39,21 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# AI Context & Tooling
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+.agents/
+.claude/
+.codex/
+.cursor/
+.gemini/
+.opencode/
+graphify-out/
+
+# IDE & Temp
+out/
+Backend.userlibraries
+sgpj.eml
+*.log

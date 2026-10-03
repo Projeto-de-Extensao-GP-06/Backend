@@ -5,6 +5,8 @@ import br.com.sgpj.dto.response.DataJudApiResponse;
 import br.com.sgpj.entity.Processo.ProcessoApi;
 import br.com.sgpj.entity.Processo.SiglaTribunal;
 import br.com.sgpj.mapper.ProcessoApiMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
@@ -18,6 +20,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class ProcessoApiGateway {
 
+    private static final Logger log = LoggerFactory.getLogger(ProcessoApiGateway.class);
+
     private final DataJudAdapter dataJudAdapter;
 
     public ProcessoApiGateway(DataJudAdapter dataJudAdapter) {
@@ -29,26 +33,29 @@ public class ProcessoApiGateway {
      *
      * @param numeroProcesso Número do processo em formato CNJ
      * @param siglaTribunal Tribunal responsável
-     * @return ProcessoApi com dados oficiais, ou null se não encontrado
+     * @return ProcessoApi com dados oficiais, ou null se não encontrado ou se a API falhar
      */
     public ProcessoApi buscarDadosOficiais(String numeroProcesso, SiglaTribunal siglaTribunal) {
         if (numeroProcesso == null || numeroProcesso.isBlank()) {
             return null;
         }
 
-        // Adapter retorna DTO estruturado (não mais String JSON)
-        DataJudApiResponse dataJudResponse = dataJudAdapter.buscarPorNumeroDeProcesso(
-                numeroProcesso,
-                siglaTribunal.getNome()
-        );
+        try {
+            DataJudApiResponse dataJudResponse = dataJudAdapter.buscarPorNumeroDeProcesso(
+                    numeroProcesso,
+                    siglaTribunal.getNome()
+            );
 
-        // Se não houver resultados, retorna null
-        if (!dataJudResponse.temResultados()) {
+            if (dataJudResponse == null || !dataJudResponse.temResultados()) {
+                return null;
+            }
+
+            return ProcessoApiMapper.toEntity(dataJudResponse);
+        } catch (Exception ex) {
+            log.warn("Não foi possível obter dados oficiais do processo {} no tribunal {}: {}",
+                    numeroProcesso, siglaTribunal != null ? siglaTribunal.getNome() : "null", ex.getMessage());
             return null;
         }
-
-        // Mapeia o DTO para a entidade de domínio
-        return ProcessoApiMapper.toEntity(dataJudResponse);
     }
 }
 

@@ -17,8 +17,7 @@ public record HistoricoProcessoRequest(
         Long tipoAlteracaoId,
         @Schema(description = "Id da fase anterior", example = "null")
         Long faseAnteriorId,
-        @NotNull(message = "Id da fase nova e obrigatorio")
-        @Schema(description = "Id da fase nova", example = "1")
+        @Schema(description = "Id da fase nova, quando a alteração for de fase", example = "1")
         Long faseNovaId
 
 ) {

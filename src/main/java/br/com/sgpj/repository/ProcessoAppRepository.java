@@ -4,6 +4,8 @@ import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Processo.FaseProcesso;
 import br.com.sgpj.entity.Processo.ProcessoApp;
 import br.com.sgpj.entity.Processo.SiglaTribunal;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

@@ -34,4 +34,11 @@ public class DeleteProcessoDocumento {
             processoDocumentoRepository.deleteAll(vinculos);
         }
     }
+
+    public void desvincularDocumento(Long processoAppId, Long documentoId) {
+        br.com.sgpj.entity.Processo.ProcessoDocumentoId id = new br.com.sgpj.entity.Processo.ProcessoDocumentoId(documentoId, processoAppId);
+        if (processoDocumentoRepository.existsById(id)) {
+            processoDocumentoRepository.deleteById(id);
+        }
+    }
 }

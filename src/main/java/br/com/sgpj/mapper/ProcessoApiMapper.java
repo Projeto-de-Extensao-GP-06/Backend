@@ -50,19 +50,19 @@ public class ProcessoApiMapper {
         ProcessoApi processoApi = new ProcessoApi();
 
         // Mapeia dados básicos
-        processoApi.setNumeroCnj(source.numeroProcesso());
-        processoApi.setClasseProcessual(source.classe() != null ? source.classe().nome() : null);
-        processoApi.setSistemaTribunal(source.sistema() != null ? source.sistema().nome() : null);
-        processoApi.setFormato(source.formato() != null ? source.formato().nome() : null);
-        processoApi.setTribunalTramitacao(source.tribunal());
-        processoApi.setInstancia(source.grau());
+        processoApi.setNumeroCnj(limitarTamanho(source.numeroProcesso(), 25));
+        processoApi.setClasseProcessual(source.classe() != null ? limitarTamanho(source.classe().nome(), 255) : null);
+        processoApi.setSistemaTribunal(source.sistema() != null ? limitarTamanho(source.sistema().nome(), 100) : null);
+        processoApi.setFormato(source.formato() != null ? limitarTamanho(source.formato().nome(), 50) : null);
+        processoApi.setTribunalTramitacao(limitarTamanho(source.tribunal(), 100));
+        processoApi.setInstancia(limitarTamanho(source.grau(), 100));
 
         if (source.assuntos() != null && !source.assuntos().isEmpty() && source.assuntos().get(0) != null) {
-            processoApi.setAssunto(source.assuntos().get(0).nome());
+            processoApi.setAssunto(limitarTamanho(source.assuntos().get(0).nome(), 255));
         }
 
         processoApi.setNivelSigilo(source.nivelSigilo() != null ? source.nivelSigilo() : 0);
-        processoApi.setOrgaoJulgador(source.orgaoJulgador() != null ? source.orgaoJulgador().nome() : "Não informado");
+        processoApi.setOrgaoJulgador(source.orgaoJulgador() != null ? limitarTamanho(source.orgaoJulgador().nome(), 255) : "Não informado");
 
         // Mapeia data de ajuizamento
         try {
@@ -149,6 +149,11 @@ public class ProcessoApiMapper {
             return null;
         }
 
+        List<MovimentacoesOficiais> movimentacoes = processoApi.getMovimentacoes();
+        MovimentacaoOficialResponse ultimoMovimento = (movimentacoes != null && !movimentacoes.isEmpty())
+                ? toMovimentacaoResponse(movimentacoes.getLast())
+                : null;
+
         return new ProcessoApiResponse(
                 processoApi.getId(),
                 processoApi.getNumeroCnj(),
@@ -161,7 +166,7 @@ public class ProcessoApiMapper {
                 processoApi.getSistemaTribunal(),
                 processoApi.getOrgaoJulgador(),
                 processoApi.getAssunto(),
-                toMovimentacaoResponse(processoApi.getMovimentacoes().getLast())
+                ultimoMovimento
         );
     }
 
@@ -188,5 +193,13 @@ public class ProcessoApiMapper {
                         movimentacao.getDataHoraMovimentacao()
                 ))
                 .toList();
+    }
+
+    private static String limitarTamanho(String texto, int tamanhoMaximo) {
+        if (texto == null) {
+            return null;
+        }
+        String limpo = texto.trim();
+        return limpo.length() <= tamanhoMaximo ? limpo : limpo.substring(0, tamanhoMaximo);
     }
 }

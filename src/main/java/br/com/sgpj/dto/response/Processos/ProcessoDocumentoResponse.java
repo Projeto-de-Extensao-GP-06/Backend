@@ -7,6 +7,7 @@ public record ProcessoDocumentoResponse(
         String nomeOriginal,
         String mimeType,
         String onedriveUrlDownload,
+        String onedriveUrlThumbnail,
         Long anexadoPorUsuarioId,
         String anexadoPorUsuarioNome,
         LocalDateTime anexadoEm,

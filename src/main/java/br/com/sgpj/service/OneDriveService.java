@@ -5,7 +5,6 @@ import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
 import br.com.sgpj.dto.response.OneDriveItemResponse;
 import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.documentos.CaminhoPadraoDeArmazenamento;
-import br.com.sgpj.exception.CaminhoJaExisteException;
 import br.com.sgpj.exception.ClienteNaoEncontradoException;
 import br.com.sgpj.exception.OneDriveErroException;
 import br.com.sgpj.mapper.OneDriveMapper;
@@ -40,7 +39,8 @@ public class OneDriveService {
                            TipoDocumentoRepository tipoDocumentoRepository,
                            CaminhoPadraoDeArmazenamentoRepository caminhoPadraoDeArmazenamentoRepository,
                            ProcessoAppRepository processoAppRepository,
-                           ProcessoDocumentoRepository processoDocumentoRepository) {
+                           ProcessoDocumentoRepository processoDocumentoRepository,
+                           RegistroHistoricoProcesso registroHistorico) {
         this.clienteRepository = clienteRepository;
         this.caminhoPadraoDeArmazenamentoRepository = caminhoPadraoDeArmazenamentoRepository;
         this.graphGateway = new OneDriveGraphGateway(tokenAdapter);
@@ -51,7 +51,8 @@ public class OneDriveService {
                 tipoDocumentoRepository,
                 caminhoPadraoDeArmazenamentoRepository,
                 processoAppRepository,
-                processoDocumentoRepository
+                processoDocumentoRepository,
+                registroHistorico
         );
     }
 
@@ -60,30 +61,27 @@ public class OneDriveService {
         return graphGateway.listarArquivos(OneDrivePathHelper.caminhoDaPasta(caminhoArmazenamento.getCaminho()));
     }
 
-    public OneDriveItemResponse criarPasta(Long clienteId, String numeroCnj) {
+    public OneDriveItemResponse criarPasta(Long clienteId) {
         Cliente cliente = clienteRepository.findById(clienteId)
                 .orElseThrow(() -> new ClienteNaoEncontradoException(clienteId));
 
-        String numeroCnjSanitizado = OneDrivePathHelper.sanitizar(numeroCnj);
-        String nomeBase = OneDrivePathHelper.gerarNomePasta(cliente);
-        String caminhoCompleto = OneDrivePathHelper.caminhoCompletoDaPasta(nomeBase, numeroCnjSanitizado);
-
-        if (caminhoPadraoDeArmazenamentoRepository.existsByCaminho(caminhoCompleto)) {
-            throw new CaminhoJaExisteException(caminhoCompleto);
-        }
+        String caminhoDoCliente = OneDrivePathHelper.gerarNomePasta(cliente);
+        CaminhoPadraoDeArmazenamento caminhoExistente = caminhoPadraoDeArmazenamentoRepository
+                .findByClienteId(clienteId)
+                .stream()
+                .filter(caminho -> caminhoDoCliente.equals(caminho.getCaminho()))
+                .findFirst()
+                .orElse(null);
 
         try {
-            graphGateway.garantirPasta(OneDrivePathHelper.caminhoRaiz() + ":", nomeBase);
-            DriveItem pastaCriada = graphGateway.criarPasta(OneDrivePathHelper.caminhoDaPasta(nomeBase), numeroCnjSanitizado);
-
-            CaminhoPadraoDeArmazenamento novoCaminho = new CaminhoPadraoDeArmazenamento();
-            novoCaminho.setCliente(cliente);
-            novoCaminho.setCaminho(caminhoCompleto);
-            caminhoPadraoDeArmazenamentoRepository.save(novoCaminho);
-
-            return OneDriveMapper.toDto(pastaCriada, null, caminhoCompleto);
-        } catch (CaminhoJaExisteException e) {
-            throw e;
+            DriveItem pasta = graphGateway.garantirPasta(OneDrivePathHelper.caminhoRaiz() + ":", caminhoDoCliente);
+            if (caminhoExistente == null) {
+                CaminhoPadraoDeArmazenamento novoCaminho = new CaminhoPadraoDeArmazenamento();
+                novoCaminho.setCliente(cliente);
+                novoCaminho.setCaminho(caminhoDoCliente);
+                caminhoPadraoDeArmazenamentoRepository.save(novoCaminho);
+            }
+            return OneDriveMapper.toDto(pasta, null, caminhoDoCliente);
         } catch (Exception e) {
             throw new OneDriveErroException("Erro ao criar a pasta: " + e.getMessage());
         }

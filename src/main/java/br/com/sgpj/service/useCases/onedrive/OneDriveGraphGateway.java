@@ -53,14 +53,14 @@ public class OneDriveGraphGateway {
         }
     }
 
-    public void garantirPasta(String caminhoPai, String nomePasta) {
+    public DriveItem garantirPasta(String caminhoPai, String nomePasta) {
         try {
-            criarCliente()
+            return criarCliente()
                     .drives().byDriveId(obterDriveId())
                     .items().byDriveItemId(caminhoPai + "/" + nomePasta + ":")
                     .get();
         } catch (Exception ignored) {
-            criarPasta(caminhoPai, nomePasta);
+            return criarPasta(caminhoPai, nomePasta);
         }
     }
 

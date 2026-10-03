@@ -22,8 +22,7 @@ public final class OneDrivePathHelper {
                 .trim()
                 .replaceAll("\\s+", "-");
 
-        String documento = cliente.getCpfCnpj() != null ? cliente.getCpfCnpj() : "sem-documento";
-        return sanitizar(nome + "-" + documento);
+        return sanitizar(nome);
     }
 
     public static String caminhoRaiz() {

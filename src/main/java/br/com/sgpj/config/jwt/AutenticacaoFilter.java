@@ -106,7 +106,13 @@ public class AutenticacaoFilter extends OncePerRequestFilter {
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            registrarAutenticacaoNoContexto(request, username, jwtToken);
+            try {
+                registrarAutenticacaoNoContexto(request, username, jwtToken);
+            } catch (br.com.sgpj.exception.UsuarioNaoEncontradoException | org.springframework.security.core.userdetails.UsernameNotFoundException e) {
+                LOGGER.warn("[AUTENTICACAO] Usuário '{}' do token não foi encontrado no banco (possível alteração de e-mail). Ignorando token.", username);
+            } catch (Exception e) {
+                LOGGER.warn("[AUTENTICACAO] Falha ao autenticar usuário '{}' com o token fornecido: {}", username, e.getMessage());
+            }
         }
 
         filterChain.doFilter(request, response);

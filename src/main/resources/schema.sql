@@ -154,15 +154,15 @@ ALTER TABLE padrao_caminho_armazenamento
 CREATE TABLE processo_dados_api (
                                     id BIGINT AUTO_INCREMENT PRIMARY KEY,
                                     numero_cnj VARCHAR(25) UNIQUE,
-                                    tribunal_tramitacao VARCHAR(100),
-                                    instancia VARCHAR(45),
+                                    tribunal_tramitacao VARCHAR(200),
+                                    instancia VARCHAR(200),
                                     data_ajuizamento DATETIME,
                                     nivel_sigilo VARCHAR(50),
-                                    classe_processual VARCHAR(150),
-                                    formato VARCHAR(15),
-                                    sistema_tribunal VARCHAR(50),
-                                    orgao_julgador VARCHAR(45),
-                                    assunto VARCHAR(45)
+                                    classe_processual VARCHAR(255),
+                                    formato VARCHAR(100),
+                                    sistema_tribunal VARCHAR(200),
+                                    orgao_julgador VARCHAR(255),
+                                    assunto VARCHAR(255)
 );
 
 -- =========================================================

@@ -2,8 +2,8 @@ package br.com.sgpj.controller;
 
 import br.com.sgpj.dto.request.ClienteAtualizacaoRequest;
 import br.com.sgpj.dto.request.ClienteCriacaoRequest;
-import br.com.sgpj.dto.response.ClienteDetalhesResponse;
-import br.com.sgpj.dto.response.ClienteListarResponse;
+import br.com.sgpj.dto.response.Cliente.ClienteDetalhesResponse;
+import br.com.sgpj.dto.response.Cliente.ClienteListarResponse;
 import br.com.sgpj.exception.ClienteNaoEncontradoException;
 import br.com.sgpj.service.ClienteService;
 import org.junit.jupiter.api.DisplayName;

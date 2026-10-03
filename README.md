@@ -174,6 +174,7 @@ spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
 spring.jpa.show-sql=true
 
 jwt.validity=${JWT_VALIDITY:3600}
+jwt.refresh.validity=${JWT_REFRESH_VALIDITY:86400}
 jwt.secret=${JWT_SECRET}
 cookie.secure=${COOKIE_SECURE:false}
 

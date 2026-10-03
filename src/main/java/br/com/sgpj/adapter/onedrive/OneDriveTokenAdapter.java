@@ -65,7 +65,7 @@ public class OneDriveTokenAdapter {
     /**
      * Retorna um access token válido, usando cache quando possível.
      */
-    public String getAccessToken() {
+    public synchronized String getAccessToken() {
         Optional<OneDriveTokenCache.CachedToken> maybe = tokenCache.get();
         if (maybe.isPresent()) {
             OneDriveTokenCache.CachedToken cached = maybe.get();
@@ -80,7 +80,7 @@ public class OneDriveTokenAdapter {
     /**
      * Troca o código de autorização por tokens e persiste.
      */
-    public void exchangeCodeForToken(String code) {
+    public synchronized void exchangeCodeForToken(String code) {
         MicrosoftTokenConfig registro = tokenPort.createOrGetDefault();
 
         MultiValueMap<String, String> body = criarCorpoRequisicaoPadrao();
@@ -101,7 +101,7 @@ public class OneDriveTokenAdapter {
     /**
      * Usa refresh token persistido para renovar access token.
      */
-    public String refreshToken() {
+    public synchronized String refreshToken() {
         MicrosoftTokenConfig registro = tokenPort.findTokenConfig()
                 .orElseThrow(() -> new OneDriveErroException(
                         "Refresh token não encontrado no banco. Execute o login do OneDrive em /api-onedrive/auth/login."));

@@ -1,7 +1,7 @@
 package br.com.sgpj.controller;
 
 import br.com.sgpj.adapter.onedrive.OneDriveTokenAdapter;
-import br.com.sgpj.exception.OneDriveErroException;
+import br.com.sgpj.service.OneDriveReconexaoService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -16,7 +16,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -26,18 +25,23 @@ class OneDriveAuthControllerTest {
     @Mock
     private OneDriveTokenAdapter tokenAdapter;
 
+    @Mock
+    private OneDriveReconexaoService reconexaoService;
+
     private OneDriveAuthController controller;
 
     private static final String CLIENT_ID = "meu-client-id";
     private static final String TENANT_ID = "meu-tenant";
     private static final String REDIRECT_URI = "http://localhost:8080/login/oauth2/code/azure";
+    private static final String FRONTEND_URL = "http://localhost:5173";
 
     @BeforeEach
     void setUp() {
-        controller = new OneDriveAuthController(tokenAdapter);
+        controller = new OneDriveAuthController(tokenAdapter, reconexaoService);
         ReflectionTestUtils.setField(controller, "clientId", CLIENT_ID);
         ReflectionTestUtils.setField(controller, "tenantId", TENANT_ID);
         ReflectionTestUtils.setField(controller, "redirectUri", REDIRECT_URI);
+        ReflectionTestUtils.setField(controller, "frontendUrl", FRONTEND_URL);
     }
 
     @Nested
@@ -78,43 +82,29 @@ class OneDriveAuthControllerTest {
     class CallbackTest {
 
         @Test
-        @DisplayName("Deve trocar o code por tokens e retornar sucesso")
+        @DisplayName("Deve trocar o code por tokens e redirecionar para o frontend com sucesso")
         void deveProcessarCallbackComSucesso() {
-            ResponseEntity<Map<String, String>> resposta = controller.callback("codigo-valido", null, null);
+            when(reconexaoService.concluir("codigo-valido", null, null)).thenReturn(true);
 
-            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
-            assertThat(resposta.getBody().get("status")).isEqualTo("connected");
-            verify(tokenAdapter).exchangeCodeForToken("codigo-valido");
+            ResponseEntity<Void> resposta = controller.callback("codigo-valido", null, null);
+
+            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.FOUND);
+            assertThat(resposta.getHeaders().getLocation().toString())
+                    .isEqualTo("http://localhost:5173/app/perfil?onedrive=connected");
+            verify(reconexaoService).concluir("codigo-valido", null, null);
         }
 
         @Test
-        @DisplayName("Deve lançar OneDriveErroException quando a Microsoft retornar um erro")
-        void deveLancarExcecaoQuandoMicrosoftRetornaErro() {
-            assertThatThrownBy(() -> controller.callback(null, "access_denied", "O usuário negou o acesso"))
-                    .isInstanceOf(OneDriveErroException.class)
-                    .hasMessageContaining("access_denied")
-                    .hasMessageContaining("O usuário negou o acesso");
+        @DisplayName("Deve redirecionar para o frontend com erro quando a Microsoft retornar erro")
+        void deveRedirecionarComErro() {
+            when(reconexaoService.concluir(null, "access_denied", "O usuário negou o acesso")).thenReturn(false);
 
-            verifyNoInteractions(tokenAdapter);
-        }
+            ResponseEntity<Void> resposta = controller.callback(null, "access_denied", "O usuário negou o acesso");
 
-        @Test
-        @DisplayName("Deve lançar IllegalArgumentException quando o code estiver ausente")
-        void deveLancarExcecaoQuandoCodeAusente() {
-            assertThatThrownBy(() -> controller.callback(null, null, null))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("code");
-
-            verifyNoInteractions(tokenAdapter);
-        }
-
-        @Test
-        @DisplayName("Deve lançar IllegalArgumentException quando o code estiver em branco")
-        void deveLancarExcecaoQuandoCodeEmBranco() {
-            assertThatThrownBy(() -> controller.callback("   ", null, null))
-                    .isInstanceOf(IllegalArgumentException.class);
-
-            verifyNoInteractions(tokenAdapter);
+            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.FOUND);
+            assertThat(resposta.getHeaders().getLocation().toString())
+                    .isEqualTo("http://localhost:5173/app/perfil?onedrive=error");
+            verify(reconexaoService).concluir(null, "access_denied", "O usuário negou o acesso");
         }
     }
 }

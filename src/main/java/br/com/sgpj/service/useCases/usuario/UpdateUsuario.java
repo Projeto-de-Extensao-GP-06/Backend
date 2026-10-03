@@ -1,7 +1,7 @@
 package br.com.sgpj.service.useCases.usuario;
 
 import br.com.sgpj.dto.request.UsuarioAtualizacaoRequest;
-import br.com.sgpj.dto.response.UsuarioListarResponse;
+import br.com.sgpj.dto.response.Usuario.UsuarioListarResponse;
 import br.com.sgpj.entity.Cargo;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.CargoNaoEncontradoException;

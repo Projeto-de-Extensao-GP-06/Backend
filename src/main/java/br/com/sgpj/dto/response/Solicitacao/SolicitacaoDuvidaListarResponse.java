@@ -1,4 +1,4 @@
-package br.com.sgpj.dto.response;
+package br.com.sgpj.dto.response.Solicitacao;
 
 import br.com.sgpj.entity.SolicitacaoStatus;
 
@@ -13,6 +13,7 @@ public record SolicitacaoDuvidaListarResponse(
         String estado,
         String numeroProcesso,
         String descricao,
+        String comoConheceu,
         LocalDateTime dataSolicitacao,
         SolicitacaoStatus status
 ) {

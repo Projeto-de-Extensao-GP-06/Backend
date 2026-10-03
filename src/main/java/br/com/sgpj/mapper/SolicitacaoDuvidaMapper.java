@@ -1,8 +1,8 @@
 package br.com.sgpj.mapper;
 
-import br.com.sgpj.dto.response.SolicitacaoClientePreenchimentoResponse;
-import br.com.sgpj.dto.response.SolicitacaoDuvidaDetalhesResponse;
-import br.com.sgpj.dto.response.SolicitacaoDuvidaListarResponse;
+import br.com.sgpj.dto.response.Solicitacao.SolicitacaoClientePreenchimentoResponse;
+import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaDetalhesResponse;
+import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaListarResponse;
 import br.com.sgpj.dto.response.Processos.ProcessoApiCreateResponse;
 import br.com.sgpj.entity.SolicitacaoDuvida;
 
@@ -21,6 +21,7 @@ public class SolicitacaoDuvidaMapper {
                 solicitacao.getEstado(),
                 solicitacao.getNumeroProcesso(),
                 solicitacao.getDescricao(),
+                solicitacao.getComoConheceu(),
                 solicitacao.getDataSolicitacao(),
                 solicitacao.getStatus()
         );
@@ -36,6 +37,7 @@ public class SolicitacaoDuvidaMapper {
                 solicitacao.getEstado(),
                 solicitacao.getNumeroProcesso(),
                 solicitacao.getDescricao(),
+                solicitacao.getComoConheceu(),
                 solicitacao.getAceitouTermos(),
                 solicitacao.getDataSolicitacao(),
                 solicitacao.getStatus(),
@@ -55,6 +57,7 @@ public class SolicitacaoDuvidaMapper {
                 solicitacao.getEstado(),
                 solicitacao.getNumeroProcesso(),
                 solicitacao.getDescricao(),
+                solicitacao.getComoConheceu(),
                 processoApiResponse(solicitacao)
         );
     }

@@ -5,8 +5,8 @@ import br.com.sgpj.dto.request.EnviarOtpRequest;
 import br.com.sgpj.dto.request.UsuarioLoginRequest;
 import br.com.sgpj.dto.request.ValidarOtpRequest;
 import br.com.sgpj.dto.response.RefreshTokenResponse;
-import br.com.sgpj.dto.response.UsuarioSessaoResponse;
-import br.com.sgpj.dto.response.UsuarioTokenResponse;
+import br.com.sgpj.dto.response.Usuario.UsuarioSessaoResponse;
+import br.com.sgpj.dto.response.Usuario.UsuarioTokenResponse;
 
 import br.com.sgpj.security.AuthenticationCookieService;
 import br.com.sgpj.security.IpAddressUtil;
@@ -17,6 +17,7 @@ import br.com.sgpj.config.jwt.GerenciadorTokenJwt;
 import br.com.sgpj.service.RefreshTokenService;
 import br.com.sgpj.service.UsuarioService;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -29,6 +30,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
@@ -42,10 +44,10 @@ public class AuthController {
     private static final String ACCESS_TOKEN_COOKIE = "authToken";
     private static final String REFRESH_TOKEN_COOKIE = "refreshToken";
 
-    @Value("${jwt.validity}")
+    @Value("${jwt.validity:3600}")
     private long jwtValidity;
 
-    @Value("${jwt.refresh.validity}")
+    @Value("${jwt.refresh.validity:604800}")
     private long jwtRefreshValidity;
 
     private final UsuarioService usuarioService;
@@ -55,6 +57,16 @@ public class AuthController {
     private final GerenciadorTokenJwt gerenciadorTokenJwt;
     private final TokenBlacklistService tokenBlacklistService;
     private final RefreshTokenService refreshTokenService;
+
+    @GetMapping("/me")
+    @SecurityRequirement(name = "Bearer")
+    @Operation(summary = "Retorna os dados do usuário autenticado")
+    public ResponseEntity<UsuarioSessaoResponse> me(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok(usuarioService.autenticar(authentication.getName()));
+    }
 
     @PostMapping("/login")
     public ResponseEntity<UsuarioSessaoResponse> login(

@@ -1,14 +1,13 @@
 package br.com.sgpj.service.useCases.solicitacaoDuvida;
 
 import br.com.sgpj.dto.request.SolicitacaoDuvidaCriacaoRequest;
-import br.com.sgpj.dto.response.SolicitacaoDuvidaDetalhesResponse;
+import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaDetalhesResponse;
 import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Contato;
 import br.com.sgpj.entity.Processo.ProcessoApi;
 import br.com.sgpj.entity.Processo.ProcessoApp;
 import br.com.sgpj.entity.Processo.SiglaTribunal;
 import br.com.sgpj.entity.Processo.StatusProcesso;
-import br.com.sgpj.entity.SolicitacaoDuvida;
 import br.com.sgpj.entity.StatusCliente;
 import br.com.sgpj.entity.StatusClienteEnum;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
@@ -58,6 +57,7 @@ public class CreateSolicitacaoDuvida {
         Cliente cliente = new Cliente();
         cliente.setNomeRazaoSocial(request.nomeCompleto().trim());
         cliente.setPF(request.isPF());
+        cliente.setComoConheceu(request.comoConheceu());
         cliente.setStatusCliente(buscarStatus(StatusClienteEnum.LEAD));
         cliente.setDataHoraEnvioFormulario(LocalDateTime.now());
         cliente = clienteRepository.save(cliente);

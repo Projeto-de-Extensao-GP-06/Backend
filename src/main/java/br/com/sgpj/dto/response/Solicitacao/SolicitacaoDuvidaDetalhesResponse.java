@@ -1,4 +1,4 @@
-package br.com.sgpj.dto.response;
+package br.com.sgpj.dto.response.Solicitacao;
 
 import br.com.sgpj.dto.response.Processos.ProcessoApiCreateResponse;
 import br.com.sgpj.entity.SolicitacaoStatus;
@@ -14,6 +14,7 @@ public record SolicitacaoDuvidaDetalhesResponse(
         String estado,
         String numeroProcesso,
         String descricao,
+        String comoConheceu,
         Boolean aceitouTermos,
         LocalDateTime dataSolicitacao,
         SolicitacaoStatus status,

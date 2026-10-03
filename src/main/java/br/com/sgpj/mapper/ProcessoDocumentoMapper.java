@@ -19,6 +19,7 @@ public final class ProcessoDocumentoMapper {
                 processoDocumento.getDocumento().getNomeOriginal(),
                 processoDocumento.getDocumento().getMimeType(),
                 processoDocumento.getDocumento().getOnedriveUrlDownload(),
+                processoDocumento.getDocumento().getOnedriveUrlThumbnail(),
                 processoDocumento.getAnexadoPorUsuario() != null ? processoDocumento.getAnexadoPorUsuario().getId() : null,
                 processoDocumento.getAnexadoPorUsuario() != null ? processoDocumento.getAnexadoPorUsuario().getNome() : null,
                 processoDocumento.getAnexadoEm(),

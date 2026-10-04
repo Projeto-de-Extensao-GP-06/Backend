@@ -10,9 +10,10 @@ import java.time.LocalDateTime;
 public record AudienciasResponse (
         Long idProcesso,
         LocalDateTime dataAudiencia,
-        FaseProcesso faseProcesso,
-        Usuario usuarioResponsavel,
-        Prioridade prioridade,
-        String NomeCliente
+        String nomeFaseProcesso,
+        String nomeUsuarioResponsavel,
+        String emailUsuarioResponsavel,
+        String nomePrioridade,
+        String nomeCliente
 )
 {}

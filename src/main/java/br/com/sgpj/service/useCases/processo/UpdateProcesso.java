@@ -1,18 +1,22 @@
 package br.com.sgpj.service.useCases.processo;
 
 import br.com.sgpj.dto.request.ProcessoAppUpdateRequest;
+import br.com.sgpj.dto.response.Processos.HistoricoProcessoResponse;
+import br.com.sgpj.dto.response.Processos.ProcessoAppResponse;
 import br.com.sgpj.dto.response.Processos.ProcessoAppUpdateResponse;
 import br.com.sgpj.entity.Processo.*;
+import br.com.sgpj.exception.DataJudIntegrationException;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
 import br.com.sgpj.exception.OperacaoInvalidaException;
+import br.com.sgpj.mapper.HistoricoProcessoMapper;
 import br.com.sgpj.mapper.ProcessoAppMapper;
-import br.com.sgpj.repository.FaseProcessoRepository;
-import br.com.sgpj.repository.MotivoStatusProcessoRepository;
-import br.com.sgpj.repository.PrioridadeRepository;
-import br.com.sgpj.repository.ProcessoAppRepository;
+import br.com.sgpj.repository.*;
+import br.com.sgpj.service.RegistroHistoricoProcesso;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Component
 public class UpdateProcesso {
@@ -20,36 +24,60 @@ public class UpdateProcesso {
     private final ProcessoAppRepository processoAppRepository;
     private final PrioridadeRepository prioridadeRepository;
     private final FaseProcessoRepository faseProcessoRepository;
+    private final SiglaTribunalRepository siglaTribunalRepository;
     private final ProcessoApiGateway processoApiGateway;
     private final MotivoStatusProcessoRepository motivoStatusProcessoRepository;
+    private final MovimentacoesOficiaisRepository movimentacoesOficiaisRepository;
+    private final ProcessoApiRepository processoApiRepository;
+    private final HistoricoProcessoRepository historicoProcessoRepository;
+    private final RegistroHistoricoProcesso registroHistorico;
 
     public UpdateProcesso(ProcessoAppRepository processoAppRepository,
-                          PrioridadeRepository prioridadeRepository,
-                          FaseProcessoRepository faseProcessoRepository,
-                          ProcessoApiGateway processoApiGateway,
-                          MotivoStatusProcessoRepository motivoStatusProcessoRepository) {
+                           PrioridadeRepository prioridadeRepository,
+                           FaseProcessoRepository faseProcessoRepository,
+                           SiglaTribunalRepository siglaTribunalRepository,
+                           ProcessoApiGateway processoApiGateway,
+                          MotivoStatusProcessoRepository motivoStatusProcessoRepository,
+                           MovimentacoesOficiaisRepository movimentacoesOficiaisRepository,
+                           ProcessoApiRepository processoApiRepository,
+                           HistoricoProcessoRepository historicoProcessoRepository,
+                           RegistroHistoricoProcesso registroHistorico) {
         this.processoAppRepository = processoAppRepository;
         this.prioridadeRepository = prioridadeRepository;
         this.faseProcessoRepository = faseProcessoRepository;
+        this.siglaTribunalRepository = siglaTribunalRepository;
         this.processoApiGateway = processoApiGateway;
         this.motivoStatusProcessoRepository = motivoStatusProcessoRepository;
+        this.movimentacoesOficiaisRepository = movimentacoesOficiaisRepository;
+        this.processoApiRepository = processoApiRepository;
+        this.historicoProcessoRepository = historicoProcessoRepository;
+        this.registroHistorico = registroHistorico;
     }
 
+    // ... resto da classe continua igual
+
+    @Transactional
     public ProcessoAppUpdateResponse atualizarProcesso(Long id, ProcessoAppUpdateRequest processoAtualizar) {
         ProcessoApp processoEncontrado = processoAppRepository.findById(id)
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Processo não encontrado para o ID: " + id));
+        StatusProcesso statusAnterior = processoEncontrado.getStatus();
+        String observacaoAnterior = processoEncontrado.getObservacao();
 
         Prioridade prioridade = prioridadeRepository.findById(processoAtualizar.prioridadeId())
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Prioridade não encontrada para o ID: " + processoAtualizar.prioridadeId()));
         FaseProcesso faseProcesso = faseProcessoRepository.findById(processoAtualizar.faseProcessoId())
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Fase do processo nao encontrada para o ID: " + processoAtualizar.faseProcessoId()));
+        SiglaTribunal siglaTribunal = processoAtualizar.siglaTribunalId() == null
+                ? processoEncontrado.getSiglaTribunal()
+                : siglaTribunalRepository.findById(processoAtualizar.siglaTribunalId())
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Sigla do tribunal não encontrada para o ID: " + processoAtualizar.siglaTribunalId()));
 
         ProcessoApp processoEditado = ProcessoAppMapper.toUpdateEntity(processoAtualizar);
 
         processoEditado.setId(processoEncontrado.getId());
         processoEditado.setUsuarioResponsavel(processoEncontrado.getUsuarioResponsavel());
         processoEditado.setCliente(processoEncontrado.getCliente());
-        processoEditado.setSiglaTribunal(processoEncontrado.getSiglaTribunal());
+        processoEditado.setSiglaTribunal(siglaTribunal);
         processoEditado.setDataHoraInicio(processoEncontrado.getDataHoraInicio());
         processoEditado.setPrioridade(prioridade);
         processoEditado.setFaseProcesso(faseProcesso);
@@ -92,14 +120,101 @@ public class UpdateProcesso {
         }
 
         if (processoEncontrado.getProcessoApi() == null) {
-            if (processoAtualizar.numeroCnj() != null) {
-                ProcessoApi processoApi = processoApiGateway.buscarDadosOficiais(processoAtualizar.numeroCnj());
+            if (processoAtualizar.numeroCnj() != null && !processoAtualizar.numeroCnj().isBlank()) {
+                ProcessoApi processoApi = null;
+                try {
+                    processoApi = processoApiGateway.buscarDadosOficiais(
+                            processoAtualizar.numeroCnj());
+                } catch (Exception e) {
+                    // Ignora erro da API externa
+                }
+                if (processoApi == null) {
+                    processoApi = new ProcessoApi();
+                    processoApi.setNumeroCnj(processoAtualizar.numeroCnj());
+                    if (siglaTribunal != null) {
+                        processoApi.setTribunalTramitacao(siglaTribunal.getNome());
+                    }
+                }
                 processoEditado.setProcessoApi(processoApi);
             }
         } else {
-            processoEditado.setProcessoApi(processoEncontrado.getProcessoApi());
+            ProcessoApi processoApi = processoEncontrado.getProcessoApi();
+            if (processoAtualizar.numeroCnj() != null && !processoAtualizar.numeroCnj().isBlank()) {
+                processoApi.setNumeroCnj(processoAtualizar.numeroCnj());
+            }
+            processoEditado.setProcessoApi(processoApi);
         }
 
-        return ProcessoAppMapper.toUpdateResponse(processoAppRepository.save(processoEditado));
+        ProcessoApp processoSalvo = processoAppRepository.save(processoEditado);
+        registrarAlteracao(statusAnterior, observacaoAnterior, processoSalvo);
+        return ProcessoAppMapper.toUpdateResponse(processoSalvo);
+    }
+
+    private void registrarAlteracao(StatusProcesso statusAnterior, String observacaoAnterior, ProcessoApp atual) {
+        if (statusAnterior != atual.getStatus()) {
+            registroHistorico.registrar(atual, atual.getUsuarioResponsavel(), RegistroHistoricoProcesso.STATUS,
+                    "Status alterado de " + statusAnterior + " para " + atual.getStatus() + ".");
+        } else if (!java.util.Objects.equals(observacaoAnterior, atual.getObservacao())) {
+            registroHistorico.registrar(atual, atual.getUsuarioResponsavel(), RegistroHistoricoProcesso.OBSERVACAO,
+                    "Observações atualizadas.");
+        } else {
+            registroHistorico.registrar(atual, atual.getUsuarioResponsavel(), RegistroHistoricoProcesso.ATUALIZACAO,
+                    "Dados do processo atualizados.");
+        }
+    }
+
+    @Transactional
+    public ProcessoAppResponse atualizarDadosDoDataJud(Long id) {
+        ProcessoApp processoApp = processoAppRepository.findById(id)
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Processo não encontrado para o ID: " + id));
+
+        ProcessoApi processoApiExistente = processoApp.getProcessoApi();
+        if (processoApiExistente == null || processoApiExistente.getNumeroCnj() == null) {
+            throw new OperacaoInvalidaException("Este processo não possui número CNJ vinculado para atualização.");
+        }
+
+        ProcessoApi dadosAtualizados = processoApiGateway.buscarDadosOficiais(
+                processoApiExistente.getNumeroCnj());
+
+        if (dadosAtualizados == null) {
+            throw new DataJudIntegrationException("Não foi possível estabelecer conexão com o DataJud, tente novamente mais tarde.");
+        }
+
+        processoApiExistente.setTribunalTramitacao(dadosAtualizados.getTribunalTramitacao());
+        processoApiExistente.setInstancia(dadosAtualizados.getInstancia());
+        processoApiExistente.setDataAjuizamento(dadosAtualizados.getDataAjuizamento());
+        processoApiExistente.setNivelSigilo(dadosAtualizados.getNivelSigilo());
+        processoApiExistente.setClasseProcessual(dadosAtualizados.getClasseProcessual());
+        processoApiExistente.setFormato(dadosAtualizados.getFormato());
+        processoApiExistente.setSistemaTribunal(dadosAtualizados.getSistemaTribunal());
+        processoApiExistente.setOrgaoJulgador(dadosAtualizados.getOrgaoJulgador());
+        processoApiExistente.setAssunto(dadosAtualizados.getAssunto());
+
+        if (processoApiExistente.getMovimentacoes() != null && !processoApiExistente.getMovimentacoes().isEmpty()) {
+            movimentacoesOficiaisRepository.deleteAll(processoApiExistente.getMovimentacoes());
+        }
+
+        List<MovimentacoesOficiais> novasMovimentacoes = dadosAtualizados.getMovimentacoes();
+        if (novasMovimentacoes != null) {
+            for (MovimentacoesOficiais mov : novasMovimentacoes) {
+                mov.setId(null);
+                mov.setProcessoApi(processoApiExistente);
+            }
+        }
+        processoApiExistente.setMovimentacoes(novasMovimentacoes);
+
+        processoApiRepository.save(processoApiExistente);
+
+        processoApp.setUltimaAtualizacao(LocalDateTime.now());
+        processoAppRepository.save(processoApp);
+        registroHistorico.registrar(processoApp, processoApp.getUsuarioResponsavel(), RegistroHistoricoProcesso.ATUALIZACAO,
+                "Dados oficiais do processo atualizados.");
+
+        List<HistoricoProcessoResponse> historico = historicoProcessoRepository
+                .findByProcessoApp(processoApp).stream()
+                .map(HistoricoProcessoMapper::toResponse)
+                .toList();
+
+        return ProcessoAppMapper.toResponse(processoApp, historico);
     }
 }

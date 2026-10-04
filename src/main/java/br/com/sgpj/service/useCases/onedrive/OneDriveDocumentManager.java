@@ -17,6 +17,7 @@ import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.ProcessoDocumentoRepository;
 import br.com.sgpj.repository.TipoDocumentoRepository;
 import br.com.sgpj.repository.UsuarioRepository;
+import br.com.sgpj.service.RegistroHistoricoProcesso;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -32,14 +33,16 @@ public class OneDriveDocumentManager {
     private final CaminhoPadraoDeArmazenamentoRepository caminhoPadraoDeArmazenamentoRepository;
     private final ProcessoAppRepository processoAppRepository;
     private final ProcessoDocumentoRepository processoDocumentoRepository;
+    private final RegistroHistoricoProcesso registroHistorico;
 
     public OneDriveDocumentManager(UsuarioAutenticacaoAdapter usuarioAutenticacaoAdapter,
                             UsuarioRepository usuarioRepository,
                             DocumentoRepository documentoRepository,
                             TipoDocumentoRepository tipoDocumentoRepository,
-                            CaminhoPadraoDeArmazenamentoRepository caminhoPadraoDeArmazenamentoRepository,
-                            ProcessoAppRepository processoAppRepository,
-                            ProcessoDocumentoRepository processoDocumentoRepository) {
+                             CaminhoPadraoDeArmazenamentoRepository caminhoPadraoDeArmazenamentoRepository,
+                             ProcessoAppRepository processoAppRepository,
+                             ProcessoDocumentoRepository processoDocumentoRepository,
+                             RegistroHistoricoProcesso registroHistorico) {
         this.usuarioAutenticacaoAdapter = usuarioAutenticacaoAdapter;
         this.usuarioRepository = usuarioRepository;
         this.documentoRepository = documentoRepository;
@@ -47,6 +50,7 @@ public class OneDriveDocumentManager {
         this.caminhoPadraoDeArmazenamentoRepository = caminhoPadraoDeArmazenamentoRepository;
         this.processoAppRepository = processoAppRepository;
         this.processoDocumentoRepository = processoDocumentoRepository;
+        this.registroHistorico = registroHistorico;
     }
 
     public Documento registrarDocumento(OneDriveItemResponse item, Long tipoDocumentoId, CaminhoPadraoDeArmazenamento caminhoDeArmazenamento, Long processoAppId) {
@@ -79,6 +83,7 @@ public class OneDriveDocumentManager {
             doc.setInativadoPorUsuario(usuario);
             doc.setUltimaAtualizacao(LocalDateTime.now());
             documentoRepository.save(doc);
+            removerVinculosDeDocumento(doc.getId());
         });
     }
 
@@ -169,6 +174,8 @@ public class OneDriveDocumentManager {
         pd.setAnexadoPorUsuario(usuario);
         pd.setAnexadoEm(LocalDateTime.now());
         processoDocumentoRepository.save(pd);
+        registroHistorico.registrar(processo, usuario, RegistroHistoricoProcesso.DOCUMENTO,
+                "Documento adicionado: " + documentoSalvo.getNomeOriginal() + ".");
     }
 
     private Usuario obterUsuarioLogado() {

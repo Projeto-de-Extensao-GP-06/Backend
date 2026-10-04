@@ -4,7 +4,9 @@ import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
 import br.com.sgpj.dto.request.UsuarioLoginRequest;
 import br.com.sgpj.dto.response.AutenticacaoUsuarioResponse;
 import br.com.sgpj.dto.response.Usuario.UsuarioTokenResponse;
+import br.com.sgpj.dto.response.Usuario.UsuarioSessaoResponse;
 import br.com.sgpj.entity.Usuario;
+import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.mapper.UsuarioMapper;
 import br.com.sgpj.repository.UsuarioRepository;
 import br.com.sgpj.service.RefreshTokenService;
@@ -56,5 +58,13 @@ public class AutenticarUsuario {
         UsuarioTokenResponse tokenResponse = UsuarioMapper.toTokenDto(usuario, token, refreshToken);
 
         return new AutenticacaoUsuarioResponse(usuario, tokenResponse);
+    }
+
+    public UsuarioSessaoResponse obterSessao(String email) {
+        Usuario usuario = usuarioRepository.findByEmailWithPermissoes(email)
+                .orElseThrow(() -> new UsuarioNaoEncontradoException(email));
+
+        UsuarioTokenResponse dadosUsuario = UsuarioMapper.toTokenDto(usuario, null, null);
+        return UsuarioMapper.toSessaoDto(dadosUsuario, usuario);
     }
 }

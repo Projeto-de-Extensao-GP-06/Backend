@@ -70,9 +70,9 @@ class OneDriveControllerTest {
     @Test
     @DisplayName("POST /pasta — CriarPasta deve retornar 200")
     void criarPastaDeveRetornar200() {
-        OneDriveItemResponse pasta = new OneDriveItemResponse("id-pasta", "1234567", "pasta", null, null, null, null, null, null, null);
-        when(service.criarPasta(1L, "1234567-89.2024.8.26.0100")).thenReturn(pasta);
-        ResponseEntity<OneDriveItemResponse> resposta = controller.criarPasta(1L, "1234567-89.2024.8.26.0100");
+        OneDriveItemResponse pasta = new OneDriveItemResponse("id-pasta", "empresa-x-123", "pasta", null, null, null, null, null, null, null);
+        when(service.criarPasta(1L)).thenReturn(pasta);
+        ResponseEntity<OneDriveItemResponse> resposta = controller.criarPasta(1L);
         assertEquals(HttpStatus.OK, resposta.getStatusCode());
         assertEquals("pasta", resposta.getBody().tipo());
     }

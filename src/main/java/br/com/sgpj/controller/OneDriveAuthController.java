@@ -2,6 +2,7 @@ package br.com.sgpj.controller;
 
 import br.com.sgpj.adapter.onedrive.OneDriveTokenAdapter;
 import br.com.sgpj.exception.OneDriveErroException;
+import br.com.sgpj.service.OneDriveReconexaoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,6 +30,7 @@ import java.util.Map;
 public class OneDriveAuthController {
 
     private final OneDriveTokenAdapter tokenAdapter;
+    private final OneDriveReconexaoService reconexaoService;
 
     @Value("${microsoft.client-id}")
     private String clientId;
@@ -39,12 +41,16 @@ public class OneDriveAuthController {
     @Value("${microsoft.redirect-uri}")
     private String redirectUri;
 
-    public OneDriveAuthController(OneDriveTokenAdapter tokenAdapter) {
+    @Value("${app.frontend-url:http://localhost:5173}")
+    private String frontendUrl;
+
+    public OneDriveAuthController(OneDriveTokenAdapter tokenAdapter, OneDriveReconexaoService reconexaoService) {
         this.tokenAdapter = tokenAdapter;
+        this.reconexaoService = reconexaoService;
     }
 
     @GetMapping("/login")
-    @PreAuthorize("hasAuthority('WRITE') || hasAuthority('READ')")
+    @PreAuthorize("hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
     @Operation(summary = "Retorna a URL para iniciar o re-login do OneDrive no navegador")
     public ResponseEntity<Map<String, String>> iniciarLogin() {
@@ -56,7 +62,7 @@ public class OneDriveAuthController {
     }
 
     @GetMapping("/login/redirect")
-    @PreAuthorize("hasAuthority('WRITE') || hasAuthority('READ')")
+    @PreAuthorize("hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
     @Operation(summary = "Redireciona o navegador para o login da Microsoft")
     public ResponseEntity<Void> redirecionarParaLogin() {
@@ -67,24 +73,23 @@ public class OneDriveAuthController {
     }
 
     @GetMapping("/callback")
-    @Operation(summary = "Recebe o authorization code da Microsoft e persiste o novo refresh token")
-    public ResponseEntity<Map<String, String>> callback(
+    @Operation(summary = "Recebe o authorization code da Microsoft e redireciona ao frontend")
+    public ResponseEntity<Void> callback(
             @RequestParam(required = false) String code,
             @RequestParam(required = false) String error,
             @RequestParam(name = "error_description", required = false) String errorDescription
     ) {
-        if (error != null && !error.isBlank()) {
-            throw new OneDriveErroException("A Microsoft recusou a autenticação do OneDrive: "
-                    + formatarMensagemMicrosoft(error, errorDescription));
-        }
+        boolean sucesso = reconexaoService.concluir(code, error, errorDescription);
 
-        validarCode(code);
-        tokenAdapter.exchangeCodeForToken(code);
+        URI destino = UriComponentsBuilder.fromUriString(frontendUrl)
+                .path("/app/perfil")
+                .queryParam("onedrive", sucesso ? "connected" : "error")
+                .build()
+                .toUri();
 
-        return ResponseEntity.ok(Map.of(
-                "message", "OneDrive reconectado com sucesso.",
-                "status", "connected"
-        ));
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(destino)
+                .build();
     }
 
     private void validarCode(@NotBlank String code) {

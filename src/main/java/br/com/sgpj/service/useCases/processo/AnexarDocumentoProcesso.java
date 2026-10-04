@@ -14,6 +14,7 @@ import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.ProcessoDocumentoRepository;
 import br.com.sgpj.repository.UsuarioRepository;
 import lombok.extern.slf4j.Slf4j;
+import br.com.sgpj.service.RegistroHistoricoProcesso;
 
 import java.time.LocalDateTime;
 
@@ -24,15 +25,18 @@ public class AnexarDocumentoProcesso {
     private final DocumentoRepository documentoRepository;
     private final UsuarioRepository usuarioRepository;
     private final ProcessoDocumentoRepository processoDocumentoRepository;
+    private final RegistroHistoricoProcesso registroHistorico;
 
     public AnexarDocumentoProcesso(ProcessoAppRepository processoAppRepository,
                                    DocumentoRepository documentoRepository,
                                    UsuarioRepository usuarioRepository,
-                                   ProcessoDocumentoRepository processoDocumentoRepository) {
+                                   ProcessoDocumentoRepository processoDocumentoRepository,
+                                   RegistroHistoricoProcesso registroHistorico) {
         this.processoAppRepository = processoAppRepository;
         this.documentoRepository = documentoRepository;
         this.usuarioRepository = usuarioRepository;
         this.processoDocumentoRepository = processoDocumentoRepository;
+        this.registroHistorico = registroHistorico;
     }
 
     public ProcessoDocumentoResponse anexarDocumento(Long processoId, Long documentoId, Long usuarioId) {
@@ -60,6 +64,9 @@ public class AnexarDocumentoProcesso {
         processoDocumento.setAnexadoPorUsuario(usuario);
         processoDocumento.setAnexadoEm(LocalDateTime.now());
 
-        return ProcessoDocumentoMapper.toResponse(processoDocumentoRepository.save(processoDocumento));
+        ProcessoDocumento vinculoSalvo = processoDocumentoRepository.save(processoDocumento);
+        registroHistorico.registrar(processo, usuario, RegistroHistoricoProcesso.DOCUMENTO,
+                "Documento vinculado: " + documento.getNomeOriginal() + ".");
+        return ProcessoDocumentoMapper.toResponse(vinculoSalvo);
     }
 }

@@ -45,8 +45,19 @@ public class ProcessoAppMapper {
     }
 
     public static ProcessoAppCreateResponse toCreateResponse(ProcessoApp processoApp) {
+        boolean sincronizado = processoApp != null && processoApp.getProcessoApi() != null && processoApp.getProcessoApi().getClasseProcessual() != null;
+        String cnj = processoApp != null && processoApp.getProcessoApi() != null ? processoApp.getProcessoApi().getNumeroCnj() : null;
+        return toCreateResponse(processoApp, sincronizado, cnj);
+    }
+
+    public static ProcessoAppCreateResponse toCreateResponse(ProcessoApp processoApp, boolean sincronizado, String cnj) {
         if (processoApp == null) {
             return null;
+        }
+
+        String numProc = cnj;
+        if (numProc == null && processoApp.getProcessoApi() != null) {
+            numProc = processoApp.getProcessoApi().getNumeroCnj();
         }
 
         return new ProcessoAppCreateResponse(
@@ -71,7 +82,9 @@ public class ProcessoAppMapper {
                 processoApp.getJustificativa(),
                 processoApp.getSiglaTribunal() != null ? processoApp.getSiglaTribunal() : null,
                 processoApp.getValorCausa(),
-                ProcessoApiMapper.toCreateResponse(processoApp.getProcessoApi())
+                ProcessoApiMapper.toCreateResponse(processoApp.getProcessoApi()),
+                numProc,
+                sincronizado
         );
     }
 

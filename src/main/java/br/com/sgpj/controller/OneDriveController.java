@@ -46,7 +46,7 @@ public class OneDriveController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAuthority('CRIAR DOCUMENTO') || hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
-    @Operation(summary = "Faz upload de um arquivo para a pasta do processo no OneDrive")
+    @Operation(summary = "Faz upload de um arquivo para a pasta do cliente no OneDrive")
     public ResponseEntity<OneDriveItemResponse> uploadArquivo(
             @RequestParam("arquivo") MultipartFile arquivo,
             @RequestParam @NotNull(message = "O ID do tipo de documento é obrigatório") @Positive(message = "O ID do tipo de documento deve ser um número positivo") Long tipoDocumentoId,
@@ -69,11 +69,10 @@ public class OneDriveController {
     @PostMapping("/pasta")
     @PreAuthorize("hasAuthority('CRIAR DOCUMENTO') || hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
-    @Operation(summary = "Cria a pasta do processo no OneDrive (nomeCliente - Cpf ou Cnpj/numero_cnj) e vincula ao cliente")
+    @Operation(summary = "Garante a pasta única do cliente no OneDrive")
     public ResponseEntity<OneDriveItemResponse> criarPasta(
-            @RequestParam @NotNull(message = "O ID do cliente é obrigatório") @Positive(message = "O ID do cliente deve ser um número positivo") Long clienteId,
-            @RequestParam @NotBlank(message = "O número CNJ é obrigatório") String numeroCnj) {
-        OneDriveItemResponse resposta = service.criarPasta(clienteId, numeroCnj);
+            @RequestParam @NotNull(message = "O ID do cliente é obrigatório") @Positive(message = "O ID do cliente deve ser um número positivo") Long clienteId) {
+        OneDriveItemResponse resposta = service.criarPasta(clienteId);
         return ResponseEntity.ok(resposta);
     }
 

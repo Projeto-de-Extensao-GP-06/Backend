@@ -17,6 +17,8 @@ import br.com.sgpj.repository.FaseProcessoRepository;
 import br.com.sgpj.repository.MotivoStatusProcessoRepository;
 import br.com.sgpj.repository.PrioridadeRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
+import br.com.sgpj.repository.SiglaTribunalRepository;
+import br.com.sgpj.service.RegistroHistoricoProcesso;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -53,10 +55,16 @@ class UpdateProcessoTest {
     private FaseProcessoRepository faseProcessoRepository;
 
     @Mock
+    private SiglaTribunalRepository siglaTribunalRepository;
+
+    @Mock
     private ProcessoApiGateway processoApiGateway;
 
     @Mock
     private MotivoStatusProcessoRepository motivoStatusProcessoRepository;
+
+    @Mock
+    private RegistroHistoricoProcesso registroHistorico;
 
     @InjectMocks
     private UpdateProcesso updateProcesso;
@@ -322,6 +330,32 @@ class UpdateProcessoTest {
             assertEquals(usuarioResponsavel, salvo.getEncerradoSuspensoPorUsuario());
             assertEquals(StatusProcesso.ENCERRADO, response.status());
             assertEquals(1, response.motivoStatusId());
+        }
+    }
+
+    @Nested
+    @DisplayName("Atualização de tribunal")
+    class AtualizacaoTribunal {
+
+        @Test
+        @DisplayName("Deve persistir a sigla de tribunal selecionada")
+        void deveAtualizarSiglaTribunal() {
+            SiglaTribunal tribunalSelecionado = new SiglaTribunal(2L, "TJRJ");
+            ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
+                    null, "Descrição atualizada", "Observação atualizada", 1L,
+                    StatusProcesso.ATIVO, 1L, 2L, null, 1000.0, null, null);
+
+            when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
+            when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
+            when(faseProcessoRepository.findById(1L)).thenReturn(Optional.of(faseProcesso));
+            when(siglaTribunalRepository.findById(2L)).thenReturn(Optional.of(tribunalSelecionado));
+            when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            updateProcesso.atualizarProcesso(1L, request);
+
+            ArgumentCaptor<ProcessoApp> captor = ArgumentCaptor.forClass(ProcessoApp.class);
+            verify(processoAppRepository).save(captor.capture());
+            assertEquals(tribunalSelecionado, captor.getValue().getSiglaTribunal());
         }
     }
 

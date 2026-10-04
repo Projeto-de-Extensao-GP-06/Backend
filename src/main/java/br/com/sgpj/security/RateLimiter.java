@@ -19,11 +19,11 @@ public class RateLimiter {
     private final ConcurrentMap<String, RequestHistory> requestHistory = new ConcurrentHashMap<>();
     
     // Rate limit configuration: max requests per time window
-    private static final int MAX_REQUESTS_PER_HOUR = 10;
-    private static final int MAX_REQUESTS_PER_MINUTE = 5;
-    private static final int MAX_OTP_REQUESTS_PER_HOUR = 3;
-    private static final int MAX_LOGIN_REQUESTS_PER_MINUTE = 3;
-    private static final int MAX_LOGIN_REQUESTS_PER_HOUR = 5;
+    private static final int MAX_REQUESTS_PER_HOUR = 100;
+    private static final int MAX_REQUESTS_PER_MINUTE = 500;
+    private static final int MAX_OTP_REQUESTS_PER_HOUR = 300;
+    private static final int MAX_LOGIN_REQUESTS_PER_MINUTE = 300;
+    private static final int MAX_LOGIN_REQUESTS_PER_HOUR = 500;
     
     /**
      * Checks if the identifier has exceeded the rate limit for general public endpoints.

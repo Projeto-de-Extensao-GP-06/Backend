@@ -25,6 +25,9 @@ public record DadosIndependentesResponse(
     TempoDuracaoProcessosResponse tempoDuracaoProcessos,
 
     @Schema(description = "Lista de processos com audiência marcada (ordem de prioridade)")
-    List<AudienciasResponse> audiencias
+    List<AudienciasResponse> audiencias,
+
+    @Schema(description = "Devolve o número total de usuários que entraram por um meio específico")
+    FormasDeEntradaResponse formasDeEntrada
     )
 {}

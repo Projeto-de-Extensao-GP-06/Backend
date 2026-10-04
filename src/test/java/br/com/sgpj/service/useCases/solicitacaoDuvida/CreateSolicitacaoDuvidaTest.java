@@ -78,7 +78,6 @@ class CreateSolicitacaoDuvidaTest {
                     "fulano@email.com",
                     true,
                     "11999999999",
-                    "SP",
                     null,
                     "Descrição da dúvida",
                     "Instagram",
@@ -111,9 +110,9 @@ class CreateSolicitacaoDuvidaTest {
             ProcessoApp salvo = processoCaptor.getValue();
             assertEquals(StatusProcesso.SOLICITACAO, salvo.getStatus());
             assertEquals("Descrição da dúvida", salvo.getDescricaoCaso());
-            assertEquals("Solicitação enviada pelo formulário público. Estado: SP", salvo.getObservacao());
+            assertEquals("Solicitação enviada pelo formulário público.", salvo.getObservacao());
             assertNotNull(response);
-            verify(processoApiGateway, never()).buscarDadosOficiais(any(), any());
+            verify(processoApiGateway, never()).buscarDadosOficiais(any());
         }
 
         @Test
@@ -124,7 +123,6 @@ class CreateSolicitacaoDuvidaTest {
                     "fulano@email.com",
                     true,
                     "11999999999",
-                    "SP",
                     "0000001-00.2026.8.26.0001",
                     "Descrição da dúvida",
                     "Instagram",
@@ -146,7 +144,7 @@ class CreateSolicitacaoDuvidaTest {
                 c.setId(20L);
                 return c;
             });
-            when(processoApiGateway.buscarDadosOficiais(any(), any())).thenReturn(apiMock);
+            when(processoApiGateway.buscarDadosOficiais(any())).thenReturn(apiMock);
             when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> {
                 ProcessoApp p = inv.getArgument(0);
                 p.setId(30L);
@@ -171,7 +169,6 @@ class CreateSolicitacaoDuvidaTest {
                     "fulano@email.com",
                     true,
                     "11999999999",
-                    "SP",
                     "0000001-00.2026.8.26.0001",
                     "Descrição da dúvida",
                     "Instagram",
@@ -190,7 +187,7 @@ class CreateSolicitacaoDuvidaTest {
                 c.setId(20L);
                 return c;
             });
-            when(processoApiGateway.buscarDadosOficiais(any(), any()))
+            when(processoApiGateway.buscarDadosOficiais(any()))
                     .thenThrow(new RuntimeException("API indisponível"));
             when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> {
                 ProcessoApp p = inv.getArgument(0);
@@ -212,7 +209,6 @@ class CreateSolicitacaoDuvidaTest {
                     "fulano@email.com",
                     true,
                     "11999999999",
-                    "SP",
                     null,
                     "Descrição",
                     "Instagram",

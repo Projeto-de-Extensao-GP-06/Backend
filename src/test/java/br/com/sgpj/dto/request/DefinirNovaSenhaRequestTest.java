@@ -30,7 +30,7 @@ class DefinirNovaSenhaRequestTest {
     @DisplayName("Deve passar na validação com senha dentro dos limites de tamanho")
     void devePassarNaValidacaoComSenhaValida() {
         // Given
-        String senhaValida = "senhaSegura123"; // 14 caracteres (entre 6 e 20)
+        String senhaValida = "senhaSegura123"; // 14 caracteres (entre 8 e 255)
         DefinirNovaSenhaRequest request = new DefinirNovaSenhaRequest(senhaValida);
 
         // When
@@ -61,10 +61,10 @@ class DefinirNovaSenhaRequestTest {
     }
 
     @Test
-    @DisplayName("Deve falhar na validação (@Size) quando senha tiver tamanho menor que 6")
-    void deveFalharNaValidacaoQuandoSenhaTamanhoMenorQue6() {
+    @DisplayName("Deve falhar na validação (@Size) quando senha tiver tamanho menor que 8")
+    void deveFalharNaValidacaoQuandoSenhaTamanhoMenorQue8() {
         // Given
-        DefinirNovaSenhaRequest request = new DefinirNovaSenhaRequest("12345");
+        DefinirNovaSenhaRequest request = new DefinirNovaSenhaRequest("1234567");
 
         // When
         Set<ConstraintViolation<DefinirNovaSenhaRequest>> violacoes = validator.validate(request);
@@ -76,10 +76,10 @@ class DefinirNovaSenhaRequestTest {
     }
 
     @Test
-    @DisplayName("Deve falhar na validação (@Size) quando senha tiver tamanho maior que 20")
-    void deveFalharNaValidacaoQuandoSenhaTamanhoMaiorQue20() {
+    @DisplayName("Deve falhar na validação (@Size) quando senha tiver tamanho maior que 255")
+    void deveFalharNaValidacaoQuandoSenhaTamanhoMaiorQue255() {
         // Given
-        DefinirNovaSenhaRequest request = new DefinirNovaSenhaRequest("123456789012345678901");
+        DefinirNovaSenhaRequest request = new DefinirNovaSenhaRequest("a".repeat(256));
 
         // When
         Set<ConstraintViolation<DefinirNovaSenhaRequest>> violacoes = validator.validate(request);

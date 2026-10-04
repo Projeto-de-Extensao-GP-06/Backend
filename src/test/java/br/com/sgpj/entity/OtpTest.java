@@ -116,4 +116,18 @@ class OtpTest {
         // Then
         assertFalse(excedeu);
     }
+
+    @Test
+    @DisplayName("Deve inicializar e manipular usuarioValido corretamente")
+    void deveManipularUsuarioValidoCorretamente() {
+        LocalDateTime expiraEm = LocalDateTime.now().plusMinutes(15);
+        Otp otpValido = new Otp(EMAIL_TESTE, OTP_VALIDO, expiraEm, true);
+        assertTrue(otpValido.isUsuarioValido());
+
+        Otp otpInvalido = new Otp(EMAIL_TESTE, OTP_VALIDO, expiraEm, false);
+        assertFalse(otpInvalido.isUsuarioValido());
+
+        otpInvalido.setUsuarioValido(true);
+        assertTrue(otpInvalido.isUsuarioValido());
+    }
 }

@@ -5,10 +5,12 @@ import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.mapper.UsuarioMapper;
 import br.com.sgpj.repository.UsuarioRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Slf4j
 @Service
 public class ReadUsuario {
 
@@ -52,6 +54,7 @@ public class ReadUsuario {
 
     public Usuario obterPorId(Long id) {
         if (!usuarioRepository.existsById(id)) {
+            log.warn("Usuário com ID {} não encontrado.", id);
             throw new UsuarioNaoEncontradoException(id);
         }
         return usuarioRepository.getReferenceById(id);

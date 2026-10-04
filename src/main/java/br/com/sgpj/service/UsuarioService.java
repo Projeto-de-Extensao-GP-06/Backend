@@ -153,8 +153,8 @@ public class UsuarioService {
     enviarDefinirSenhaOtp.executar(email);
   }
 
-  public boolean validarOtp(ValidarOtpRequest request) {
-    return validarOtp.executar(request);
+  public void validarOtp(ValidarOtpRequest request) {
+    validarOtp.executar(request);
   }
 
   // =========================

@@ -125,7 +125,7 @@ class CreateProcessoTest {
             assertEquals(prioridade, salvo.getPrioridade());
             assertEquals(faseProcesso, salvo.getFaseProcesso());
             assertEquals(siglaTribunal, salvo.getSiglaTribunal());
-            verify(processoApiGateway, never()).buscarDadosOficiais(any(), any());
+            verify(processoApiGateway, never()).buscarDadosOficiais(any());
         }
 
         @Test
@@ -144,7 +144,7 @@ class CreateProcessoTest {
             when(faseProcessoRepository.findById(2L)).thenReturn(Optional.of(faseProcesso));
             when(siglaTribunalRepository.findById(3L)).thenReturn(Optional.of(siglaTribunal));
             when(clienteRepository.findById(4L)).thenReturn(Optional.of(cliente));
-            when(processoApiGateway.buscarDadosOficiais("00000010020268260001", siglaTribunal))
+            when(processoApiGateway.buscarDadosOficiais("00000010020268260001"))
                     .thenReturn(apiMock);
             when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> {
                 ProcessoApp p = inv.getArgument(0);
@@ -160,7 +160,7 @@ class CreateProcessoTest {
             ProcessoApp salvo = captor.getValue();
             assertEquals(apiMock, salvo.getProcessoApi());
             assertEquals(StatusProcesso.ATIVO, salvo.getStatus());
-            verify(processoApiGateway).buscarDadosOficiais("00000010020268260001", siglaTribunal);
+            verify(processoApiGateway).buscarDadosOficiais("00000010020268260001");
         }
 
         @Test
@@ -176,7 +176,7 @@ class CreateProcessoTest {
             when(faseProcessoRepository.findById(2L)).thenReturn(Optional.of(faseProcesso));
             when(siglaTribunalRepository.findById(3L)).thenReturn(Optional.of(siglaTribunal));
             when(clienteRepository.findById(4L)).thenReturn(Optional.of(cliente));
-            when(processoApiGateway.buscarDadosOficiais("00000010020268260001", siglaTribunal))
+            when(processoApiGateway.buscarDadosOficiais("00000010020268260001"))
                     .thenThrow(new RuntimeException("DataJud timeout"));
             when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> {
                 ProcessoApp p = inv.getArgument(0);

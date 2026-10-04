@@ -44,7 +44,7 @@ public class CreateProcesso {
     }
 
     @Transactional
-    public ProcessoAppCreateResponse criarProcesso(ProcessoAppCriacaoRequest novoProcesso, Usuario usuarioAutenticado) {
+    public ProcessoAppCreateResponse criarProcesso(ProcessoAppCriacaoRequest novoProcesso, Usuario usuarioResponsavel) {
         Prioridade prioridade = prioridadeRepository.findById(novoProcesso.prioridadeId())
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Prioridade nao encontrada para o ID: " + novoProcesso.prioridadeId()));
         FaseProcesso faseProcesso = faseProcessoRepository.findById(novoProcesso.faseProcessoId())
@@ -55,7 +55,8 @@ public class CreateProcesso {
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Cliente nao encontrada para o ID: " + novoProcesso.clienteId()));
 
         ProcessoApp processoApp = ProcessoAppMapper.toCreateEntity(novoProcesso);
-        processoApp.setUsuarioResponsavel(usuarioAutenticado);
+
+        processoApp.setUsuarioResponsavel(usuarioResponsavel);
         processoApp.setCliente(cliente);
         processoApp.setPrioridade(prioridade);
         processoApp.setFaseProcesso(faseProcesso);
@@ -73,7 +74,7 @@ public class CreateProcesso {
         if (cnjNormalizado != null) {
             ProcessoApi dadosOficiais = null;
             try {
-                dadosOficiais = processoApiGateway.buscarDadosOficiais(cnjNormalizado, siglaTribunal);
+                dadosOficiais = processoApiGateway.buscarDadosOficiais(cnjNormalizado);
             } catch (Exception e) {
                 log.warn("Falha ao buscar dados no DataJud para o CNJ {}: {}", cnjNormalizado, e.getMessage());
             }
@@ -94,7 +95,7 @@ public class CreateProcesso {
         }
 
         ProcessoApp salvo = processoAppRepository.save(processoApp);
-        registroHistorico.registrar(salvo, usuarioAutenticado, RegistroHistoricoProcesso.ABERTURA, "Processo criado.");
+        registroHistorico.registrar(salvo, usuarioResponsavel, RegistroHistoricoProcesso.ABERTURA, "Processo criado.");
 
         return ProcessoAppMapper.toCreateResponse(salvo, sincronizado, cnjNormalizado);
     }

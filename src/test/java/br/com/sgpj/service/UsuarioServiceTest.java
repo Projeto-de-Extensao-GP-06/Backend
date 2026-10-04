@@ -18,7 +18,6 @@ import br.com.sgpj.service.useCases.usuario.EnviarDefinirSenhaOtp;
 import br.com.sgpj.service.useCases.usuario.EnviarRedefinirSenhaOtp;
 import br.com.sgpj.service.useCases.usuario.ReadUsuario;
 import br.com.sgpj.service.useCases.usuario.ReativarUsuario;
-import br.com.sgpj.service.useCases.usuario.StatusEnvioOtp;
 import br.com.sgpj.service.useCases.usuario.UpdateUsuario;
 import br.com.sgpj.service.useCases.usuario.ValidarOtp;
 import org.junit.jupiter.api.DisplayName;
@@ -187,22 +186,16 @@ class UsuarioServiceTest {
     @Test
     @DisplayName("enviarRedefinirSenhaOtp delega para EnviarRedefinirSenhaOtp")
     void enviarRedefinirSenhaOtpDelega() {
-        when(enviarRedefinirSenhaOtp.executar("x@x.com")).thenReturn(StatusEnvioOtp.ENVIADO);
+        usuarioService.enviarRedefinirSenhaOtp("x@x.com");
 
-        StatusEnvioOtp res = usuarioService.enviarRedefinirSenhaOtp("x@x.com");
-
-        assertEquals(StatusEnvioOtp.ENVIADO, res);
         verify(enviarRedefinirSenhaOtp).executar("x@x.com");
     }
 
     @Test
     @DisplayName("enviarDefinirSenhaOtp delega para EnviarDefinirSenhaOtp")
     void enviarDefinirSenhaOtpDelega() {
-        when(enviarDefinirSenhaOtp.executar("x@x.com")).thenReturn(StatusEnvioOtp.ENVIADO);
+        usuarioService.enviarDefinirSenhaOtp("x@x.com");
 
-        StatusEnvioOtp res = usuarioService.enviarDefinirSenhaOtp("x@x.com");
-
-        assertEquals(StatusEnvioOtp.ENVIADO, res);
         verify(enviarDefinirSenhaOtp).executar("x@x.com");
     }
 

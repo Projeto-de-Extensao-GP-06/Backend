@@ -64,37 +64,37 @@ class EnviarDefinirSenhaOtpTest {
         private final String email = "usuario@teste.com";
 
         @Test
-        @DisplayName("Deve retornar USUARIO_NAO_ENCONTRADO quando usuário não existir no banco")
-        void deveRetornarUsuarioNaoEncontrado() {
+        @DisplayName("Deve gerar OTP como inválido e não enviar email quando usuário não existir no banco")
+        void deveGerarOtpMasNaoEnviarEmailQuandoUsuarioNaoExistir() {
             when(usuarioRepository.findByEmail(email)).thenReturn(null);
+            when(otpService.generateOtp(email, false)).thenReturn("654321");
 
-            StatusEnvioOtp status = useCase.executar(email);
+            useCase.executar(email);
 
-            assertEquals(StatusEnvioOtp.USUARIO_NAO_ENCONTRADO, status);
-            verify(otpService, never()).generateOtp(anyString());
+            verify(otpService).generateOtp(email, false);
             verify(emailService, never()).sendSetPasswordOtp(anyString(), anyString(), anyString());
         }
 
         @Test
-        @DisplayName("Deve retornar USUARIO_INATIVO quando usuário estiver inativo")
-        void deveRetornarUsuarioInativo() {
+        @DisplayName("Deve gerar OTP como inválido e não enviar email quando usuário estiver inativo")
+        void deveGerarOtpMasNaoEnviarEmailQuandoUsuarioInativo() {
             Usuario usuario = new Usuario();
             usuario.setId(1L);
             usuario.setEmail(email);
             usuario.setAtivo(false);
 
             when(usuarioRepository.findByEmail(email)).thenReturn(usuario);
+            when(otpService.generateOtp(email, false)).thenReturn("654321");
 
-            StatusEnvioOtp status = useCase.executar(email);
+            useCase.executar(email);
 
-            assertEquals(StatusEnvioOtp.USUARIO_INATIVO, status);
-            verify(otpService, never()).generateOtp(anyString());
+            verify(otpService).generateOtp(email, false);
             verify(emailService, never()).sendSetPasswordOtp(anyString(), anyString(), anyString());
         }
 
         @Test
-        @DisplayName("Deve retornar SENHA_JA_CADASTRADA quando usuário já possuir senha")
-        void deveRetornarSenhaJaCadastrada() {
+        @DisplayName("Deve gerar OTP como inválido e não enviar email quando usuário já possuir senha")
+        void deveGerarOtpMasNaoEnviarEmailQuandoUsuarioJaPossuirSenha() {
             Usuario usuario = new Usuario();
             usuario.setId(1L);
             usuario.setEmail(email);
@@ -102,16 +102,16 @@ class EnviarDefinirSenhaOtpTest {
             usuario.setSenha("senha-criptografada");
 
             when(usuarioRepository.findByEmail(email)).thenReturn(usuario);
+            when(otpService.generateOtp(email, false)).thenReturn("654321");
 
-            StatusEnvioOtp status = useCase.executar(email);
+            useCase.executar(email);
 
-            assertEquals(StatusEnvioOtp.SENHA_JA_CADASTRADA, status);
-            verify(otpService, never()).generateOtp(anyString());
+            verify(otpService).generateOtp(email, false);
             verify(emailService, never()).sendSetPasswordOtp(anyString(), anyString(), anyString());
         }
 
         @Test
-        @DisplayName("Deve gerar OTP, enviar email e retornar ENVIADO quando usuário for válido e sem senha")
+        @DisplayName("Deve gerar OTP como válido e enviar email quando usuário for válido e sem senha")
         void deveEnviarOtpComSucesso() {
             Usuario usuario = new Usuario();
             usuario.setId(1L);
@@ -121,12 +121,11 @@ class EnviarDefinirSenhaOtpTest {
             usuario.setSenha(null);
 
             when(usuarioRepository.findByEmail(email)).thenReturn(usuario);
-            when(otpService.generateOtp(email)).thenReturn("654321");
+            when(otpService.generateOtp(email, true)).thenReturn("654321");
 
-            StatusEnvioOtp status = useCase.executar(email);
+            useCase.executar(email);
 
-            assertEquals(StatusEnvioOtp.ENVIADO, status);
-            verify(otpService).generateOtp(email);
+            verify(otpService).generateOtp(email, true);
             verify(emailService).sendSetPasswordOtp(email, "Fulano", "654321");
         }
     }

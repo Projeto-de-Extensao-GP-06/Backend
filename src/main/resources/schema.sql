@@ -370,7 +370,8 @@ CREATE TABLE usuario_otp (
                              email VARCHAR(255) PRIMARY KEY,
                              otp VARCHAR(60) NOT NULL,
                              expira_em DATETIME NOT NULL,
-                             tentativas INT NOT NULL DEFAULT 0
+                             tentativas INT NOT NULL DEFAULT 0,
+                             usuario_valido TINYINT NOT NULL DEFAULT 0
 ) ENGINE=MEMORY;
 
 -- =========================================================

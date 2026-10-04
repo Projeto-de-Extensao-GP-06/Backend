@@ -41,6 +41,10 @@ public class OtpService {
     }
 
     public String generateOtp(String email) {
+        return generateOtp(email, true);
+    }
+
+    public String generateOtp(String email, boolean usuarioValido) {
         otpRateLimiter.checkGenerationAllowed(email);
 
         String otp = String.format("%06d", secureRandom.nextInt(1000000));
@@ -48,7 +52,7 @@ public class OtpService {
 
         // Hash do OTP antes de armazenar no banco
         String hashedOtp = otpHashUtil.hashOtp(otp);
-        Otp usuarioOtp = new Otp(email, hashedOtp, expiryTime);
+        Otp usuarioOtp = new Otp(email, hashedOtp, expiryTime, usuarioValido);
         otpRepository.save(usuarioOtp);
 
         // Record this OTP generation in the rate limiter
@@ -95,10 +99,12 @@ public class OtpService {
             return false;
         }
 
-        // Verificar o OTP usando hash
-        if (otpHashUtil.verifyOtp(inputOtp, otp.getOtp())) {
-            otpRepository.deleteByEmail(email);
-            return true;
+        if (otp.isUsuarioValido()) {
+            // Verificar o OTP usando hash
+            if (otpHashUtil.verifyOtp(inputOtp, otp.getOtp())) {
+                otpRepository.deleteByEmail(email);
+                return true;
+            }
         }
 
         // Delega controle de tentativas para a política

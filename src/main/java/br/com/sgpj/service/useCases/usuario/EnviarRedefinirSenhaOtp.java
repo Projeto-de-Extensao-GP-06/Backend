@@ -25,40 +25,36 @@ public class EnviarRedefinirSenhaOtp {
         this.emailService = emailService;
     }
 
-    public StatusEnvioOtp executar(String email) {
+    public void executar(String email) {
 
         validarEmail(email);
 
-        Usuario usuario =
-                usuarioRepository.findByEmail(email);
+        Usuario usuario = usuarioRepository.findByEmail(email);
+
+        boolean usuarioValido = usuario != null && usuario.isAtivo() && hasPassword(usuario);
+        String otp = otpService.generateOtp(email, usuarioValido);
 
         if (usuario == null) {
-            log.warn("Falha ao enviar código de verificação para redefinição de senha. Motivo: email {} não encontrado.", email);
-            return StatusEnvioOtp.USUARIO_NAO_ENCONTRADO;
+            log.warn("Solicitação de OTP para e-mail não cadastrado: {}. Código gerado para controle de tentativas, mas e-mail não enviado.", email);
+            return;
         }
 
         if (!usuario.isAtivo()) {
-            log.warn("Falha ao enviar código de verificação para redefinição de senha. Motivo: usuário {} está inativo.", usuario.getId());
-            return StatusEnvioOtp.USUARIO_INATIVO;
+            log.warn("Solicitação de OTP para usuário inativo: {}. Código gerado para controle de tentativas, mas e-mail não enviado.", usuario.getId());
+            return;
         }
 
         if (!hasPassword(usuario)) {
-            log.warn("Falha ao enviar código de verificação para redefinição de senha. Motivo: usuário {} não possui senha ativa.", usuario.getId());
-            return StatusEnvioOtp.SENHA_NAO_CADASTRADA;
+            log.warn("Usuário ID: {} não possui senha ativa. Deve realizar o Primeiro Acesso. E-mail de redefinição não enviado.", usuario.getId());
+            return;
         }
 
         log.info("Enviando código de verificação para usuário {}.", email);
-
-        String otp =
-                otpService.generateOtp(email);
-
         emailService.sendForgotPasswordOtp(
                 email,
                 usuario.getNome(),
                 otp
         );
-
-        return StatusEnvioOtp.ENVIADO;
     }
 
     private void validarEmail(String email) {

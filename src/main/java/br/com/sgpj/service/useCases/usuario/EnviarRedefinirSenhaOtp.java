@@ -1,14 +1,13 @@
 package br.com.sgpj.service.useCases.usuario;
 
 import br.com.sgpj.entity.Usuario;
-import br.com.sgpj.exception.PasswordConflictException;
-import br.com.sgpj.exception.UsuarioInativoException;
-import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.repository.UsuarioRepository;
 import br.com.sgpj.service.EmailService;
 import br.com.sgpj.service.OtpService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 public class EnviarRedefinirSenhaOtp {
 
@@ -30,28 +29,27 @@ public class EnviarRedefinirSenhaOtp {
 
         validarEmail(email);
 
-        Usuario usuario =
-                usuarioRepository.findByEmail(email);
+        Usuario usuario = usuarioRepository.findByEmail(email);
+
+        boolean usuarioValido = usuario != null && usuario.isAtivo() && hasPassword(usuario);
+        String otp = otpService.generateOtp(email, usuarioValido);
 
         if (usuario == null) {
-            throw new UsuarioNaoEncontradoException(email);
+            log.warn("Solicitação de OTP para e-mail não cadastrado: {}. Código gerado para controle de tentativas, mas e-mail não enviado.", email);
+            return;
         }
 
         if (!usuario.isAtivo()) {
-            throw new UsuarioInativoException(
-                    "Este usuário está inativo. Contate um administrador."
-            );
+            log.warn("Solicitação de OTP para usuário inativo: {}. Código gerado para controle de tentativas, mas e-mail não enviado.", usuario.getId());
+            return;
         }
 
         if (!hasPassword(usuario)) {
-            throw new PasswordConflictException(
-                    "Essa conta ainda não realizou o primeiro acesso no sistema e não possui uma senha ativa."
-            );
+            log.warn("Usuário ID: {} não possui senha ativa. Deve realizar o Primeiro Acesso. E-mail de redefinição não enviado.", usuario.getId());
+            return;
         }
 
-        String otp =
-                otpService.generateOtp(email);
-
+        log.info("Enviando código de verificação para usuário {}.", email);
         emailService.sendForgotPasswordOtp(
                 email,
                 usuario.getNome(),

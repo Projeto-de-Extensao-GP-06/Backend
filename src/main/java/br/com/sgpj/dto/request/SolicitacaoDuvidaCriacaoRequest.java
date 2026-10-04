@@ -36,6 +36,10 @@ public record SolicitacaoDuvidaCriacaoRequest(
         @NotBlank(message = "Descrição é obrigatória")
         String descricao,
 
+        @Schema(description = "Como conheceu o escritório", example = "Instagram")
+        @Size(max = 20, message = "Como conheceu deve ter no máximo 20 caracteres")
+        String comoConheceu,
+
         @Schema(description = "Aceite das políticas e termos", example = "true")
         @NotNull(message = "Aceite das políticas e termos é obrigatório")
         @AssertTrue(message = "É necessário aceitar as políticas e termos")

@@ -18,6 +18,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -52,7 +55,7 @@ class ProcessosControllerTest {
     void setup() {
         docResponse = new ProcessoDocumentoResponse(
                 20L, "contrato.pdf", "application/pdf",
-                "https://download.url", 1L, "Usuario Responsavel",
+                "https://download.url", "https://preview.url", 1L, "Usuario Responsavel",
                 LocalDateTime.of(2026, 1, 1, 10, 0),
                 "RG", 5L, "rafael-silva-12345678901/001"
         );
@@ -140,25 +143,26 @@ class ProcessosControllerTest {
         @Test
         @DisplayName("Deve retornar lista de processos com status 200 quando escopo é válido")
         void deveRetornarListaComStatus200QuandoEscopoValido() {
-            when(processoService.listarProcessos()).thenReturn(List.of(processoAppMiniResponse));
+            Page<ProcessoAppMiniResponse> processos = new PageImpl<>(List.of(processoAppMiniResponse));
+            when(processoService.listarProcessos(any())).thenReturn(processos);
 
-            ResponseEntity<List<ProcessoAppMiniResponse>> resposta = controller.listarProcessos();
+            ResponseEntity<Page<ProcessoAppMiniResponse>> resposta = controller.listarProcessos(PageRequest.of(0, 20));
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
             assertThat(resposta.getBody()).hasSize(1);
 
-            verify(processoService).listarProcessos();
+            verify(processoService).listarProcessos(any());
         }
 
         @Test
         @DisplayName("Deve retornar lista vazia com status 200 quando não há processos")
         void deveRetornarListaVaziaComStatus200QuandoNaoHaProcessos() {
-            when(processoService.listarProcessos()).thenReturn(List.of());
+            when(processoService.listarProcessos(any())).thenReturn(Page.empty());
 
-            ResponseEntity<List<ProcessoAppMiniResponse>> resposta = controller.listarProcessos();
+            ResponseEntity<Page<ProcessoAppMiniResponse>> resposta = controller.listarProcessos(PageRequest.of(0, 20));
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
-            assertThat(resposta.getBody()).isEmpty();
+            assertThat(resposta.getBody().getContent()).isEmpty();
         }
     }
 
@@ -314,7 +318,7 @@ class ProcessosControllerTest {
     void listarDocumentosDeveRetornarMultiplos() {
         ProcessoDocumentoResponse doc2 = new ProcessoDocumentoResponse(
                 21L, "procuracao.pdf", "application/pdf",
-                "https://download2.url", 2L, "Outro Usuario",
+                "https://download2.url", "https://preview2.url", 2L, "Outro Usuario",
                 LocalDateTime.of(2026, 2, 1, 9, 0),
                 "Procuração", 5L, "rafael-silva-12345678901/001"
         );
@@ -328,4 +332,3 @@ class ProcessosControllerTest {
         assertEquals(21L, resp.getBody().get(1).documentoId());
     }
 }
-

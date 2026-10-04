@@ -9,6 +9,10 @@ import br.com.sgpj.service.ProcessoService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -48,6 +52,14 @@ public class ProcessosController {
         return ResponseEntity.ok(processoEditado);
     }
 
+    @PostMapping("/processos/{id}/atualizar-dados")
+    @PreAuthorize("hasAuthority('EDITAR PROCESSO') || hasAuthority('TODAS AS PERMISSÕES')")
+    @SecurityRequirement(name = "Bearer")
+    public ResponseEntity<ProcessoAppResponse> atualizarDadosOficiais(@PathVariable Long id) {
+        ProcessoAppResponse processoAtualizado = processoService.atualizarDadosDoDataJud(id);
+        return ResponseEntity.ok(processoAtualizado);
+    }
+
     @DeleteMapping("/processos/{id}")
     @PreAuthorize("hasAuthority('EXCLUIR PROCESSO') || hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
@@ -58,8 +70,11 @@ public class ProcessosController {
 
     @GetMapping("/processos")
     @SecurityRequirement(name = "Bearer")
-    public ResponseEntity<List<ProcessoAppMiniResponse>> listarProcessos(){
-        List<ProcessoAppMiniResponse> processos = processoService.listarProcessos();
+    public ResponseEntity<Page<ProcessoAppMiniResponse>> listarProcessos(
+            @PageableDefault(size = 20, sort = "ultimaAtualizacao", direction = Sort.Direction.DESC)
+            Pageable pageable
+    ){
+        Page<ProcessoAppMiniResponse> processos = processoService.listarProcessos(pageable);
         return ResponseEntity.ok(processos);
     }
 
@@ -112,5 +127,14 @@ public class ProcessosController {
         return ResponseEntity.ok(docs);
     }
 
-
+    @DeleteMapping("/processos/{processoId}/documentos/{documentoId}")
+    @PreAuthorize("hasAuthority('EXCLUIR DOCUMENTO') || hasAuthority('TODAS AS PERMISSÕES')")
+    @SecurityRequirement(name = "Bearer")
+    public ResponseEntity<Void> desvincularDocumento(
+            @PathVariable Long processoId,
+            @PathVariable Long documentoId
+    ) {
+        processoService.desvincularDocumento(processoId, documentoId);
+        return ResponseEntity.noContent().build();
+    }
 }

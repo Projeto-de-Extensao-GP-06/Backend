@@ -34,6 +34,9 @@ public record ProcessoAppUpdateRequest(
         @Schema(description = "Id da fase do processo", example = "1")
         Long faseProcessoId,
 
+        @Schema(description = "Id da sigla do tribunal", example = "1")
+        Long siglaTribunalId,
+
         LocalDateTime dataAudiencia,
 
         @Schema(description = "Valor da causa em reais (R$)", example = "2500.00")
@@ -45,4 +48,19 @@ public record ProcessoAppUpdateRequest(
         @Schema(description = "Justificativa complementar (opcional)", example = "Aguardando documentação do cliente")
         String justificativa
 ) {
+    public ProcessoAppUpdateRequest(
+            String numeroCnj,
+            String descricaoCaso,
+            String observacao,
+            Long prioridadeId,
+            StatusProcesso status,
+            Long faseProcessoId,
+            LocalDateTime dataAudiencia,
+            Double valorCausa,
+            Integer motivoStatusProcessoId,
+            String justificativa
+    ) {
+        this(numeroCnj, descricaoCaso, observacao, prioridadeId, status, faseProcessoId, null,
+                dataAudiencia, valorCausa, motivoStatusProcessoId, justificativa);
+    }
 }

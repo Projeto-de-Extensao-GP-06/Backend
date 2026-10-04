@@ -5,6 +5,8 @@ import br.com.sgpj.dto.response.DataJudApiResponse;
 import br.com.sgpj.entity.Processo.ProcessoApi;
 import br.com.sgpj.exception.TribunalInvalidoException;
 import br.com.sgpj.mapper.ProcessoApiMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
@@ -17,6 +19,8 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class ProcessoApiGateway {
+
+    private static final Logger log = LoggerFactory.getLogger(ProcessoApiGateway.class);
 
     private final DataJudAdapter dataJudAdapter;
 
@@ -35,22 +39,25 @@ public class ProcessoApiGateway {
         if (numeroProcesso == null || numeroProcesso.isBlank()) {
             return null;
         }
-
         String siglaTribunal = mapearSiglaTribunalPorNumero(numeroProcesso.substring(14, 16));
 
-        // Adapter retorna DTO estruturado (não mais String JSON)
-        DataJudApiResponse dataJudResponse = dataJudAdapter.buscarPorNumeroDeProcesso(
-                numeroProcesso,
-                siglaTribunal
-        );
+        try {
 
-        // Se não houver resultados, retorna null
-        if (!dataJudResponse.temResultados()) {
+            DataJudApiResponse dataJudResponse = dataJudAdapter.buscarPorNumeroDeProcesso(
+                    numeroProcesso,
+                    siglaTribunal
+            );
+
+            if (dataJudResponse == null || !dataJudResponse.temResultados()) {
+                return null;
+            }
+
+            return ProcessoApiMapper.toEntity(dataJudResponse);
+        } catch (Exception ex) {
+            log.warn("Não foi possível obter dados oficiais do processo {} no tribunal {}: {}",
+                    numeroProcesso, siglaTribunal != null ? siglaTribunal : "null", ex.getMessage());
             return null;
         }
-
-        // Mapeia o DTO para a entidade de domínio
-        return ProcessoApiMapper.toEntity(dataJudResponse);
     }
 
     private String mapearSiglaTribunalPorNumero(String numero) {

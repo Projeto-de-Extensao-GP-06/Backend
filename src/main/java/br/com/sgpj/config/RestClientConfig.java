@@ -13,8 +13,8 @@ public class RestClientConfig {
     @Bean
     public RestClient restClient() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(Duration.ofSeconds(10));
-        factory.setReadTimeout(Duration.ofSeconds(30));
+        factory.setConnectTimeout(Duration.ofSeconds(15));
+        factory.setReadTimeout(Duration.ofSeconds(75));
 
         return RestClient.builder()
                 .baseUrl("https://api-publica.datajud.cnj.jus.br")

@@ -1,5 +1,6 @@
 package br.com.sgpj.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.util.List;
@@ -15,6 +16,7 @@ public class Permissao {
     private String nome;
 
     @OneToMany(mappedBy = "permissao", fetch = FetchType.EAGER)
+    @JsonIgnore
     private List<CargoPermissao> cargos;
 
     // Constructors

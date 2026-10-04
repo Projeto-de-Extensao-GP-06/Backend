@@ -1,7 +1,7 @@
 package br.com.sgpj.service.useCases.usuario;
 
 import br.com.sgpj.dto.request.UsuarioAtualizacaoRequest;
-import br.com.sgpj.dto.response.UsuarioListarResponse;
+import br.com.sgpj.dto.response.Usuario.UsuarioListarResponse;
 import br.com.sgpj.entity.Cargo;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.CargoNaoEncontradoException;
@@ -9,8 +9,10 @@ import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.mapper.UsuarioMapper;
 import br.com.sgpj.repository.CargoRepository;
 import br.com.sgpj.repository.UsuarioRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 public class UpdateUsuario {
 
@@ -31,6 +33,7 @@ public class UpdateUsuario {
     ) {
 
         if (!usuarioRepository.existsById(id)) {
+            log.warn("Usuário com ID {} não encontrado.", id);
             throw new UsuarioNaoEncontradoException(id);
         }
 

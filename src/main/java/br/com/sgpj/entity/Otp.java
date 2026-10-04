@@ -27,21 +27,30 @@ public class Otp {
     @Column(name = "tentativas", nullable = false)
     private int tentativas = 0;
 
+    @Column(name = "usuario_valido", nullable = false)
+    private boolean usuarioValido;
+
     public Otp() {
     }
 
     public Otp(String email, String otp, LocalDateTime expiraEm) {
-        this.email = email;
-        this.otp = otp;
-        this.expiraEm = expiraEm;
-        this.tentativas = 0;
+        this(email, otp, expiraEm, 0, true);
+    }
+
+    public Otp(String email, String otp, LocalDateTime expiraEm, boolean usuarioValido) {
+        this(email, otp, expiraEm, 0, usuarioValido);
     }
 
     public Otp(String email, String otp, LocalDateTime expiraEm, int tentativas) {
+        this(email, otp, expiraEm, tentativas, true);
+    }
+
+    public Otp(String email, String otp, LocalDateTime expiraEm, int tentativas, boolean usuarioValido) {
         this.email = email;
         this.otp = otp;
         this.expiraEm = expiraEm;
         this.tentativas = tentativas;
+        this.usuarioValido = usuarioValido;
     }
 
     public String getEmail() {
@@ -86,5 +95,13 @@ public class Otp {
 
     public boolean excedeuLimiteDeTentativas(int maxTentativas) {
         return this.tentativas >= maxTentativas;
+    }
+
+    public boolean isUsuarioValido() {
+        return usuarioValido;
+    }
+
+    public void setUsuarioValido(boolean usuarioValido) {
+        this.usuarioValido = usuarioValido;
     }
 }

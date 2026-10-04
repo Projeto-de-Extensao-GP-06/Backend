@@ -10,9 +10,12 @@ import br.com.sgpj.repository.*;
 import br.com.sgpj.service.useCases.processo.AnexarDocumentoProcesso;
 import br.com.sgpj.service.useCases.processo.CreateProcesso;
 import br.com.sgpj.service.useCases.processo.DeleteProcessoApp;
+import br.com.sgpj.service.useCases.processo.DeleteProcessoDocumento;
 import br.com.sgpj.service.useCases.processo.ListarDocumentosProcesso;
 import br.com.sgpj.service.useCases.processo.ReadProcesso;
 import br.com.sgpj.service.useCases.processo.UpdateProcesso;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -27,6 +30,7 @@ public class ProcessoService {
     private final AnexarDocumentoProcesso anexarDocumentoProcesso;
     private final ListarDocumentosProcesso listarDocumentosProcesso;
     private final DeleteProcessoApp deleteProcessoApp;
+    private final DeleteProcessoDocumento deleteProcessoDocumento;
 
     public ProcessoService(CreateProcesso createProcesso,
                            UsuarioRepository usuarioRepository,
@@ -36,12 +40,15 @@ public class ProcessoService {
                            DocumentoRepository documentoRepository,
                            ProcessoDocumentoRepository processoDocumentoRepository,
                            AuthorizationUtil authorizationUtil,
-                           DeleteProcessoApp deleteProcessoApp) {
+                           DeleteProcessoApp deleteProcessoApp,
+                           DeleteProcessoDocumento deleteProcessoDocumento,
+                           RegistroHistoricoProcesso registroHistorico) {
         this.createProcesso = createProcesso;
         this.updateProcesso = updateProcesso;
         this.readProcesso = readProcesso;
         this.deleteProcessoApp = deleteProcessoApp;
-        this.anexarDocumentoProcesso = new AnexarDocumentoProcesso(processoAppRepository, documentoRepository, usuarioRepository, processoDocumentoRepository);
+        this.deleteProcessoDocumento = deleteProcessoDocumento;
+        this.anexarDocumentoProcesso = new AnexarDocumentoProcesso(processoAppRepository, documentoRepository, usuarioRepository, processoDocumentoRepository, registroHistorico);
         this.listarDocumentosProcesso = new ListarDocumentosProcesso(processoDocumentoRepository, authorizationUtil);
     }
 
@@ -51,8 +58,8 @@ public class ProcessoService {
     }
 
     // READ OPERATIONS
-    public List<ProcessoAppMiniResponse> listarProcessos(){
-        return readProcesso.listarProcessos();
+    public Page<ProcessoAppMiniResponse> listarProcessos(Pageable pageable){
+        return readProcesso.listarProcessos(pageable);
     }
 
     public ProcessoAppResponse buscarPorId(Long id){
@@ -85,5 +92,13 @@ public class ProcessoService {
 
     public List<ProcessoDocumentoResponse> listarDocumentosDoProcesso(Long processoAppId) {
         return listarDocumentosProcesso.listarDocumentosDoProcesso(processoAppId);
+    }
+
+    public void desvincularDocumento(Long processoId, Long documentoId) {
+        deleteProcessoDocumento.desvincularDocumento(processoId, documentoId);
+    }
+
+    public ProcessoAppResponse atualizarDadosDoDataJud(Long id) {
+        return updateProcesso.atualizarDadosDoDataJud(id);
     }
 }

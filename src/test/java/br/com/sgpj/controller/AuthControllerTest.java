@@ -6,8 +6,8 @@ import br.com.sgpj.dto.request.EnviarOtpRequest;
 import br.com.sgpj.dto.request.UsuarioLoginRequest;
 import br.com.sgpj.dto.request.ValidarOtpRequest;
 import br.com.sgpj.dto.response.RefreshTokenResponse;
-import br.com.sgpj.dto.response.UsuarioSessaoResponse;
-import br.com.sgpj.dto.response.UsuarioTokenResponse;
+import br.com.sgpj.dto.response.Usuario.UsuarioSessaoResponse;
+import br.com.sgpj.dto.response.Usuario.UsuarioTokenResponse;
 import br.com.sgpj.security.AuthenticationCookieService;
 import br.com.sgpj.security.RateLimiter;
 import br.com.sgpj.security.TokenBlacklistService;
@@ -25,6 +25,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Duration;
@@ -74,6 +75,42 @@ class AuthControllerTest {
     void setUp() {
         ReflectionTestUtils.setField(authController, "jwtValidity", JWT_VALIDITY);
         ReflectionTestUtils.setField(authController, "jwtRefreshValidity", JWT_REFRESH_VALIDITY);
+    }
+
+    @Nested
+    @DisplayName("me()")
+    class MeTest {
+
+        @Test
+        @DisplayName("Deve retornar os dados do usuário autenticado")
+        void deveRetornarSessaoDoUsuarioAutenticado() {
+            Authentication authentication = mock(Authentication.class);
+            UsuarioSessaoResponse sessao = new UsuarioSessaoResponse(
+                    1L,
+                    "Usuário Teste",
+                    "usuario@teste.com",
+                    new UsuarioSessaoResponse.CargoDto(1L, "Advogado"),
+                    List.of("PROCESSO_CRIAR")
+            );
+            when(authentication.isAuthenticated()).thenReturn(true);
+            when(authentication.getName()).thenReturn("usuario@teste.com");
+            when(usuarioService.autenticar("usuario@teste.com")).thenReturn(sessao);
+
+            ResponseEntity<UsuarioSessaoResponse> response = authController.me(authentication);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(response.getBody()).isEqualTo(sessao);
+            verify(usuarioService).autenticar("usuario@teste.com");
+        }
+
+        @Test
+        @DisplayName("Deve retornar 401 sem autenticação válida")
+        void deveRetornar401SemAutenticacao() {
+            ResponseEntity<UsuarioSessaoResponse> response = authController.me(null);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+            verifyNoInteractions(usuarioService);
+        }
     }
 
     // =========================================================================

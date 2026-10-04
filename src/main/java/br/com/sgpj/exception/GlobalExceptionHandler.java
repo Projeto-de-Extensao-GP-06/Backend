@@ -53,8 +53,13 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<Map<String, Object>> handleBadCredentials() {
-        return buildResponse(HttpStatus.UNAUTHORIZED, "E-mail ou senha inválidos");
+    public ResponseEntity<Map<String, Object>> handleBadCredentials(BadCredentialsException ex) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, "E-mail e/ou senha inválido(s)");
+    }
+
+    @ExceptionHandler(OtpInvalidaException.class)
+    public ResponseEntity<Map<String, Object>> handleOtpInvalida(OtpInvalidaException ex) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
     @ExceptionHandler(UsernameNotFoundException.class)
@@ -210,6 +215,27 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(TokenBlacklistedException.class)
     public ResponseEntity<Map<String, Object>> handleTokenBlacklisted(TokenBlacklistedException ex) {
         return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage());
+    }
+
+    @ExceptionHandler(DataJudIntegrationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataJudIntegration(DataJudIntegrationException ex) {
+        String msg = "Não foi possível estabelecer conexão com o DataJud para buscar os dados oficiais. Tente novamente mais tarde.";
+        return buildResponse(HttpStatus.BAD_GATEWAY, msg);
+    }
+
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handleHttpMessageNotReadable(org.springframework.http.converter.HttpMessageNotReadableException ex) {
+        String msg = "Formato de dados inválido na requisição.";
+        if (ex.getMessage() != null && ex.getMessage().contains("LocalDateTime")) {
+            msg = "Data ou horário em formato inválido. Verifique o ano, mês, dia e horário informados.";
+        }
+        return buildResponse(HttpStatus.BAD_REQUEST, msg);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, Object>> handleGeneralException(Exception ex) {
+        String msg = ex.getMessage() != null && !ex.getMessage().isBlank() ? ex.getMessage() : "Erro interno inesperado no servidor.";
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, msg);
     }
 
     @ExceptionHandler(TribunalInvalidoException.class)

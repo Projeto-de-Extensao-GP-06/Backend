@@ -45,16 +45,27 @@ public class ProcessoAppMapper {
     }
 
     public static ProcessoAppCreateResponse toCreateResponse(ProcessoApp processoApp) {
+        boolean sincronizado = processoApp != null && processoApp.getProcessoApi() != null && processoApp.getProcessoApi().getClasseProcessual() != null;
+        String cnj = processoApp != null && processoApp.getProcessoApi() != null ? processoApp.getProcessoApi().getNumeroCnj() : null;
+        return toCreateResponse(processoApp, sincronizado, cnj);
+    }
+
+    public static ProcessoAppCreateResponse toCreateResponse(ProcessoApp processoApp, boolean sincronizado, String cnj) {
         if (processoApp == null) {
             return null;
+        }
+
+        String numProc = cnj;
+        if (numProc == null && processoApp.getProcessoApi() != null) {
+            numProc = processoApp.getProcessoApi().getNumeroCnj();
         }
 
         return new ProcessoAppCreateResponse(
                 processoApp.getId(),
                 processoApp.getUsuarioResponsavel() != null ? processoApp.getUsuarioResponsavel().getId() : null,
                 processoApp.getUsuarioResponsavel() != null ? processoApp.getUsuarioResponsavel().getNome() : null,
-                processoApp.getCliente().getId(),
-                processoApp.getCliente().getNomeRazaoSocial(),
+                processoApp.getCliente() != null ? processoApp.getCliente().getId() : null,
+                processoApp.getCliente() != null ? processoApp.getCliente().getNomeRazaoSocial() : null,
                 processoApp.getDescricaoCaso(),
                 processoApp.getObservacao(),
                 processoApp.getPrioridade() != null ? processoApp.getPrioridade() : null,
@@ -71,7 +82,9 @@ public class ProcessoAppMapper {
                 processoApp.getJustificativa(),
                 processoApp.getSiglaTribunal() != null ? processoApp.getSiglaTribunal() : null,
                 processoApp.getValorCausa(),
-                ProcessoApiMapper.toCreateResponse(processoApp.getProcessoApi())
+                ProcessoApiMapper.toCreateResponse(processoApp.getProcessoApi()),
+                numProc,
+                sincronizado
         );
     }
 
@@ -84,8 +97,8 @@ public class ProcessoAppMapper {
                 processoApp.getId(),
                 processoApp.getUsuarioResponsavel() != null ? processoApp.getUsuarioResponsavel().getId() : null,
                 processoApp.getUsuarioResponsavel() != null ? processoApp.getUsuarioResponsavel().getNome() : null,
-                processoApp.getCliente().getId(),
-                processoApp.getCliente().getNomeRazaoSocial(),
+                processoApp.getCliente() != null ? processoApp.getCliente().getId() : null,
+                processoApp.getCliente() != null ? processoApp.getCliente().getNomeRazaoSocial() : null,
                 processoApp.getDescricaoCaso(),
                 processoApp.getObservacao(),
                 processoApp.getPrioridade() != null ? processoApp.getPrioridade() : null,
@@ -115,8 +128,8 @@ public class ProcessoAppMapper {
 
         return new ProcessoAppMiniResponse(
                 processoApp.getId(),
-                processoApp.getCliente().getId(),
-                processoApp.getCliente().getNomeRazaoSocial(),
+                processoApp.getCliente() != null ? processoApp.getCliente().getId() : null,
+                processoApp.getCliente() != null ? processoApp.getCliente().getNomeRazaoSocial() : null,
                 processoApp.getPrioridade() != null ? processoApp.getPrioridade() : null,
                 processoApp.getFaseProcesso() != null ? processoApp.getFaseProcesso() : null,
                 processoApp.getStatus(),
@@ -133,8 +146,8 @@ public class ProcessoAppMapper {
                       processoApp.getId(),
                       processoApp.getUsuarioResponsavel() != null ? processoApp.getUsuarioResponsavel().getId() : null,
                       processoApp.getUsuarioResponsavel() != null ? processoApp.getUsuarioResponsavel().getNome() : null,
-                      processoApp.getCliente().getId(),
-                      processoApp.getCliente().getNomeRazaoSocial(),
+                      processoApp.getCliente() != null ? processoApp.getCliente().getId() : null,
+                      processoApp.getCliente() != null ? processoApp.getCliente().getNomeRazaoSocial() : null,
                       processoApp.getDescricaoCaso(),
                       processoApp.getObservacao(),
                       processoApp.getPrioridade() != null ? processoApp.getPrioridade() : null,

@@ -1,7 +1,7 @@
 package br.com.sgpj.service.useCases.solicitacaoDuvida;
 
 import br.com.sgpj.dto.request.SolicitacaoDuvidaCriacaoRequest;
-import br.com.sgpj.dto.response.SolicitacaoDuvidaDetalhesResponse;
+import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaDetalhesResponse;
 import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Contato;
 import br.com.sgpj.entity.Processo.ProcessoApi;
@@ -55,6 +55,7 @@ public class CreateSolicitacaoDuvida {
         Cliente cliente = new Cliente();
         cliente.setNomeRazaoSocial(request.nomeCompleto().trim());
         cliente.setPF(request.isPF());
+        cliente.setComoConheceu(request.comoConheceu());
         cliente.setStatusCliente(buscarStatus(StatusClienteEnum.LEAD));
         cliente.setDataHoraEnvioFormulario(LocalDateTime.now());
         cliente = clienteRepository.save(cliente);

@@ -144,6 +144,21 @@ class OtpServiceTest {
         }
 
         @Test
+        @DisplayName("Deve retornar false e registrar tentativa quando usuarioValido for false")
+        void deveRetornarFalseQuandoUsuarioValidoForFalse() {
+            Otp otpInvalido = new Otp(EMAIL, "hash-armazenado", LocalDateTime.now().plusMinutes(10), false);
+            when(otpRepository.findByEmail(EMAIL)).thenReturn(otpInvalido);
+
+            boolean resultado = otpService.isOtpValid(EMAIL, "123456");
+
+            assertFalse(resultado);
+            assertEquals(1, otpInvalido.getTentativas());
+            verify(otpHashUtil, never()).verifyOtp(anyString(), anyString());
+            verify(otpRepository).save(otpInvalido);
+            verify(otpRepository, never()).deleteByEmail(EMAIL);
+        }
+
+        @Test
         @DisplayName("Deve lançar LimiteTentativasExcedidoException ao esgotar as tentativas permitidas")
         void deveLancarExcecaoQuandoExcederLimiteDeTentativas() {
             // maxTentativas = 3; já houve 2 tentativas incorretas anteriores

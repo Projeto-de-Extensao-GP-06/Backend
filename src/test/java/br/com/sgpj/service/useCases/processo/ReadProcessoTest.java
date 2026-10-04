@@ -23,6 +23,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -83,31 +86,33 @@ class ReadProcessoTest {
         @Test
         @DisplayName("Deve listar todos os processos ignorando status SOLICITACAO")
         void deveListarProcessosIgnorandoSolicitacao() {
-            when(processoAppRepository.findAll()).thenReturn(List.of(
+            PageRequest pageable = PageRequest.of(0, 20);
+            when(processoAppRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(
                     processoAtivo,
                     processoSuspenso,
                     processoEncerrado,
                     processoNegado,
                     processoSolicitacao
-            ));
+            ), pageable, 5));
 
-            List<ProcessoAppMiniResponse> resultado = readProcesso.listarProcessos();
+            Page<ProcessoAppMiniResponse> resultado = readProcesso.listarProcessos(pageable);
 
             assertNotNull(resultado);
-            assertEquals(4, resultado.size());
-            assertTrue(resultado.stream().noneMatch(p -> p.status() == StatusProcesso.SOLICITACAO));
-            verify(processoAppRepository).findAll();
+            assertEquals(4, resultado.getContent().size());
+            assertTrue(resultado.getContent().stream().noneMatch(p -> p.status() == StatusProcesso.SOLICITACAO));
+            verify(processoAppRepository).findAll(pageable);
         }
 
         @Test
         @DisplayName("Deve retornar lista vazia quando apenas existirem solicitações")
         void deveRetornarListaVaziaQuandoApenasSolicitacao() {
-            when(processoAppRepository.findAll()).thenReturn(List.of(processoSolicitacao));
+            PageRequest pageable = PageRequest.of(0, 20);
+            when(processoAppRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(processoSolicitacao), pageable, 1));
 
-            List<ProcessoAppMiniResponse> resultado = readProcesso.listarProcessos();
+            Page<ProcessoAppMiniResponse> resultado = readProcesso.listarProcessos(pageable);
 
             assertNotNull(resultado);
-            assertTrue(resultado.isEmpty());
+            assertTrue(resultado.getContent().isEmpty());
         }
     }
 

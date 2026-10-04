@@ -16,6 +16,7 @@ import br.com.sgpj.repository.FaseProcessoRepository;
 import br.com.sgpj.repository.PrioridadeRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.SiglaTribunalRepository;
+import br.com.sgpj.service.RegistroHistoricoProcesso;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -58,6 +59,9 @@ class CreateProcessoTest {
 
     @Mock
     private ProcessoAppRepository processoAppRepository;
+
+    @Mock
+    private RegistroHistoricoProcesso registroHistorico;
 
     @InjectMocks
     private CreateProcesso createProcesso;
@@ -140,7 +144,7 @@ class CreateProcessoTest {
             when(faseProcessoRepository.findById(2L)).thenReturn(Optional.of(faseProcesso));
             when(siglaTribunalRepository.findById(3L)).thenReturn(Optional.of(siglaTribunal));
             when(clienteRepository.findById(4L)).thenReturn(Optional.of(cliente));
-            when(processoApiGateway.buscarDadosOficiais("0000001-00.2026.8.26.0001"))
+            when(processoApiGateway.buscarDadosOficiais("00000010020268260001"))
                     .thenReturn(apiMock);
             when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> {
                 ProcessoApp p = inv.getArgument(0);
@@ -155,6 +159,42 @@ class CreateProcessoTest {
 
             ProcessoApp salvo = captor.getValue();
             assertEquals(apiMock, salvo.getProcessoApi());
+            assertEquals(StatusProcesso.ATIVO, salvo.getStatus());
+            verify(processoApiGateway).buscarDadosOficiais("00000010020268260001");
+        }
+
+        @Test
+        @DisplayName("Deve criar processo com sucesso mesmo quando busca no DataJud lançar exceção")
+        void deveCriarProcessoComSucessoMesmoQuandoApiDataJudFalhar() {
+            ProcessoAppCriacaoRequest request = new ProcessoAppCriacaoRequest(
+                    4L, "Descrição", "Obs", 1L, 2L,
+                    LocalDateTime.of(2026, 12, 1, 14, 0),
+                    3L, "0000001-00.2026.8.26.0001", 10000.0
+            );
+
+            when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
+            when(faseProcessoRepository.findById(2L)).thenReturn(Optional.of(faseProcesso));
+            when(siglaTribunalRepository.findById(3L)).thenReturn(Optional.of(siglaTribunal));
+            when(clienteRepository.findById(4L)).thenReturn(Optional.of(cliente));
+            when(processoApiGateway.buscarDadosOficiais("00000010020268260001"))
+                    .thenThrow(new RuntimeException("DataJud timeout"));
+            when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> {
+                ProcessoApp p = inv.getArgument(0);
+                p.setId(101L);
+                return p;
+            });
+
+            ProcessoAppCreateResponse response = createProcesso.criarProcesso(request, usuarioAutenticado);
+
+            ArgumentCaptor<ProcessoApp> captor = ArgumentCaptor.forClass(ProcessoApp.class);
+            verify(processoAppRepository).save(captor.capture());
+
+            ProcessoApp salvo = captor.getValue();
+            assertNotNull(response);
+            assertEquals(101L, response.id());
+            assertNotNull(salvo.getProcessoApi());
+            assertEquals("00000010020268260001", salvo.getProcessoApi().getNumeroCnj());
+            assertEquals("TJSP", salvo.getProcessoApi().getTribunalTramitacao());
             assertEquals(StatusProcesso.ATIVO, salvo.getStatus());
             verify(processoApiGateway).buscarDadosOficiais("0000001-00.2026.8.26.0001");
         }

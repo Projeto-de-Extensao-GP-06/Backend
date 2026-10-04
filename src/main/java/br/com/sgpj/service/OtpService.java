@@ -1,20 +1,14 @@
 package br.com.sgpj.service;
 
 import br.com.sgpj.entity.Otp;
-import br.com.sgpj.exception.LimiteTentativasExcedidoException;
-import br.com.sgpj.exception.OtpGenerationLimitExceededException;
 import br.com.sgpj.repository.OtpRepository;
 import br.com.sgpj.security.OtpHashUtil;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import br.com.sgpj.service.otp.OtpRateLimiter;
 import br.com.sgpj.service.otp.AttemptPolicy;
-
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * Serviço para gerenciamento de códigos OTP (One-Time Password).

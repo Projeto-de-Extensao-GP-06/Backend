@@ -19,11 +19,21 @@ public class RateLimiter {
     private final ConcurrentMap<String, RequestHistory> requestHistory = new ConcurrentHashMap<>();
     
     // Rate limit configuration: max requests per time window
-    private static final int MAX_REQUESTS_PER_HOUR = 100;
-    private static final int MAX_REQUESTS_PER_MINUTE = 500;
-    private static final int MAX_OTP_REQUESTS_PER_HOUR = 300;
-    private static final int MAX_LOGIN_REQUESTS_PER_MINUTE = 300;
-    private static final int MAX_LOGIN_REQUESTS_PER_HOUR = 500;
+    // 1. General public endpoints (SPA page navigation, background calls, shared NAT networks):
+    public static final int MAX_REQUESTS_PER_MINUTE = 60;
+    public static final int MAX_REQUESTS_PER_HOUR = 1000;
+
+    // 2. Login endpoints (anti-brute force per IP + email, based on OWASP/NIST guidelines):
+    public static final int MAX_LOGIN_REQUESTS_PER_MINUTE = 10;
+    public static final int MAX_LOGIN_REQUESTS_PER_HOUR = 30;
+
+    // 3. OTP endpoints (OTP generation and validation per IP + email, allowing reasonable retries):
+    public static final int MAX_OTP_REQUESTS_PER_MINUTE = 5;
+    public static final int MAX_OTP_REQUESTS_PER_HOUR = 20;
+
+    // 4. Form submission endpoints (public inquiry form per client IP, considering shared NAT):
+    public static final int MAX_FORM_REQUESTS_PER_MINUTE = 10;
+    public static final int MAX_FORM_REQUESTS_PER_HOUR = 60;
     
     /**
      * Checks if the identifier has exceeded the rate limit for general public endpoints.
@@ -45,7 +55,7 @@ public class RateLimiter {
      */
     public void checkOtpRateLimit(String identifier) {
         checkRateLimit(identifier, MAX_OTP_REQUESTS_PER_HOUR, ChronoUnit.HOURS);
-        checkRateLimit(identifier, MAX_REQUESTS_PER_MINUTE, ChronoUnit.MINUTES);
+        checkRateLimit(identifier, MAX_OTP_REQUESTS_PER_MINUTE, ChronoUnit.MINUTES);
     }
     
     /**
@@ -55,8 +65,8 @@ public class RateLimiter {
      * @throws RateLimitExceededException if rate limit is exceeded
      */
     public void checkFormRateLimit(String identifier) {
-        checkRateLimit(identifier, MAX_REQUESTS_PER_HOUR, ChronoUnit.HOURS);
-        checkRateLimit(identifier, MAX_REQUESTS_PER_MINUTE, ChronoUnit.MINUTES);
+        checkRateLimit(identifier, MAX_FORM_REQUESTS_PER_HOUR, ChronoUnit.HOURS);
+        checkRateLimit(identifier, MAX_FORM_REQUESTS_PER_MINUTE, ChronoUnit.MINUTES);
     }
     
     /**
@@ -135,5 +145,17 @@ public class RateLimiter {
      */
     public void clearForIdentifier(String identifier) {
         requestHistory.keySet().removeIf(key -> key.startsWith(identifier + ":"));
+    }
+    
+    /**
+     * Clears rate limit history for a specific identifier and time unit.
+     * 
+     * @param identifier The identifier to clear
+     * @param timeUnit The time unit to clear
+     */
+    public void clearForIdentifier(String identifier, ChronoUnit timeUnit) {
+        if (identifier != null && timeUnit != null) {
+            requestHistory.remove(identifier + ":" + timeUnit.name());
+        }
     }
 }

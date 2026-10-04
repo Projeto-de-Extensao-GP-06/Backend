@@ -6,6 +6,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.time.temporal.ChronoUnit;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("RateLimiter - Testes de proteção contra abuso")
@@ -27,8 +29,8 @@ class RateLimiterTest {
         void devePermitirRequestsDentroLimite() {
             String identifier = "test-user@example.com";
             
-            // Should allow up to MAX_REQUESTS_PER_MINUTE (5) requests
-            for (int i = 0; i < 5; i++) {
+            // Should allow up to MAX_REQUESTS_PER_MINUTE requests
+            for (int i = 0; i < RateLimiter.MAX_REQUESTS_PER_MINUTE; i++) {
                 assertDoesNotThrow(() -> rateLimiter.checkRateLimit(identifier));
             }
         }
@@ -38,12 +40,12 @@ class RateLimiterTest {
         void deveLancarExcecaoQuandoLimiteMinutoExcedido() {
             String identifier = "test-user@example.com";
             
-            // Make 5 requests (max per minute)
-            for (int i = 0; i < 5; i++) {
+            // Make max requests per minute
+            for (int i = 0; i < RateLimiter.MAX_REQUESTS_PER_MINUTE; i++) {
                 rateLimiter.checkRateLimit(identifier);
             }
             
-            // 6th request should exceed limit
+            // Next request should exceed limit
             assertThrows(RateLimitExceededException.class, () -> rateLimiter.checkRateLimit(identifier));
         }
 
@@ -66,39 +68,32 @@ class RateLimiterTest {
     class CheckOtpRateLimitTest {
 
         @Test
-        @DisplayName("Deve aplicar limites mais estritos para OTP")
-        void deveAplicarLimitesMaisEstritosParaOtp() {
-            String identifier = "otp-user@example.com";
+        @DisplayName("Deve aplicar limites por minuto para OTP")
+        void deveAplicarLimitesPorMinutoParaOtp() {
+            String identifier = "otp-minute@example.com";
             
-            // OTP has stricter limit: MAX_OTP_REQUESTS_PER_HOUR (3)
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < RateLimiter.MAX_OTP_REQUESTS_PER_MINUTE; i++) {
                 assertDoesNotThrow(() -> rateLimiter.checkOtpRateLimit(identifier));
             }
             
-            // 4th request should exceed OTP limit
+            // Next request should exceed minute limit
             assertThrows(RateLimitExceededException.class, () -> rateLimiter.checkOtpRateLimit(identifier));
         }
 
         @Test
-        @DisplayName("Deve respeitar limite por minuto para OTP")
-        void deveRespeitarLimitePorMinutoParaOtp() {
-            String identifier = "otp-minute@example.com";
+        @DisplayName("Deve aplicar limites por hora para OTP")
+        void deveAplicarLimitesPorHoraParaOtp() {
+            String identifier = "otp-hourly@example.com";
             
-            // Make 3 requests (max per hour for OTP)
-            for (int i = 0; i < 3; i++) {
-                rateLimiter.checkOtpRateLimit(identifier);
+            // Clear minute window to test hourly limit accumulation
+            for (int i = 0; i < RateLimiter.MAX_OTP_REQUESTS_PER_HOUR; i++) {
+                rateLimiter.clearForIdentifier(identifier, ChronoUnit.MINUTES);
+                assertDoesNotThrow(() -> rateLimiter.checkOtpRateLimit(identifier));
             }
             
-            // Clear the hour limit but keep minute limit by using a different identifier
-            String minuteOnlyIdentifier = "otp-minute-only@example.com";
-            
-            // Make 5 requests (max per minute)
-            for (int i = 0; i < 5; i++) {
-                rateLimiter.checkRateLimit(minuteOnlyIdentifier);
-            }
-            
-            // 6th request should exceed minute limit
-            assertThrows(RateLimitExceededException.class, () -> rateLimiter.checkRateLimit(minuteOnlyIdentifier));
+            // Next request should exceed hourly limit
+            rateLimiter.clearForIdentifier(identifier, ChronoUnit.MINUTES);
+            assertThrows(RateLimitExceededException.class, () -> rateLimiter.checkOtpRateLimit(identifier));
         }
     }
 
@@ -107,16 +102,30 @@ class RateLimiterTest {
     class CheckFormRateLimitTest {
 
         @Test
-        @DisplayName("Deve aplicar limites padrão para formulários")
+        @DisplayName("Deve aplicar limites padrão por minuto para formulários")
         void deveAplicarLimitesPadraoParaFormularios() {
             String identifier = "form-user@example.com";
             
-            // Forms use standard limits
-            for (int i = 0; i < 5; i++) {
+            // Forms use dedicated form limits
+            for (int i = 0; i < RateLimiter.MAX_FORM_REQUESTS_PER_MINUTE; i++) {
                 assertDoesNotThrow(() -> rateLimiter.checkFormRateLimit(identifier));
             }
             
-            // 6th request should exceed limit
+            // Next request should exceed limit
+            assertThrows(RateLimitExceededException.class, () -> rateLimiter.checkFormRateLimit(identifier));
+        }
+
+        @Test
+        @DisplayName("Deve aplicar limites por hora para formulários")
+        void deveAplicarLimitesPorHoraParaFormularios() {
+            String identifier = "form-hourly@example.com";
+            
+            for (int i = 0; i < RateLimiter.MAX_FORM_REQUESTS_PER_HOUR; i++) {
+                rateLimiter.clearForIdentifier(identifier, ChronoUnit.MINUTES);
+                assertDoesNotThrow(() -> rateLimiter.checkFormRateLimit(identifier));
+            }
+            
+            rateLimiter.clearForIdentifier(identifier, ChronoUnit.MINUTES);
             assertThrows(RateLimitExceededException.class, () -> rateLimiter.checkFormRateLimit(identifier));
         }
     }
@@ -126,16 +135,30 @@ class RateLimiterTest {
     class CheckLoginRateLimitTest {
 
         @Test
-        @DisplayName("Deve aplicar limites mais estritos para login")
+        @DisplayName("Deve aplicar limites mais estritos para login por minuto")
         void deveAplicarLimitesMaisEstritosParaLogin() {
             String identifier = "login-user@example.com";
             
-            // Login has stricter limit: MAX_LOGIN_REQUESTS_PER_MINUTE (3)
-            for (int i = 0; i < 3; i++) {
+            // Login has limit: MAX_LOGIN_REQUESTS_PER_MINUTE
+            for (int i = 0; i < RateLimiter.MAX_LOGIN_REQUESTS_PER_MINUTE; i++) {
                 assertDoesNotThrow(() -> rateLimiter.checkLoginRateLimit(identifier));
             }
             
-            // 4th request should exceed login limit
+            // Next request should exceed login limit
+            assertThrows(RateLimitExceededException.class, () -> rateLimiter.checkLoginRateLimit(identifier));
+        }
+
+        @Test
+        @DisplayName("Deve aplicar limites para login por hora")
+        void deveAplicarLimitesParaLoginPorHora() {
+            String identifier = "login-hourly@example.com";
+            
+            for (int i = 0; i < RateLimiter.MAX_LOGIN_REQUESTS_PER_HOUR; i++) {
+                rateLimiter.clearForIdentifier(identifier, ChronoUnit.MINUTES);
+                assertDoesNotThrow(() -> rateLimiter.checkLoginRateLimit(identifier));
+            }
+            
+            rateLimiter.clearForIdentifier(identifier, ChronoUnit.MINUTES);
             assertThrows(RateLimitExceededException.class, () -> rateLimiter.checkLoginRateLimit(identifier));
         }
     }
@@ -158,6 +181,25 @@ class RateLimiterTest {
             rateLimiter.clearForIdentifier(identifier);
             
             // Should allow requests again
+            assertDoesNotThrow(() -> rateLimiter.checkRateLimit(identifier));
+        }
+
+        @Test
+        @DisplayName("Deve limpar histórico para identificador e unidade de tempo específica")
+        void deveLimparHistoricoParaIdentificadorEUnidadeTempo() {
+            String identifier = "cleanup-unit-test@example.com";
+            
+            for (int i = 0; i < RateLimiter.MAX_REQUESTS_PER_MINUTE; i++) {
+                rateLimiter.checkRateLimit(identifier);
+            }
+            
+            // Minute limit exceeded
+            assertThrows(RateLimitExceededException.class, () -> rateLimiter.checkRateLimit(identifier));
+            
+            // Clear only minute window
+            rateLimiter.clearForIdentifier(identifier, ChronoUnit.MINUTES);
+            
+            // Can make request again
             assertDoesNotThrow(() -> rateLimiter.checkRateLimit(identifier));
         }
 
@@ -188,7 +230,7 @@ class RateLimiterTest {
             String identifier2 = "user2@example.com";
             
             // Max out requests for user1
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < RateLimiter.MAX_REQUESTS_PER_MINUTE; i++) {
                 rateLimiter.checkRateLimit(identifier1);
             }
             
@@ -210,7 +252,7 @@ class RateLimiterTest {
             String identifier = "error-test@example.com";
             
             // Max out requests
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < RateLimiter.MAX_REQUESTS_PER_MINUTE; i++) {
                 rateLimiter.checkRateLimit(identifier);
             }
             

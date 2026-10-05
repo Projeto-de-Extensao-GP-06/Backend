@@ -26,6 +26,9 @@ public class Cliente {
     @Column(length = 15)
     private String rg;
 
+    @Column(name = "como_conheceu", length = 20)
+    private String comoConheceu;
+
     @ManyToOne
     @JoinColumn(name = "status_cliente_id")
     private StatusCliente statusCliente;
@@ -131,5 +134,9 @@ public class Cliente {
     public Boolean getPF() { return isPF; }
 
     public void setPF(Boolean PF) { isPF = PF; }
+
+    public String getComoConheceu() { return comoConheceu; }
+
+    public void setComoConheceu(String comoConheceu) { this.comoConheceu = comoConheceu; }
 }
 

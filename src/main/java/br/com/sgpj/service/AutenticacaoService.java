@@ -1,8 +1,7 @@
 package br.com.sgpj.service;
 
-import br.com.sgpj.dto.response.UsuarioDetalhesResponse;
+import br.com.sgpj.dto.response.Usuario.UsuarioDetalhesResponse;
 import br.com.sgpj.entity.Usuario;
-import br.com.sgpj.exception.ClienteNaoEncontradoException;
 import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.repository.UsuarioRepository;
 import io.jsonwebtoken.Claims;

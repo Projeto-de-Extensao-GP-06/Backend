@@ -1,4 +1,4 @@
-package br.com.sgpj.dto.response;
+package br.com.sgpj.dto.response.Cliente;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -23,6 +23,9 @@ public record ClienteListarResponse(
 
         @Schema(description = "Nome do status do cliente", example = "Ativo")
         String statusNome,
+
+        @Schema(description = "Como conheceu o escritório", example = "Instagram")
+        String comoConheceu,
 
         @Schema(description = "Data e hora do envio do formulário", example = "2026-05-16T10:30:00")
         LocalDateTime dataHoraEnvioFormulario,

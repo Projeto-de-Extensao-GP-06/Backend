@@ -14,7 +14,7 @@ public class SolicitacaoDuvida {
     private String estado;
     private String numeroProcesso;
     private String descricao;
-    private String comoConheceu;
+    private ComoConheceuEnum comoConheceu;
     private Boolean aceitouTermos;
     private LocalDateTime dataSolicitacao;
     private SolicitacaoStatus status;
@@ -85,11 +85,11 @@ public class SolicitacaoDuvida {
         this.descricao = descricao;
     }
 
-    public String getComoConheceu() {
+    public ComoConheceuEnum getComoConheceu() {
         return comoConheceu;
     }
 
-    public void setComoConheceu(String comoConheceu) {
+    public void setComoConheceu(ComoConheceuEnum comoConheceu) {
         this.comoConheceu = comoConheceu;
     }
 

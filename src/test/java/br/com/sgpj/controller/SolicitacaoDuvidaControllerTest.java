@@ -4,6 +4,7 @@ import br.com.sgpj.dto.request.SolicitacaoDuvidaCriacaoRequest;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoClientePreenchimentoResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaDetalhesResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaListarResponse;
+import br.com.sgpj.entity.ComoConheceuEnum;
 import br.com.sgpj.entity.SolicitacaoStatus;
 import br.com.sgpj.security.RateLimiter;
 import br.com.sgpj.service.SolicitacaoDuvidaService;
@@ -97,7 +98,7 @@ class SolicitacaoDuvidaControllerTest {
                 "SP",
                 "10108901220228260292",
                 "Preciso de ajuda com meu processo",
-                "Instagram",
+                ComoConheceuEnum.INSTAGRAM,
                 null
         ));
 
@@ -127,7 +128,7 @@ class SolicitacaoDuvidaControllerTest {
                 "11999999999",
                 "10108901220228260292",
                 "Preciso de ajuda com meu processo",
-                "Instagram",
+                ComoConheceuEnum.INSTAGRAM,
                 true
         );
     }
@@ -142,7 +143,7 @@ class SolicitacaoDuvidaControllerTest {
                 "SP",
                 "10108901220228260292",
                 "Preciso de ajuda com meu processo",
-                "Instagram",
+                ComoConheceuEnum.INSTAGRAM,
                 true,
                 LocalDateTime.of(2026, 5, 30, 10, 0),
                 SolicitacaoStatus.PENDENTE,
@@ -161,7 +162,7 @@ class SolicitacaoDuvidaControllerTest {
                 "SP",
                 "10108901220228260292",
                 "Preciso de ajuda com meu processo",
-                "Instagram",
+                ComoConheceuEnum.INSTAGRAM,
                 LocalDateTime.of(2026, 5, 30, 10, 0),
                 SolicitacaoStatus.PENDENTE
         );

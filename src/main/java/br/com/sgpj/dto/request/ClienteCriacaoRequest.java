@@ -1,5 +1,6 @@
 package br.com.sgpj.dto.request;
 
+import br.com.sgpj.entity.ComoConheceuEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
@@ -31,9 +32,9 @@ public record ClienteCriacaoRequest(
         @Size(max = 15, message = "RG deve ter no máximo 15 caracteres")
         String rg,
 
-        @Schema(description = "Como conheceu o escritório", example = "Instagram")
-        @Size(max = 20, message = "Como conheceu deve ter no máximo 20 caracteres")
-        String comoConheceu,
+        @Schema(description = "Como conheceu o escritório", example = "INSTAGRAM")
+        @NotNull(message = "Como conheceu é obrigatório")
+        ComoConheceuEnum comoConheceu,
 
         @Schema(description = "ID do status do cliente", example = "1")
         @NotNull(message = "Status do cliente é obrigatório")

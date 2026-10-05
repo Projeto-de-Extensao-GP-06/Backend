@@ -3,6 +3,7 @@ package br.com.sgpj.service.useCases.solicitacaoDuvida;
 import br.com.sgpj.dto.request.SolicitacaoDuvidaCriacaoRequest;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaDetalhesResponse;
 import br.com.sgpj.entity.Cliente;
+import br.com.sgpj.entity.ComoConheceuEnum;
 import br.com.sgpj.entity.Contato;
 import br.com.sgpj.entity.Processo.ProcessoApi;
 import br.com.sgpj.entity.Processo.ProcessoApp;
@@ -80,7 +81,7 @@ class CreateSolicitacaoDuvidaTest {
                     "11999999999",
                     null,
                     "Descrição da dúvida",
-                    "Instagram",
+                    ComoConheceuEnum.INSTAGRAM,
                     true
             );
 
@@ -125,7 +126,7 @@ class CreateSolicitacaoDuvidaTest {
                     "11999999999",
                     "0000001-00.2026.8.26.0001",
                     "Descrição da dúvida",
-                    "Instagram",
+                    ComoConheceuEnum.INSTAGRAM,
                     true
             );
 
@@ -171,7 +172,7 @@ class CreateSolicitacaoDuvidaTest {
                     "11999999999",
                     "0000001-00.2026.8.26.0001",
                     "Descrição da dúvida",
-                    "Instagram",
+                    ComoConheceuEnum.INSTAGRAM,
                     true
             );
 
@@ -211,7 +212,7 @@ class CreateSolicitacaoDuvidaTest {
                     "11999999999",
                     null,
                     "Descrição",
-                    "Instagram",
+                    ComoConheceuEnum.INSTAGRAM,
                     true
             );
 

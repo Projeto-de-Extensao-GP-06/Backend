@@ -1,6 +1,7 @@
 package br.com.sgpj.dto.response.Solicitacao;
 
 import br.com.sgpj.dto.response.Processos.ProcessoApiCreateResponse;
+import br.com.sgpj.entity.ComoConheceuEnum;
 
 public record SolicitacaoClientePreenchimentoResponse(
         Long solicitacaoId,
@@ -12,7 +13,7 @@ public record SolicitacaoClientePreenchimentoResponse(
         String estado,
         String numeroProcesso,
         String descricao,
-        String comoConheceu,
+        ComoConheceuEnum comoConheceu,
         ProcessoApiCreateResponse processo
 ) {
 }

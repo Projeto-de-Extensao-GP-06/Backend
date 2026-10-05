@@ -1,5 +1,6 @@
 package br.com.sgpj.dto.request;
 
+import br.com.sgpj.entity.ComoConheceuEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
@@ -36,9 +37,9 @@ public record SolicitacaoDuvidaCriacaoRequest(
         @NotBlank(message = "Descrição é obrigatória")
         String descricao,
 
-        @Schema(description = "Como conheceu o escritório", example = "Instagram")
-        @Size(max = 20, message = "Como conheceu deve ter no máximo 20 caracteres")
-        String comoConheceu,
+        @Schema(description = "Como conheceu o escritório", example = "INSTAGRAM")
+        @NotNull(message = "Como conheceu é obrigatório")
+        ComoConheceuEnum comoConheceu,
 
         @Schema(description = "Aceite das políticas e termos", example = "true")
         @NotNull(message = "Aceite das políticas e termos é obrigatório")

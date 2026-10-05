@@ -1,5 +1,6 @@
 package br.com.sgpj.dto.response.Cliente;
 
+import br.com.sgpj.entity.ComoConheceuEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
@@ -23,7 +24,7 @@ public record ClienteDetalhesResponse(
         String rg,
 
         @Schema(description = "Como conheceu o escritório", example = "Instagram")
-        String comoConheceu,
+        ComoConheceuEnum comoConheceu,
 
         @Schema(description = "Status do cliente")
         StatusClienteDto status,

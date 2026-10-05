@@ -26,8 +26,9 @@ public class Cliente {
     @Column(length = 15)
     private String rg;
 
-    @Column(name = "como_conheceu", length = 20)
-    private String comoConheceu;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "como_conheceu")
+    private ComoConheceuEnum comoConheceu;
 
     @ManyToOne
     @JoinColumn(name = "status_cliente_id")
@@ -135,8 +136,8 @@ public class Cliente {
 
     public void setPF(Boolean PF) { isPF = PF; }
 
-    public String getComoConheceu() { return comoConheceu; }
+    public ComoConheceuEnum getComoConheceu() { return comoConheceu; }
 
-    public void setComoConheceu(String comoConheceu) { this.comoConheceu = comoConheceu; }
+    public void setComoConheceu(ComoConheceuEnum comoConheceu) { this.comoConheceu = comoConheceu; }
 }
 

@@ -123,7 +123,7 @@ CREATE TABLE cliente (
                          is_pf TINYINT NOT NULL,
                          rg VARCHAR(15),
                          status_cliente_id INT NOT NULL,
-                         como_conheceu VARCHAR(20),
+                         como_conheceu ENUM('INSTAGRAM', 'SITE', 'INDICACAO', 'OUTROS') NOT NULL,
                          endereco_id BIGINT,
                          data_hora_envio_formulario DATETIME,
                          data_hora_transformacao_em_cliente DATETIME,
@@ -576,7 +576,7 @@ VALUES (
     1,
     '445566778',
     (SELECT id FROM status_cliente WHERE nome = 'ATIVO'),
-    'instagram',
+    'INSTAGRAM',
     (
         SELECT id
         FROM endereco
@@ -649,7 +649,7 @@ VALUES (
     1,
     '556677889',
     (SELECT id FROM status_cliente WHERE nome = 'ATIVO'),
-    'instagram',
+    'INSTAGRAM',
     (
         SELECT id
         FROM endereco
@@ -722,7 +722,7 @@ VALUES (
     0,
     NULL,
     (SELECT id FROM status_cliente WHERE nome = 'ATIVO'),
-    'indicacao',
+    'INDICACAO',
     (
         SELECT id
         FROM endereco

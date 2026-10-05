@@ -48,6 +48,12 @@ public class ProcessoApiGateway {
                     siglaTribunal
             );
 
+        try {
+            DataJudApiResponse dataJudResponse = dataJudAdapter.buscarPorNumeroDeProcesso(
+                    numeroProcesso,
+                    siglaTribunal.getNome()
+            );
+
             if (dataJudResponse == null || !dataJudResponse.temResultados()) {
                 return null;
             }

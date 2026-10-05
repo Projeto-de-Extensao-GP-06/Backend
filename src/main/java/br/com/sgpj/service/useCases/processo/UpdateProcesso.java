@@ -124,7 +124,7 @@ public class UpdateProcesso {
                 ProcessoApi processoApi = null;
                 try {
                     processoApi = processoApiGateway.buscarDadosOficiais(
-                            processoAtualizar.numeroCnj());
+                            processoAtualizar.numeroCnj(), siglaTribunal);
                 } catch (Exception e) {
                     // Ignora erro da API externa
                 }
@@ -174,7 +174,7 @@ public class UpdateProcesso {
         }
 
         ProcessoApi dadosAtualizados = processoApiGateway.buscarDadosOficiais(
-                processoApiExistente.getNumeroCnj());
+                processoApiExistente.getNumeroCnj(), processoApp.getSiglaTribunal());
 
         if (dadosAtualizados == null) {
             throw new DataJudIntegrationException("Não foi possível estabelecer conexão com o DataJud, tente novamente mais tarde.");

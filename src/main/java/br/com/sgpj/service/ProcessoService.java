@@ -58,8 +58,16 @@ public class ProcessoService {
     }
 
     // READ OPERATIONS
-    public Page<ProcessoAppMiniResponse> listarProcessos(Pageable pageable){
-        return readProcesso.listarProcessos(pageable);
+    public Page<ProcessoAppMiniResponse> listarProcessos(
+            Pageable pageable,
+            String query,
+            String status,
+            Long faseId,
+            Long tribunalId,
+            Long prioridadeId,
+            String audiencia
+    ) {
+        return readProcesso.listarProcessos(pageable, query, status, faseId, tribunalId, prioridadeId, audiencia);
     }
 
     public ProcessoAppResponse buscarPorId(Long id){

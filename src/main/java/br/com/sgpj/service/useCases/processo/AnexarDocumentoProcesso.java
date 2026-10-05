@@ -13,10 +13,12 @@ import br.com.sgpj.repository.DocumentoRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.ProcessoDocumentoRepository;
 import br.com.sgpj.repository.UsuarioRepository;
+import lombok.extern.slf4j.Slf4j;
 import br.com.sgpj.service.RegistroHistoricoProcesso;
 
 import java.time.LocalDateTime;
 
+@Slf4j
 public class AnexarDocumentoProcesso {
 
     private final ProcessoAppRepository processoAppRepository;
@@ -45,6 +47,7 @@ public class AnexarDocumentoProcesso {
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Documento não encontrado: " + documentoId));
 
         if (!usuarioRepository.existsById(usuarioId)) {
+            log.warn("Usuário com ID {} não encontrado.", usuarioId);
             throw new UsuarioNaoEncontradoException(usuarioId);
         }
         Usuario usuario = usuarioRepository.getReferenceById(usuarioId);

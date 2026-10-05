@@ -5,8 +5,8 @@ import br.com.sgpj.dto.request.EnviarOtpRequest;
 import br.com.sgpj.dto.request.UsuarioLoginRequest;
 import br.com.sgpj.dto.request.ValidarOtpRequest;
 import br.com.sgpj.dto.response.RefreshTokenResponse;
-import br.com.sgpj.dto.response.UsuarioSessaoResponse;
-import br.com.sgpj.dto.response.UsuarioTokenResponse;
+import br.com.sgpj.dto.response.Usuario.UsuarioSessaoResponse;
+import br.com.sgpj.dto.response.Usuario.UsuarioTokenResponse;
 
 import br.com.sgpj.security.AuthenticationCookieService;
 import br.com.sgpj.security.IpAddressUtil;
@@ -44,10 +44,10 @@ public class AuthController {
     private static final String ACCESS_TOKEN_COOKIE = "authToken";
     private static final String REFRESH_TOKEN_COOKIE = "refreshToken";
 
-    @Value("${jwt.validity}")
+    @Value("${jwt.validity:3600}")
     private long jwtValidity;
 
-    @Value("${jwt.refresh.validity}")
+    @Value("${jwt.refresh.validity:604800}")
     private long jwtRefreshValidity;
 
     private final UsuarioService usuarioService;
@@ -143,8 +143,7 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        String token =
-                gerenciadorTokenJwt.extrairTokenDaRequisicao(request);
+        String token = gerenciadorTokenJwt.extrairTokenDaRequisicao(request);
 
         if (token != null) {
             tokenBlacklistService.blacklistToken(token);
@@ -234,6 +233,8 @@ public class AuthController {
                 );
 
         rateLimiter.checkOtpRateLimit(identifier);
+
+        usuarioService.validarOtp(request);
 
         UsuarioTokenResponse autenticado =
                 usuarioService.autenticarOtp(request);

@@ -1,4 +1,4 @@
-package br.com.sgpj.dto.response;
+package br.com.sgpj.dto.response.Cliente;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -21,6 +21,9 @@ public record ClienteDetalhesResponse(
 
         @Schema(description = "RG do cliente", example = "123456789")
         String rg,
+
+        @Schema(description = "Como conheceu o escritório", example = "Instagram")
+        String comoConheceu,
 
         @Schema(description = "Status do cliente")
         StatusClienteDto status,

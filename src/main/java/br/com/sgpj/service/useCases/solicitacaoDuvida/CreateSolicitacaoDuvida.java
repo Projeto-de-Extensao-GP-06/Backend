@@ -1,14 +1,12 @@
 package br.com.sgpj.service.useCases.solicitacaoDuvida;
 
 import br.com.sgpj.dto.request.SolicitacaoDuvidaCriacaoRequest;
-import br.com.sgpj.dto.response.SolicitacaoDuvidaDetalhesResponse;
+import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaDetalhesResponse;
 import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Contato;
 import br.com.sgpj.entity.Processo.ProcessoApi;
 import br.com.sgpj.entity.Processo.ProcessoApp;
-import br.com.sgpj.entity.Processo.SiglaTribunal;
 import br.com.sgpj.entity.Processo.StatusProcesso;
-import br.com.sgpj.entity.SolicitacaoDuvida;
 import br.com.sgpj.entity.StatusCliente;
 import br.com.sgpj.entity.StatusClienteEnum;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
@@ -31,7 +29,7 @@ import java.util.List;
 public class CreateSolicitacaoDuvida {
 
     private static final Logger logger = LoggerFactory.getLogger(CreateSolicitacaoDuvida.class);
-    private static final String OBSERVACAO_SOLICITACAO_PREFIXO = "Solicitação enviada pelo formulário público. Estado: ";
+    private static final String OBSERVACAO_SOLICITACAO_PREFIXO = "Solicitação enviada pelo formulário público.";
 
     private final ClienteRepository clienteRepository;
     private final ContatoRepository contatoRepository;
@@ -52,12 +50,12 @@ public class CreateSolicitacaoDuvida {
     }
 
     public SolicitacaoDuvidaDetalhesResponse criarSolicitacao(SolicitacaoDuvidaCriacaoRequest request) {
-        String estado = request.estado().trim().toUpperCase();
         String numeroProcesso = normalizarOpcional(request.numeroProcesso());
 
         Cliente cliente = new Cliente();
         cliente.setNomeRazaoSocial(request.nomeCompleto().trim());
         cliente.setPF(request.isPF());
+        cliente.setComoConheceu(request.comoConheceu());
         cliente.setStatusCliente(buscarStatus(StatusClienteEnum.LEAD));
         cliente.setDataHoraEnvioFormulario(LocalDateTime.now());
         cliente = clienteRepository.save(cliente);
@@ -76,13 +74,13 @@ public class CreateSolicitacaoDuvida {
         ProcessoApp processoApp = new ProcessoApp();
         processoApp.setCliente(cliente);
         processoApp.setDescricaoCaso(request.descricao().trim());
-        processoApp.setObservacao(OBSERVACAO_SOLICITACAO_PREFIXO + estado);
+        processoApp.setObservacao(OBSERVACAO_SOLICITACAO_PREFIXO);
         processoApp.setDataHoraInicio(cliente.getDataHoraEnvioFormulario());
         processoApp.setUltimaAtualizacao(cliente.getDataHoraEnvioFormulario());
         processoApp.setStatus(StatusProcesso.SOLICITACAO);
 
         if (numeroProcesso != null) {
-            processoApp.setProcessoApi(buscarProcessoOficial(numeroProcesso, estado));
+            processoApp.setProcessoApi(buscarProcessoOficial(numeroProcesso));
         }
 
         return SolicitacaoDuvidaMapper.toDetalhesResponse(
@@ -95,12 +93,12 @@ public class CreateSolicitacaoDuvida {
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Status de cliente não encontrado: " + statusEnum.getNome()));
     }
 
-    private ProcessoApi buscarProcessoOficial(String numeroProcesso, String estado) {
+    private ProcessoApi buscarProcessoOficial(String numeroProcesso) {
         try {
-            return processoApiGateway.buscarDadosOficiais(numeroProcesso, new SiglaTribunal(null, "TJ" + estado));
+            return processoApiGateway.buscarDadosOficiais(numeroProcesso);
         } catch (RuntimeException exception) {
-            logger.warn("Não foi possível buscar processo oficial. Número: {}, Estado: {}. Motivo: {}", 
-                    numeroProcesso, estado, exception.getMessage());
+            logger.warn("Não foi possível buscar processo oficial. Número: {}. Motivo: {}",
+                    numeroProcesso, exception.getMessage());
             return null;
         }
     }

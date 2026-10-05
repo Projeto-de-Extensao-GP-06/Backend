@@ -23,23 +23,22 @@ public record SolicitacaoDuvidaCriacaoRequest(
         @NotNull(message = "Indicador de pessoa física é obrigatório")
         Boolean isPF,
 
-        @Schema(description = "Telefone do solicitante", example = "(11) 99999-9999")
+        @Schema(description = "Telefone do solicitante", example = "11999999999")
         @NotBlank(message = "Telefone é obrigatório")
         @Size(max = 20, message = "Telefone deve ter no máximo 20 caracteres")
         String telefone,
 
-        @Schema(description = "Estado (UF)", example = "SP")
-        @NotBlank(message = "Estado é obrigatório")
-        @Size(min = 2, max = 2, message = "Estado deve conter a UF com 2 caracteres")
-        String estado,
-
-        @Schema(description = "Número do processo, quando existir", example = "0000000-00.0000.0.00.0000")
+        @Schema(description = "Número do processo, quando existir", example = "00000000000000000000")
         @Size(max = 25, message = "Número do processo deve ter no máximo 25 caracteres")
         String numeroProcesso,
 
         @Schema(description = "Descrição da situação do solicitante")
         @NotBlank(message = "Descrição é obrigatória")
         String descricao,
+
+        @Schema(description = "Como conheceu o escritório", example = "Instagram")
+        @Size(max = 20, message = "Como conheceu deve ter no máximo 20 caracteres")
+        String comoConheceu,
 
         @Schema(description = "Aceite das políticas e termos", example = "true")
         @NotNull(message = "Aceite das políticas e termos é obrigatório")

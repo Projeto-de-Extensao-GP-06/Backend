@@ -11,11 +11,13 @@ import br.com.sgpj.repository.CargoPermissaoRepository;
 import br.com.sgpj.repository.CargoRepository;
 import br.com.sgpj.repository.PermissaoRepository;
 import br.com.sgpj.repository.UsuarioRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Component
 public class UpdateCargo {
 
@@ -41,6 +43,7 @@ public class UpdateCargo {
 
         Usuario atribuidoPor = usuarioRepository.findByEmail(emailUsuario);
         if (atribuidoPor == null) {
+            log.warn("Usuário com email {} não encontrado.", emailUsuario);
             throw new UsuarioNaoEncontradoException(emailUsuario);
         }
 

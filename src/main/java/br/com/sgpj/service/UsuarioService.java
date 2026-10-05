@@ -6,9 +6,9 @@ import br.com.sgpj.dto.request.UsuarioCriacaoRequest;
 import br.com.sgpj.dto.request.UsuarioLoginRequest;
 import br.com.sgpj.dto.request.ValidarOtpRequest;
 import br.com.sgpj.dto.response.AutenticacaoUsuarioResponse;
-import br.com.sgpj.dto.response.UsuarioListarResponse;
-import br.com.sgpj.dto.response.UsuarioTokenResponse;
-import br.com.sgpj.dto.response.UsuarioSessaoResponse;
+import br.com.sgpj.dto.response.Usuario.UsuarioListarResponse;
+import br.com.sgpj.dto.response.Usuario.UsuarioTokenResponse;
+import br.com.sgpj.dto.response.Usuario.UsuarioSessaoResponse;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.service.useCases.usuario.AutenticarOtp;
 import br.com.sgpj.service.useCases.usuario.AutenticarUsuario;
@@ -153,8 +153,8 @@ public class UsuarioService {
     enviarDefinirSenhaOtp.executar(email);
   }
 
-  public boolean validarOtp(ValidarOtpRequest request) {
-    return validarOtp.executar(request);
+  public void validarOtp(ValidarOtpRequest request) {
+    validarOtp.executar(request);
   }
 
   // =========================

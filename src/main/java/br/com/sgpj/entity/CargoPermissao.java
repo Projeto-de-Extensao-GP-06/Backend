@@ -1,5 +1,6 @@
 package br.com.sgpj.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -13,6 +14,7 @@ public class CargoPermissao {
     @ManyToOne
     @MapsId("cargoId")
     @JoinColumn(name = "cargo_id")
+    @JsonIgnore
     private Cargo cargo;
 
     @ManyToOne
@@ -22,6 +24,7 @@ public class CargoPermissao {
 
     @ManyToOne
     @JoinColumn(name = "atribuido_por")
+    @JsonIgnore
     private Usuario atribuidoPor;
 
     @Column(nullable = false)

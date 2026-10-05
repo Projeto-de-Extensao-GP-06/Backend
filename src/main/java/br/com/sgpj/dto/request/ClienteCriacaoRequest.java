@@ -31,6 +31,10 @@ public record ClienteCriacaoRequest(
         @Size(max = 15, message = "RG deve ter no máximo 15 caracteres")
         String rg,
 
+        @Schema(description = "Como conheceu o escritório", example = "Instagram")
+        @Size(max = 20, message = "Como conheceu deve ter no máximo 20 caracteres")
+        String comoConheceu,
+
         @Schema(description = "ID do status do cliente", example = "1")
         @NotNull(message = "Status do cliente é obrigatório")
         Long statusClienteId,

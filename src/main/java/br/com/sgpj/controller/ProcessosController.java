@@ -72,9 +72,16 @@ public class ProcessosController {
     @SecurityRequirement(name = "Bearer")
     public ResponseEntity<Page<ProcessoAppMiniResponse>> listarProcessos(
             @PageableDefault(size = 20, sort = "ultimaAtualizacao", direction = Sort.Direction.DESC)
-            Pageable pageable
-    ){
-        Page<ProcessoAppMiniResponse> processos = processoService.listarProcessos(pageable);
+            Pageable pageable,
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Long faseId,
+            @RequestParam(required = false) Long tribunalId,
+            @RequestParam(required = false) Long prioridadeId,
+            @RequestParam(required = false) String audiencia
+    ) {
+        Page<ProcessoAppMiniResponse> processos = processoService.listarProcessos(
+                pageable, query, status, faseId, tribunalId, prioridadeId, audiencia);
         return ResponseEntity.ok(processos);
     }
 

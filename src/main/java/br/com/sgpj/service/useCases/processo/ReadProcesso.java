@@ -15,7 +15,6 @@ import br.com.sgpj.repository.HistoricoProcessoRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.security.AuthorizationUtil;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
@@ -37,18 +36,18 @@ public class ReadProcesso {
         this.clienteRepository = clienteRepository;
     }
 
-    public Page<ProcessoAppMiniResponse> listarProcessos(Pageable pageable) {
-
-        Page<ProcessoApp> paginaEncontrada = processoAppRepository.findAll(pageable);
-        List<ProcessoAppMiniResponse> processosFiltrados = new ArrayList<>();
-
-        for (ProcessoApp processo : paginaEncontrada.getContent()) {
-            if (deveExibirComoProcesso(processo)) {
-                processosFiltrados.add(ProcessoAppMapper.toMiniResponse(processo));
-            }
-        }
-
-        return new PageImpl<>(processosFiltrados, pageable, paginaEncontrada.getTotalElements());
+    public Page<ProcessoAppMiniResponse> listarProcessos(
+            Pageable pageable,
+            String query,
+            String status,
+            Long faseId,
+            Long tribunalId,
+            Long prioridadeId,
+            String audiencia
+    ) {
+        var spec = ProcessoSpecification.comFiltros(query, status, faseId, tribunalId, prioridadeId, audiencia);
+        Page<ProcessoApp> paginaEncontrada = processoAppRepository.findAll(spec, pageable);
+        return paginaEncontrada.map(ProcessoAppMapper::toMiniResponse);
     }
 
     public ProcessoAppResponse buscarPorId(Long id) {

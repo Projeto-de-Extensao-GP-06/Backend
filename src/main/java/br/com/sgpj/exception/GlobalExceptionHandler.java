@@ -245,6 +245,8 @@ public class GlobalExceptionHandler {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", LocalDateTime.now().toString());
         body.put("status", HttpStatus.BAD_REQUEST.value());
+        String primeiraMensagem = fieldErrors.values().stream().findFirst().orElse("Dados inválidos na requisição.");
+        body.put("message", primeiraMensagem);
         body.put("errors", fieldErrors);
         return body;
     }

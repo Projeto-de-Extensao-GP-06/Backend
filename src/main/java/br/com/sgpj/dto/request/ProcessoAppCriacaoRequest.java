@@ -17,11 +17,11 @@ public record ProcessoAppCriacaoRequest(
         Long clienteId,
 
         @NotBlank(message = "A descrição do caso é obrigatória")
-        @Size(min = 10, max = 5000, message = "A descrição do caso deve ter no mínimo 10 caracteres")
+        @Size(max = 10000, message = "A descrição não pode ter mais de 10000 caracteres")
         @Schema(description = "Descricao sobre o processo", example = "Esse processo e sobre divisao de bens")
         String descricaoCaso,
 
-        @Size(max = 5000, message = "A observação não pode ter mais de 5000 caracteres")
+        @Size(max = 10000, message = "A observação não pode ter mais de 10000 caracteres")
         @Schema(description = "observacao sobre o processo", example = "Cliente tem algum laudo")
         String observacao,
 

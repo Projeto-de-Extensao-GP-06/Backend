@@ -2,8 +2,8 @@ package br.com.sgpj.service;
 
 import br.com.sgpj.dto.request.ClienteAtualizacaoRequest;
 import br.com.sgpj.dto.request.ClienteCriacaoRequest;
-import br.com.sgpj.dto.response.ClienteDetalhesResponse;
-import br.com.sgpj.dto.response.ClienteListarResponse;
+import br.com.sgpj.dto.response.Cliente.ClienteDetalhesResponse;
+import br.com.sgpj.dto.response.Cliente.ClienteListarResponse;
 import br.com.sgpj.service.useCases.cliente.CreateCliente;
 import br.com.sgpj.service.useCases.cliente.DeleteCliente;
 import br.com.sgpj.service.useCases.cliente.ReadCliente;

@@ -1,9 +1,9 @@
 package br.com.sgpj.controller;
 
 import br.com.sgpj.dto.request.SolicitacaoDuvidaCriacaoRequest;
-import br.com.sgpj.dto.response.SolicitacaoClientePreenchimentoResponse;
-import br.com.sgpj.dto.response.SolicitacaoDuvidaDetalhesResponse;
-import br.com.sgpj.dto.response.SolicitacaoDuvidaListarResponse;
+import br.com.sgpj.dto.response.Solicitacao.SolicitacaoClientePreenchimentoResponse;
+import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaDetalhesResponse;
+import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaListarResponse;
 import br.com.sgpj.entity.SolicitacaoStatus;
 import br.com.sgpj.security.RateLimiter;
 import br.com.sgpj.service.SolicitacaoDuvidaService;
@@ -97,6 +97,7 @@ class SolicitacaoDuvidaControllerTest {
                 "SP",
                 "10108901220228260292",
                 "Preciso de ajuda com meu processo",
+                "Instagram",
                 null
         ));
 
@@ -124,9 +125,9 @@ class SolicitacaoDuvidaControllerTest {
                 "maria@email.com",
                 true,
                 "11999999999",
-                "SP",
                 "10108901220228260292",
                 "Preciso de ajuda com meu processo",
+                "Instagram",
                 true
         );
     }
@@ -141,6 +142,7 @@ class SolicitacaoDuvidaControllerTest {
                 "SP",
                 "10108901220228260292",
                 "Preciso de ajuda com meu processo",
+                "Instagram",
                 true,
                 LocalDateTime.of(2026, 5, 30, 10, 0),
                 SolicitacaoStatus.PENDENTE,
@@ -159,6 +161,7 @@ class SolicitacaoDuvidaControllerTest {
                 "SP",
                 "10108901220228260292",
                 "Preciso de ajuda com meu processo",
+                "Instagram",
                 LocalDateTime.of(2026, 5, 30, 10, 0),
                 SolicitacaoStatus.PENDENTE
         );

@@ -2,6 +2,7 @@ package br.com.sgpj.entity.documentos;
 
 import br.com.sgpj.entity.Usuario;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -47,7 +48,7 @@ public class Documento {
 
     @ManyToOne
     @JoinColumn(name = "criado_por_usuario_id")
-    @JsonBackReference
+    @JsonIgnoreProperties({"senha"})
     private Usuario criadoPorUsuario;
 
     @ManyToOne
@@ -62,7 +63,7 @@ public class Documento {
 
     @ManyToOne
     @JoinColumn(name = "inativado_por_usuario_id")
-    @JsonBackReference
+    @JsonIgnoreProperties({"senha"})
     private Usuario inativadoPorUsuario;
 
     public Documento() {

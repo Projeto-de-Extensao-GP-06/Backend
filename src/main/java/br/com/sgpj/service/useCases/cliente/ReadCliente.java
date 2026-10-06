@@ -1,7 +1,7 @@
 package br.com.sgpj.service.useCases.cliente;
 
-import br.com.sgpj.dto.response.ClienteDetalhesResponse;
-import br.com.sgpj.dto.response.ClienteListarResponse;
+import br.com.sgpj.dto.response.Cliente.ClienteDetalhesResponse;
+import br.com.sgpj.dto.response.Cliente.ClienteListarResponse;
 import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.exception.ClienteNaoEncontradoException;
 import br.com.sgpj.mapper.ClienteMapper;

@@ -125,7 +125,7 @@ class CreateProcessoTest {
             assertEquals(prioridade, salvo.getPrioridade());
             assertEquals(faseProcesso, salvo.getFaseProcesso());
             assertEquals(siglaTribunal, salvo.getSiglaTribunal());
-            verify(processoApiGateway, never()).buscarDadosOficiais(any(), any());
+            verify(processoApiGateway, never()).buscarDadosOficiais(any());
         }
 
         @Test

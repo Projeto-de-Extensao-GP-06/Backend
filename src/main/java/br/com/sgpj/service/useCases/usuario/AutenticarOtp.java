@@ -3,13 +3,13 @@ package br.com.sgpj.service.useCases.usuario;
 import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
 import br.com.sgpj.dto.request.ValidarOtpRequest;
 import br.com.sgpj.dto.response.AutenticacaoUsuarioResponse;
-import br.com.sgpj.dto.response.UsuarioTokenResponse;
+import br.com.sgpj.dto.response.Usuario.UsuarioTokenResponse;
 import br.com.sgpj.entity.Usuario;
-import br.com.sgpj.exception.UsuarioInativoException;
-import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.mapper.UsuarioMapper;
 import br.com.sgpj.repository.UsuarioRepository;
 
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.User;
@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 
+@Slf4j
 @Service
 public class AutenticarOtp {
 
@@ -41,14 +42,16 @@ public class AutenticarOtp {
                 usuarioRepository.findByEmail(request.email());
 
         if (usuario == null) {
-            throw new UsuarioNaoEncontradoException(request.email());
+            log.error("Falha na autenticação de usuário. Motivo: usuário {} não encontrado.", request.email());
+            throw new BadCredentialsException("E-mail e/ou senha inválido(s).");
         }
 
         if (!usuario.isAtivo()) {
-            throw new UsuarioInativoException(
-                    "Este usuário está inativo. Contate um administrador."
-            );
+            log.error("Falha na autenticação de usuário. Motivo: usuário {} inativo.", request.email());
+            throw new BadCredentialsException("E-mail e/ou senha inválido(s).");
         }
+
+        log.info("Autenticando usuário {} para alteração/definição de senha.", request.email());
 
         UserDetails userDetails =
                 User.withUsername(request.email())

@@ -1,9 +1,12 @@
 package br.com.sgpj.service.useCases.usuario;
 
 import br.com.sgpj.dto.request.ValidarOtpRequest;
+import br.com.sgpj.exception.OtpInvalidaException;
 import br.com.sgpj.service.OtpService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 public class ValidarOtp {
 
@@ -13,17 +16,23 @@ public class ValidarOtp {
         this.otpService = otpService;
     }
 
-    public boolean executar(ValidarOtpRequest request) {
+    public void executar(ValidarOtpRequest request) {
 
         validarRequest(request);
 
-        return otpService.isOtpValid(
-                request.email(),
-                request.otp()
-        );
+        if (!otpService.isOtpValid(request.email(), request.otp())) {
+            log.warn("Falha ao validar OTP. Motivo: código inválido para o e-mail {}", request.email());
+            throw new OtpInvalidaException("Código de verificação inválido.");
+        }
+
+        log.info("Código de verificação válido para o usuário {}.", request.email());
     }
 
     private void validarRequest(ValidarOtpRequest request) {
+
+        if (request == null) {
+            throw new IllegalArgumentException("Insira um payload válido.");
+        }
 
         if (request.email() == null
                 || request.email().isBlank()) {

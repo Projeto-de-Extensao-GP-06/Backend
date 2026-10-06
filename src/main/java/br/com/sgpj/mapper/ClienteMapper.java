@@ -1,7 +1,7 @@
 package br.com.sgpj.mapper;
 
-import br.com.sgpj.dto.response.ClienteDetalhesResponse;
-import br.com.sgpj.dto.response.ClienteListarResponse;
+import br.com.sgpj.dto.response.Cliente.ClienteDetalhesResponse;
+import br.com.sgpj.dto.response.Cliente.ClienteListarResponse;
 import br.com.sgpj.entity.Cliente;
 
 import java.util.Collections;
@@ -28,6 +28,7 @@ public class ClienteMapper {
                 cliente.getPF(),
                 email,
                 cliente.getStatusCliente() != null ? cliente.getStatusCliente().getNome() : null,
+                cliente.getComoConheceu(),
                 cliente.getDataHoraEnvioFormulario(),
                 cliente.getDataHoraTransformacaoEmCliente()
         );
@@ -57,6 +58,7 @@ public class ClienteMapper {
                 cliente.getCpfCnpj(),
                 cliente.getPF(),
                 cliente.getRg(),
+                cliente.getComoConheceu(),
                 statusDto,
                 enderecoDto,
                 cliente.getDataHoraEnvioFormulario(),

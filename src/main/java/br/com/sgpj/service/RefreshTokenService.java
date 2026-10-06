@@ -28,7 +28,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class RefreshTokenService {
 
-    @Value("${jwt.refresh.validity}")
+    @Value("${jwt.refresh.validity:604800}")
     private Integer REFRESH_TOKEN_VALIDITY;
 
     private final UsuarioRefreshTokenRepository usuarioRefreshTokenRepository;

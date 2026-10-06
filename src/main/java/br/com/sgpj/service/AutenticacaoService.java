@@ -1,12 +1,11 @@
 package br.com.sgpj.service;
 
-import br.com.sgpj.dto.response.UsuarioDetalhesResponse;
+import br.com.sgpj.dto.response.Usuario.UsuarioDetalhesResponse;
 import br.com.sgpj.entity.Usuario;
-import br.com.sgpj.exception.ClienteNaoEncontradoException;
-import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.repository.UsuarioRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -14,6 +13,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 public class AutenticacaoService implements UserDetailsService {
 
@@ -32,7 +32,8 @@ public class AutenticacaoService implements UserDetailsService {
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
       Usuario usuario = usuarioRepository.findByEmailWithPermissoes(username)
-              .orElseThrow(() -> new UsuarioNaoEncontradoException(username));
+              .orElseThrow(() -> { log.warn("Usuário {} não encontrado.", username);
+                return new UsernameNotFoundException("Usuário não encontrado."); });
 
 
     return new UsuarioDetalhesResponse(usuario);

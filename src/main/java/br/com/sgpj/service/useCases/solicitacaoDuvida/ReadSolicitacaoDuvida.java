@@ -1,6 +1,6 @@
 package br.com.sgpj.service.useCases.solicitacaoDuvida;
 
-import br.com.sgpj.dto.response.SolicitacaoDuvidaDetalhesResponse;
+import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaDetalhesResponse;
 import br.com.sgpj.entity.Processo.ProcessoApp;
 import br.com.sgpj.entity.SolicitacaoDuvida;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;

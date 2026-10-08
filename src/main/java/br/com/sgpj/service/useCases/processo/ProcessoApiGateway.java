@@ -3,6 +3,7 @@ package br.com.sgpj.service.useCases.processo;
 import br.com.sgpj.adapter.api.DataJudAdapter;
 import br.com.sgpj.dto.response.DataJudApiResponse;
 import br.com.sgpj.entity.Processo.ProcessoApi;
+import br.com.sgpj.entity.Processo.SiglaTribunal;
 import br.com.sgpj.exception.TribunalInvalidoException;
 import br.com.sgpj.mapper.ProcessoApiMapper;
 import org.slf4j.Logger;
@@ -39,10 +40,51 @@ public class ProcessoApiGateway {
         if (numeroProcesso == null || numeroProcesso.isBlank()) {
             return null;
         }
-        String siglaTribunal = mapearSiglaTribunalPorNumero(numeroProcesso.substring(14, 16));
+
+        String siglaTribunal;
+        try {
+            siglaTribunal = mapearSiglaTribunalPorNumero(numeroProcesso.substring(14, 16));
+        } catch (Exception e) {
+            siglaTribunal = null;
+        }
 
         try {
+            DataJudApiResponse dataJudResponse = dataJudAdapter.buscarPorNumeroDeProcesso(
+                    numeroProcesso,
+                    siglaTribunal
+            );
 
+            if (dataJudResponse == null || !dataJudResponse.temResultados()) {
+                return null;
+            }
+
+            return ProcessoApiMapper.toEntity(dataJudResponse);
+        } catch (Exception ex) {
+            log.warn("Não foi possível obter dados oficiais do processo {} no tribunal {}: {}",
+                    numeroProcesso, siglaTribunal != null ? siglaTribunal : "null", ex.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Overload que aceita SiglaTribunal como entidade JPA.
+     * Usa o nome da entidade como fallback quando o código do tribunal
+     * não pode ser extraído do CNJ.
+     */
+    public ProcessoApi buscarDadosOficiais(String numeroProcesso, SiglaTribunal siglaTribunalEntidade) {
+        if (numeroProcesso == null || numeroProcesso.isBlank()) {
+            return null;
+        }
+
+        String siglaTribunal;
+        try {
+            siglaTribunal = mapearSiglaTribunalPorNumero(numeroProcesso.substring(14, 16));
+        } catch (Exception e) {
+            // fallback para a entidade passada
+            siglaTribunal = siglaTribunalEntidade != null ? siglaTribunalEntidade.getNome() : null;
+        }
+
+        try {
             DataJudApiResponse dataJudResponse = dataJudAdapter.buscarPorNumeroDeProcesso(
                     numeroProcesso,
                     siglaTribunal

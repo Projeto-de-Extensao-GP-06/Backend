@@ -7,12 +7,13 @@ import br.com.sgpj.entity.Processo.SiglaTribunal;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-public interface ProcessoAppRepository extends JpaRepository<ProcessoApp, Long> {
+public interface ProcessoAppRepository extends JpaRepository<ProcessoApp, Long>, JpaSpecificationExecutor<ProcessoApp> {
     List<ProcessoApp> findByCliente(Cliente cliente);
 
     List<ProcessoApp> findByClienteId(Long clienteId);

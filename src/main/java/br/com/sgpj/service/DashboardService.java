@@ -29,7 +29,7 @@ public class DashboardService {
     private final List<ProcessoApp> solicitacoes = new ArrayList<>();
 
 
-    public void popularVariaveisEscopoDash(){
+    public synchronized void popularVariaveisEscopoDash(){
         processos = processoAppRepository.findAll();
         clientes = clienteRepository.findAll();
         fasesProcessos = faseProcessoRepository.findAll();
@@ -57,7 +57,7 @@ public class DashboardService {
     }
 
     /*----------BUSCA DOS DADOS DOS GRÁFICOS PARA O CLIENT----------*/
-    public DadosIndependentesResponse listarDadosIndependentes(){
+    public synchronized DadosIndependentesResponse listarDadosIndependentes(){
         popularVariaveisEscopoDash();
         List<ProcessosPorFaseResponse> processosPorFase = extrairProcessosPorFase(processos, fasesProcessos);
         List<AudienciasResponse> audiencia = extrairAudiencias(processos);
@@ -83,7 +83,7 @@ public class DashboardService {
     }
 
 
-    public DadosFiltradosDashResponse listarDadosFiltradosDash(LocalDate dateFrom, LocalDate dateTo){
+    public synchronized DadosFiltradosDashResponse listarDadosFiltradosDash(LocalDate dateFrom, LocalDate dateTo){
         popularVariaveisEscopoDash();
         ProcessosEncerradosResponse processosEncerrados = extrairProcessosEncerrados(dateFrom, dateTo, processos);
         ProcessosSuspensosResponse processosSuspensos = extrairProcessosSuspensos(dateFrom, dateTo, processos);

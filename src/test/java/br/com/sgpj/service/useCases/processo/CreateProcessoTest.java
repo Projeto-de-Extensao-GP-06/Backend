@@ -144,7 +144,7 @@ class CreateProcessoTest {
             when(faseProcessoRepository.findById(2L)).thenReturn(Optional.of(faseProcesso));
             when(siglaTribunalRepository.findById(3L)).thenReturn(Optional.of(siglaTribunal));
             when(clienteRepository.findById(4L)).thenReturn(Optional.of(cliente));
-            when(processoApiGateway.buscarDadosOficiais("00000010020268260001"))
+            when(processoApiGateway.buscarDadosOficiais("00000010020268260001", siglaTribunal))
                     .thenReturn(apiMock);
             when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> {
                 ProcessoApp p = inv.getArgument(0);
@@ -160,7 +160,7 @@ class CreateProcessoTest {
             ProcessoApp salvo = captor.getValue();
             assertEquals(apiMock, salvo.getProcessoApi());
             assertEquals(StatusProcesso.ATIVO, salvo.getStatus());
-            verify(processoApiGateway).buscarDadosOficiais("00000010020268260001");
+            verify(processoApiGateway).buscarDadosOficiais("00000010020268260001", siglaTribunal);
         }
 
         @Test
@@ -176,7 +176,7 @@ class CreateProcessoTest {
             when(faseProcessoRepository.findById(2L)).thenReturn(Optional.of(faseProcesso));
             when(siglaTribunalRepository.findById(3L)).thenReturn(Optional.of(siglaTribunal));
             when(clienteRepository.findById(4L)).thenReturn(Optional.of(cliente));
-            when(processoApiGateway.buscarDadosOficiais("00000010020268260001"))
+            when(processoApiGateway.buscarDadosOficiais("00000010020268260001", siglaTribunal))
                     .thenThrow(new RuntimeException("DataJud timeout"));
             when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> {
                 ProcessoApp p = inv.getArgument(0);

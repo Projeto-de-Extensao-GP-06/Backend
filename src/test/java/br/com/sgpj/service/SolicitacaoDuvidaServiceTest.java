@@ -40,6 +40,9 @@ class SolicitacaoDuvidaServiceTest {
     @Mock
     private ReadSolicitacaoDuvida readSolicitacaoDuvida;
 
+    @Mock
+    private br.com.sgpj.service.useCases.solicitacaoDuvida.BuscarCandidatosDuplicidadeSolicitacao buscarCandidatosDuplicidadeSolicitacao;
+
     @InjectMocks
     private SolicitacaoDuvidaService solicitacaoDuvidaService;
 
@@ -98,5 +101,17 @@ class SolicitacaoDuvidaServiceTest {
         solicitacaoDuvidaService.negar(1L);
 
         verify(negarSolicitacao).negar(1L);
+    }
+
+    @Test
+    @DisplayName("buscarDuplicidades deve delegar ao use case BuscarCandidatosDuplicidadeSolicitacao")
+    void deveDelegarBuscaDuplicidadesAoUseCase() {
+        List<br.com.sgpj.dto.response.Solicitacao.SolicitacaoCandidatoDuplicidadeResponse> lista = List.of(mock(br.com.sgpj.dto.response.Solicitacao.SolicitacaoCandidatoDuplicidadeResponse.class));
+        when(buscarCandidatosDuplicidadeSolicitacao.buscarPorSolicitacaoId(1L)).thenReturn(lista);
+
+        List<br.com.sgpj.dto.response.Solicitacao.SolicitacaoCandidatoDuplicidadeResponse> resultado = solicitacaoDuvidaService.buscarDuplicidades(1L);
+
+        assertEquals(lista, resultado);
+        verify(buscarCandidatosDuplicidadeSolicitacao).buscarPorSolicitacaoId(1L);
     }
 }

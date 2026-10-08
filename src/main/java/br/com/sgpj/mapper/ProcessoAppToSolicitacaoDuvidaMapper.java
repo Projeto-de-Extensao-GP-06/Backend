@@ -24,6 +24,8 @@ public class ProcessoAppToSolicitacaoDuvidaMapper {
         solicitacao.setId(processoApp.getId());
         solicitacao.setClienteId(cliente.getId());
         solicitacao.setNomeCompleto(cliente.getNomeRazaoSocial());
+        solicitacao.setNomeContato(contato != null ? contato.getNome() : null);
+        solicitacao.setCnpj(processoApp.getCnpjInformadoFormulario());
         solicitacao.setEmail(contato != null ? contato.getEmail() : null);
         solicitacao.setTelefone(contato != null ? contato.getTelefone() : null);
         solicitacao.setEstado(extrairEstado(processoApp.getObservacao()));

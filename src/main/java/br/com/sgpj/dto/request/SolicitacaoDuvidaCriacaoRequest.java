@@ -1,6 +1,8 @@
 package br.com.sgpj.dto.request;
 
 import br.com.sgpj.entity.ComoConheceuEnum;
+import br.com.sgpj.validation.CpfCnpjValidator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
@@ -44,6 +46,43 @@ public record SolicitacaoDuvidaCriacaoRequest(
         @Schema(description = "Aceite das políticas e termos", example = "true")
         @NotNull(message = "Aceite das políticas e termos é obrigatório")
         @AssertTrue(message = "É necessário aceitar as políticas e termos")
-        Boolean aceitouTermos
+        Boolean aceitouTermos,
+
+        @Schema(description = "Razão social da empresa (Obrigatória para PJ)", example = "João da Silva")
+        @Size(max = 150, message = "Razão social deve ter no máximo 150 caracteres")
+        String razaoSocial,
+
+        @Schema(description = "CNPJ do solicitante", example = "25523524000198")
+        String cnpj
 ) {
+
+        @JsonIgnore
+        @AssertTrue(message = "Razão social enviada é inválida.")
+        public boolean isRazaoSocialValida() {
+
+            if (Boolean.TRUE.equals(isPF)) {
+                return true;
+            }
+
+            return razaoSocial != null && !razaoSocial.isBlank();
+        }
+
+        @JsonIgnore
+        @AssertTrue(message = "Cnpj enviado é inválido.")
+        public boolean isCnpjValido() {
+
+            if (Boolean.TRUE.equals(isPF)) {
+                return true;
+            }
+
+            if (cnpj == null || cnpj.isBlank()) {
+                return false;
+            }
+
+            if (cnpj == null || !cnpj.matches("[0-9A-Z]{12}[0-9]{2}")) {
+                return false;
+            }
+
+            return CpfCnpjValidator.isValidCnpj(cnpj);
+        }
 }

@@ -1,6 +1,8 @@
 package br.com.sgpj.controller;
 
 import br.com.sgpj.dto.request.SolicitacaoDuvidaCriacaoRequest;
+import br.com.sgpj.dto.response.Solicitacao.MotivoDuplicidadeEnum;
+import br.com.sgpj.dto.response.Solicitacao.SolicitacaoCandidatoDuplicidadeResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoClientePreenchimentoResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaDetalhesResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaListarResponse;
@@ -23,6 +25,8 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
@@ -43,11 +47,11 @@ class SolicitacaoDuvidaControllerTest {
         SolicitacaoDuvidaCriacaoRequest request = criarRequest();
         when(service.criar(request)).thenReturn(criarDetalhes());
 
-        ResponseEntity<SolicitacaoDuvidaDetalhesResponse> response = controller.criar(request, httpRequest);
+        ResponseEntity<Void> response = controller.criar(request, httpRequest);
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertEquals("/solicitacoes/30", response.getHeaders().getLocation().toString());
-        assertEquals(30L, response.getBody().id());
+        assertNull(response.getBody());
         
         verify(rateLimiter).checkFormRateLimit(anyString());
     }
@@ -86,6 +90,28 @@ class SolicitacaoDuvidaControllerTest {
     }
 
     @Test
+    @DisplayName("GET duplicidades deve retornar lista de candidatos")
+    void buscarDuplicidadesDeveRetornarCandidatos() {
+        SolicitacaoCandidatoDuplicidadeResponse candidato = new SolicitacaoCandidatoDuplicidadeResponse(
+                50L,
+                "Cliente Candidato",
+                true,
+                "ATIVO",
+                LocalDateTime.now(),
+                List.of(MotivoDuplicidadeEnum.EMAIL),
+                List.of("maria@email.com")
+        );
+        when(service.buscarDuplicidades(30L)).thenReturn(List.of(candidato));
+
+        ResponseEntity<List<SolicitacaoCandidatoDuplicidadeResponse>> response = controller.buscarDuplicidades(30L);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(1, response.getBody().size());
+        assertEquals(50L, response.getBody().getFirst().clienteId());
+    }
+
+    @Test
     @DisplayName("PATCH aceitar deve retornar dados para preenchimento de cliente")
     void aceitarDeveRetornarPreenchimentoCliente() {
         when(service.aceitar(30L)).thenReturn(new SolicitacaoClientePreenchimentoResponse(
@@ -93,6 +119,7 @@ class SolicitacaoDuvidaControllerTest {
                 10L,
                 "Maria Silva",
                 "Maria Silva",
+                null,
                 "maria@email.com",
                 "11999999999",
                 "SP",
@@ -129,7 +156,9 @@ class SolicitacaoDuvidaControllerTest {
                 "10108901220228260292",
                 "Preciso de ajuda com meu processo",
                 ComoConheceuEnum.INSTAGRAM,
-                true
+                true,
+                null,
+                null
         );
     }
 

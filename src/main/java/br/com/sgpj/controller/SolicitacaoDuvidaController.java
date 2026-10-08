@@ -1,6 +1,7 @@
 package br.com.sgpj.controller;
 
 import br.com.sgpj.dto.request.SolicitacaoDuvidaCriacaoRequest;
+import br.com.sgpj.dto.response.Solicitacao.SolicitacaoCandidatoDuplicidadeResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoClientePreenchimentoResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaDetalhesResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaListarResponse;
@@ -41,14 +42,14 @@ public class SolicitacaoDuvidaController {
 
     @PostMapping
     @Operation(summary = "Recebe uma dúvida enviada pelo formulário público")
-    public ResponseEntity<SolicitacaoDuvidaDetalhesResponse> criar(@RequestBody @Valid SolicitacaoDuvidaCriacaoRequest request,
+    public ResponseEntity<Void> criar(@RequestBody @Valid SolicitacaoDuvidaCriacaoRequest request,
                                                                      HttpServletRequest httpRequest) {
         String identifier = IpAddressUtil.getClientIpAddress(httpRequest);
         rateLimiter.checkFormRateLimit(identifier);
         
         SolicitacaoDuvidaDetalhesResponse solicitacao = solicitacaoDuvidaService.criar(request);
         URI location = URI.create("/solicitacoes/" + solicitacao.id());
-        return ResponseEntity.created(location).body(solicitacao);
+        return ResponseEntity.created(location).build();
     }
 
     @GetMapping
@@ -67,6 +68,13 @@ public class SolicitacaoDuvidaController {
     @Operation(summary = "Busca os detalhes de uma solicitação")
     public ResponseEntity<SolicitacaoDuvidaDetalhesResponse> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(solicitacaoDuvidaService.buscarPorId(id));
+    }
+
+    @GetMapping("/{id}/duplicidades")
+    @SecurityRequirement(name = "Bearer")
+    @Operation(summary = "Busca possíveis clientes duplicados para uma solicitação")
+    public ResponseEntity<List<SolicitacaoCandidatoDuplicidadeResponse>> buscarDuplicidades(@PathVariable Long id) {
+        return ResponseEntity.ok(solicitacaoDuvidaService.buscarDuplicidades(id));
     }
 
     @PatchMapping("/{id}/aceitar")

@@ -20,6 +20,8 @@ public class SolicitacaoDuvida {
     private SolicitacaoStatus status;
     private LocalDateTime dataResposta;
     private ProcessoApi processoApi;
+    private String cnpj;
+    private String nomeContato;
 
     public Long getId() {
         return id;
@@ -131,5 +133,21 @@ public class SolicitacaoDuvida {
 
     public void setProcessoApi(ProcessoApi processoApi) {
         this.processoApi = processoApi;
+    }
+
+    public String getCnpj() {
+        return cnpj;
+    }
+
+    public void setCnpj(String cnpj) {
+        this.cnpj = cnpj;
+    }
+
+    public String getNomeContato() {
+        return nomeContato;
+    }
+
+    public void setNomeContato(String nomeContato) {
+        this.nomeContato = nomeContato;
     }
 }

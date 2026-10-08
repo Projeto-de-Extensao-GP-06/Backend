@@ -255,6 +255,7 @@ CREATE TABLE processo_dados_aplicacao (
                                           sigla_tribunal_id INT,
 
                                           valor_causa DECIMAL(15,2),
+                                          cnpj_informado_formulario VARCHAR(14),
 
                                           processo_dados_api_id BIGINT,
 

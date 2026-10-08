@@ -8,6 +8,7 @@ public record SolicitacaoClientePreenchimentoResponse(
         Long clienteId,
         String nomeRazaoSocial,
         String nomeContato,
+        String cnpj,
         String email,
         String telefone,
         String estado,

@@ -18,6 +18,7 @@ import br.com.sgpj.repository.ContatoRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.StatusClienteRepository;
 import br.com.sgpj.service.useCases.processo.ProcessoApiGateway;
+import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -49,11 +50,13 @@ public class CreateSolicitacaoDuvida {
         this.processoApiGateway = processoApiGateway;
     }
 
+    @Transactional
     public SolicitacaoDuvidaDetalhesResponse criarSolicitacao(SolicitacaoDuvidaCriacaoRequest request) {
         String numeroProcesso = normalizarOpcional(request.numeroProcesso());
 
         Cliente cliente = new Cliente();
-        cliente.setNomeRazaoSocial(request.nomeCompleto().trim());
+        String nomeRazaoSocial = (request.isPF()) ? request.nomeCompleto() : request.razaoSocial().trim();
+        cliente.setNomeRazaoSocial(nomeRazaoSocial);
         cliente.setPF(request.isPF());
         cliente.setComoConheceu(request.comoConheceu());
         cliente.setStatusCliente(buscarStatus(StatusClienteEnum.LEAD));
@@ -78,6 +81,10 @@ public class CreateSolicitacaoDuvida {
         processoApp.setDataHoraInicio(cliente.getDataHoraEnvioFormulario());
         processoApp.setUltimaAtualizacao(cliente.getDataHoraEnvioFormulario());
         processoApp.setStatus(StatusProcesso.SOLICITACAO);
+
+        if (!request.isPF()) {
+            processoApp.setCnpjInformadoFormulario(request.cnpj().trim());
+        }
 
         if (numeroProcesso != null) {
             processoApp.setProcessoApi(buscarProcessoOficial(numeroProcesso));

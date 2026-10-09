@@ -52,10 +52,12 @@ public class CreateSolicitacaoDuvida {
 
     @Transactional
     public SolicitacaoDuvidaDetalhesResponse criarSolicitacao(SolicitacaoDuvidaCriacaoRequest request) {
-        String numeroProcesso = normalizarOpcional(request.numeroProcesso());
+        String numeroProcesso = request.numeroProcessoSanitizado();
+        String telefone = request.telefoneSanitizado();
+        String cnpj = request.cnpjSanitizado();
 
         Cliente cliente = new Cliente();
-        String nomeRazaoSocial = (request.isPF()) ? request.nomeCompleto() : request.razaoSocial().trim();
+        String nomeRazaoSocial = (request.isPF()) ? request.nomeCompleto().trim() : request.razaoSocial().trim();
         cliente.setNomeRazaoSocial(nomeRazaoSocial);
         cliente.setPF(request.isPF());
         cliente.setComoConheceu(request.comoConheceu());
@@ -66,7 +68,7 @@ public class CreateSolicitacaoDuvida {
         Contato contato = ContatoMapper.toEntity(
                 request.nomeCompleto().trim(),
                 request.email().trim(),
-                request.telefone().trim(),
+                telefone,
                 null,
                 true,
                 cliente
@@ -82,8 +84,8 @@ public class CreateSolicitacaoDuvida {
         processoApp.setUltimaAtualizacao(cliente.getDataHoraEnvioFormulario());
         processoApp.setStatus(StatusProcesso.SOLICITACAO);
 
-        if (!request.isPF()) {
-            processoApp.setCnpjInformadoFormulario(request.cnpj().trim());
+        if (!request.isPF() && cnpj != null) {
+            processoApp.setCnpjInformadoFormulario(cnpj);
         }
 
         if (numeroProcesso != null) {

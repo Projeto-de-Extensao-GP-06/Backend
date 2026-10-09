@@ -7,6 +7,7 @@ import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaDetalhesResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaListarResponse;
 import br.com.sgpj.security.IpAddressUtil;
 import br.com.sgpj.security.RateLimiter;
+import br.com.sgpj.service.CloudflareTurnstileService;
 import br.com.sgpj.service.SolicitacaoDuvidaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -34,10 +35,16 @@ public class SolicitacaoDuvidaController {
 
     private final SolicitacaoDuvidaService solicitacaoDuvidaService;
     private final RateLimiter rateLimiter;
+    private final CloudflareTurnstileService cloudflareTurnstileService;
 
-    public SolicitacaoDuvidaController(SolicitacaoDuvidaService solicitacaoDuvidaService, RateLimiter rateLimiter) { 
+    public SolicitacaoDuvidaController(
+            SolicitacaoDuvidaService solicitacaoDuvidaService,
+            RateLimiter rateLimiter,
+            CloudflareTurnstileService cloudflareTurnstileService
+    ) { 
         this.solicitacaoDuvidaService = solicitacaoDuvidaService;
         this.rateLimiter = rateLimiter;
+        this.cloudflareTurnstileService = cloudflareTurnstileService;
     }
 
     @PostMapping
@@ -46,6 +53,7 @@ public class SolicitacaoDuvidaController {
                                                                      HttpServletRequest httpRequest) {
         String identifier = IpAddressUtil.getClientIpAddress(httpRequest);
         rateLimiter.checkFormRateLimit(identifier);
+        cloudflareTurnstileService.validarToken(request.turnstileToken(), identifier);
         
         SolicitacaoDuvidaDetalhesResponse solicitacao = solicitacaoDuvidaService.criar(request);
         URI location = URI.create("/solicitacoes/" + solicitacao.id());

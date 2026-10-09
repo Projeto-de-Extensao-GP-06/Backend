@@ -9,7 +9,9 @@ import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaListarResponse;
 import br.com.sgpj.entity.ComoConheceuEnum;
 import br.com.sgpj.entity.SolicitacaoStatus;
 import br.com.sgpj.security.RateLimiter;
+import br.com.sgpj.service.CloudflareTurnstileService;
 import br.com.sgpj.service.SolicitacaoDuvidaService;
+import br.com.sgpj.exception.CaptchaInvalidoException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,8 +29,10 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -38,11 +42,12 @@ class SolicitacaoDuvidaControllerTest {
 
     @Mock private SolicitacaoDuvidaService service;
     @Mock private RateLimiter rateLimiter;
+    @Mock private CloudflareTurnstileService cloudflareTurnstileService;
     @Mock private HttpServletRequest httpRequest;
     @InjectMocks private SolicitacaoDuvidaController controller;
 
     @Test
-    @DisplayName("POST deve retornar 201 com location")
+    @DisplayName("POST deve retornar 201 com location e validar captcha")
     void criarDeveRetornar201() {
         SolicitacaoDuvidaCriacaoRequest request = criarRequest();
         when(service.criar(request)).thenReturn(criarDetalhes());
@@ -54,6 +59,17 @@ class SolicitacaoDuvidaControllerTest {
         assertNull(response.getBody());
         
         verify(rateLimiter).checkFormRateLimit(anyString());
+        verify(cloudflareTurnstileService).validarToken(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("POST deve propagar exceção quando captcha for inválido")
+    void criarDeveLancarExcecaoQuandoCaptchaInvalido() {
+        SolicitacaoDuvidaCriacaoRequest request = criarRequest();
+        doThrow(new CaptchaInvalidoException("Captcha inválido"))
+                .when(cloudflareTurnstileService).validarToken(anyString(), anyString());
+
+        assertThrows(CaptchaInvalidoException.class, () -> controller.criar(request, httpRequest));
     }
 
     @Test

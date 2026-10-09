@@ -53,8 +53,54 @@ public record SolicitacaoDuvidaCriacaoRequest(
         String razaoSocial,
 
         @Schema(description = "CNPJ do solicitante", example = "25523524000198")
-        String cnpj
+        String cnpj,
+
+        @Schema(description = "Token de verificação do Cloudflare Turnstile", example = "0.xxxx...")
+        @NotBlank(message = "Token de verificação anti-robô é obrigatório")
+        String turnstileToken
 ) {
+
+        public SolicitacaoDuvidaCriacaoRequest(
+                String nomeCompleto,
+                String email,
+                Boolean isPF,
+                String telefone,
+                String numeroProcesso,
+                String descricao,
+                ComoConheceuEnum comoConheceu,
+                Boolean aceitouTermos,
+                String razaoSocial,
+                String cnpj
+        ) {
+            this(nomeCompleto, email, isPF, telefone, numeroProcesso, descricao, comoConheceu, aceitouTermos, razaoSocial, cnpj, "dummy-test-token");
+        }
+
+        @JsonIgnore
+        public String telefoneSanitizado() {
+            if (telefone == null) {
+                return null;
+            }
+            String limpo = telefone.replaceAll("\\D", "");
+            return limpo.isBlank() ? null : limpo;
+        }
+
+        @JsonIgnore
+        public String cnpjSanitizado() {
+            if (cnpj == null || cnpj.isBlank()) {
+                return null;
+            }
+            String limpo = cnpj.replaceAll("[^0-9A-Za-z]", "").toUpperCase();
+            return limpo.isBlank() ? null : limpo;
+        }
+
+        @JsonIgnore
+        public String numeroProcessoSanitizado() {
+            if (numeroProcesso == null || numeroProcesso.isBlank()) {
+                return null;
+            }
+            String limpo = numeroProcesso.replaceAll("\\D", "");
+            return limpo.isBlank() ? null : limpo;
+        }
 
         @JsonIgnore
         @AssertTrue(message = "Razão social enviada é inválida.")
@@ -79,10 +125,11 @@ public record SolicitacaoDuvidaCriacaoRequest(
                 return false;
             }
 
-            if (cnpj == null || !cnpj.matches("[0-9A-Z]{12}[0-9]{2}")) {
+            String limpo = cnpjSanitizado();
+            if (limpo == null || !limpo.matches("[0-9A-Z]{12}[0-9]{2}")) {
                 return false;
             }
 
-            return CpfCnpjValidator.isValidCnpj(cnpj);
+            return CpfCnpjValidator.isValidCnpj(limpo);
         }
 }

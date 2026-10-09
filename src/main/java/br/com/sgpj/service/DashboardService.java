@@ -2,6 +2,7 @@ package br.com.sgpj.service;
 
 import br.com.sgpj.dto.response.Dashboard.*;
 import br.com.sgpj.entity.Cliente;
+import br.com.sgpj.entity.ComoConheceuEnum;
 import br.com.sgpj.entity.Processo.FaseProcesso;
 import br.com.sgpj.entity.Processo.ProcessoApp;
 import br.com.sgpj.entity.Processo.StatusProcesso;
@@ -186,20 +187,22 @@ public class DashboardService {
     ){
         int entradaPorInstagram = 0;
         int entradaPorSite = 0;
+        int entradaPorIndicacao = 0;
         int entradaPorOutros = 0;
 
         for (Cliente cliente : clientes){
             if (cliente.getComoConheceu() != null) {
-                switch (cliente.getComoConheceu().toLowerCase()){
-                    case "instagram" -> entradaPorInstagram++;
-                    case "site" -> entradaPorSite++;
-                    case "outros" -> entradaPorOutros++;
+                switch (cliente.getComoConheceu()){
+                    case ComoConheceuEnum.INSTAGRAM -> entradaPorInstagram++;
+                    case ComoConheceuEnum.SITE -> entradaPorSite++;
+                    case ComoConheceuEnum.INDICACAO -> entradaPorIndicacao++;
+                    case ComoConheceuEnum.OUTROS -> entradaPorOutros++;
                     default -> {}
                 }
             }
         }
 
-        return new FormasDeEntradaResponse(entradaPorInstagram, entradaPorSite, entradaPorOutros);
+        return new FormasDeEntradaResponse(entradaPorInstagram, entradaPorSite, entradaPorIndicacao, entradaPorOutros);
     }
 
 

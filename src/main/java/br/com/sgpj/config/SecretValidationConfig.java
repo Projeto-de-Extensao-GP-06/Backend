@@ -50,6 +50,9 @@ public class SecretValidationConfig {
     @Value("${DATAJUD_API_KEY:}")
     private String dataJudApiKey;
 
+    @Value("${CLOUDFLARE_SECRET_KEY:}")
+    private String cloudflareSecretKey;
+
     /**
      * Valida que todos os segredos críticos estejam configurados.
      *
@@ -69,6 +72,7 @@ public class SecretValidationConfig {
         validateRequiredSecret("CLIENT_ID", clientId);
         validateRequiredSecret("CLIENT_SECRET", clientSecret);
         validateRequiredSecret("DATAJUD_API_KEY", dataJudApiKey);
+        validateRequiredSecret("CLOUDFLARE_SECRET_KEY", cloudflareSecretKey);
     }
 
     /**

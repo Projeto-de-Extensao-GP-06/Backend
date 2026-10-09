@@ -1,10 +1,13 @@
 package br.com.sgpj.mapper;
 
+import br.com.sgpj.dto.response.Solicitacao.SolicitacaoCandidatoDuplicidadeResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoClientePreenchimentoResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaDetalhesResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaListarResponse;
 import br.com.sgpj.dto.response.Processos.ProcessoApiCreateResponse;
 import br.com.sgpj.entity.SolicitacaoDuvida;
+
+import java.util.List;
 
 public class SolicitacaoDuvidaMapper {
 
@@ -47,11 +50,13 @@ public class SolicitacaoDuvidaMapper {
     }
 
     public static SolicitacaoClientePreenchimentoResponse toClientePreenchimentoResponse(SolicitacaoDuvida solicitacao) {
+        String nomeContato = solicitacao.getNomeContato() != null ? solicitacao.getNomeContato() : solicitacao.getNomeCompleto();
         return new SolicitacaoClientePreenchimentoResponse(
                 solicitacao.getId(),
                 solicitacao.getClienteId(),
                 solicitacao.getNomeCompleto(),
-                solicitacao.getNomeCompleto(),
+                nomeContato,
+                solicitacao.getCnpj(),
                 solicitacao.getEmail(),
                 solicitacao.getTelefone(),
                 solicitacao.getEstado(),

@@ -9,6 +9,8 @@ import br.com.sgpj.service.useCases.solicitacaoDuvida.CreateSolicitacaoDuvida;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.ListarSolicitacoesPendentes;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.NegarSolicitacao;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.ReadSolicitacaoDuvida;
+import br.com.sgpj.dto.response.Solicitacao.SolicitacaoCandidatoDuplicidadeResponse;
+import br.com.sgpj.service.useCases.solicitacaoDuvida.BuscarCandidatosDuplicidadeSolicitacao;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,17 +24,20 @@ public class SolicitacaoDuvidaService {
     private final AceitarSolicitacao aceitarSolicitacao;
     private final NegarSolicitacao negarSolicitacao;
     private final ReadSolicitacaoDuvida readSolicitacaoDuvida;
+    private final BuscarCandidatosDuplicidadeSolicitacao buscarCandidatosDuplicidadeSolicitacao;
 
     public SolicitacaoDuvidaService(CreateSolicitacaoDuvida createSolicitacaoDuvida,
                                      ListarSolicitacoesPendentes listarSolicitacoesPendentes,
                                      AceitarSolicitacao aceitarSolicitacao,
                                      NegarSolicitacao negarSolicitacao,
-                                     ReadSolicitacaoDuvida readSolicitacaoDuvida) {
+                                     ReadSolicitacaoDuvida readSolicitacaoDuvida,
+                                     BuscarCandidatosDuplicidadeSolicitacao buscarCandidatosDuplicidadeSolicitacao) {
         this.createSolicitacaoDuvida = createSolicitacaoDuvida;
         this.listarSolicitacoesPendentes = listarSolicitacoesPendentes;
         this.aceitarSolicitacao = aceitarSolicitacao;
         this.negarSolicitacao = negarSolicitacao;
         this.readSolicitacaoDuvida = readSolicitacaoDuvida;
+        this.buscarCandidatosDuplicidadeSolicitacao = buscarCandidatosDuplicidadeSolicitacao;
     }
 
     // CREATE OPERATIONS
@@ -50,6 +55,11 @@ public class SolicitacaoDuvidaService {
     @Transactional(readOnly = true)
     public SolicitacaoDuvidaDetalhesResponse buscarPorId(Long id) {
         return readSolicitacaoDuvida.buscarPorId(id);
+    }
+
+    @Transactional(readOnly = true)
+    public List<SolicitacaoCandidatoDuplicidadeResponse> buscarDuplicidades(Long id) {
+        return buscarCandidatosDuplicidadeSolicitacao.buscarPorSolicitacaoId(id);
     }
 
     // UPDATE OPERATIONS

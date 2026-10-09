@@ -1,11 +1,13 @@
 package br.com.sgpj.controller;
 
 import br.com.sgpj.dto.request.SolicitacaoDuvidaCriacaoRequest;
+import br.com.sgpj.dto.response.Solicitacao.SolicitacaoCandidatoDuplicidadeResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoClientePreenchimentoResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaDetalhesResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaListarResponse;
 import br.com.sgpj.security.IpAddressUtil;
 import br.com.sgpj.security.RateLimiter;
+import br.com.sgpj.service.CloudflareTurnstileService;
 import br.com.sgpj.service.SolicitacaoDuvidaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -33,22 +35,29 @@ public class SolicitacaoDuvidaController {
 
     private final SolicitacaoDuvidaService solicitacaoDuvidaService;
     private final RateLimiter rateLimiter;
+    private final CloudflareTurnstileService cloudflareTurnstileService;
 
-    public SolicitacaoDuvidaController(SolicitacaoDuvidaService solicitacaoDuvidaService, RateLimiter rateLimiter) { 
+    public SolicitacaoDuvidaController(
+            SolicitacaoDuvidaService solicitacaoDuvidaService,
+            RateLimiter rateLimiter,
+            CloudflareTurnstileService cloudflareTurnstileService
+    ) { 
         this.solicitacaoDuvidaService = solicitacaoDuvidaService;
         this.rateLimiter = rateLimiter;
+        this.cloudflareTurnstileService = cloudflareTurnstileService;
     }
 
     @PostMapping
     @Operation(summary = "Recebe uma dúvida enviada pelo formulário público")
-    public ResponseEntity<SolicitacaoDuvidaDetalhesResponse> criar(@RequestBody @Valid SolicitacaoDuvidaCriacaoRequest request,
+    public ResponseEntity<Void> criar(@RequestBody @Valid SolicitacaoDuvidaCriacaoRequest request,
                                                                      HttpServletRequest httpRequest) {
         String identifier = IpAddressUtil.getClientIpAddress(httpRequest);
         rateLimiter.checkFormRateLimit(identifier);
+        cloudflareTurnstileService.validarToken(request.turnstileToken(), identifier);
         
         SolicitacaoDuvidaDetalhesResponse solicitacao = solicitacaoDuvidaService.criar(request);
         URI location = URI.create("/solicitacoes/" + solicitacao.id());
-        return ResponseEntity.created(location).body(solicitacao);
+        return ResponseEntity.created(location).build();
     }
 
     @GetMapping
@@ -67,6 +76,13 @@ public class SolicitacaoDuvidaController {
     @Operation(summary = "Busca os detalhes de uma solicitação")
     public ResponseEntity<SolicitacaoDuvidaDetalhesResponse> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(solicitacaoDuvidaService.buscarPorId(id));
+    }
+
+    @GetMapping("/{id}/duplicidades")
+    @SecurityRequirement(name = "Bearer")
+    @Operation(summary = "Busca possíveis clientes duplicados para uma solicitação")
+    public ResponseEntity<List<SolicitacaoCandidatoDuplicidadeResponse>> buscarDuplicidades(@PathVariable Long id) {
+        return ResponseEntity.ok(solicitacaoDuvidaService.buscarDuplicidades(id));
     }
 
     @PatchMapping("/{id}/aceitar")

@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface ProcessoAppRepository extends JpaRepository<ProcessoApp, Long> {
@@ -18,6 +19,54 @@ public interface ProcessoAppRepository extends JpaRepository<ProcessoApp, Long> 
     List<ProcessoApp> findByClienteId(Long clienteId);
 
     Page<ProcessoApp> findByCliente_StatusCliente_NomeIgnoreCase(String statusNome, Pageable pageable);
+
+    @Query(value = """
+            select distinct p
+            from ProcessoApp p
+            left join p.cliente c
+            left join c.statusCliente statusCliente
+            left join p.processoApi api
+            where lower(p.observacao) like lower(concat(:estadoPrefixo, '%'))
+              and (:estado is null or lower(p.observacao) = lower(concat(:estadoPrefixo, :estado)))
+              and (:pesquisa is null
+                   or lower(c.nomeRazaoSocial) like lower(concat('%', :pesquisa, '%'))
+                   or exists (
+                       select contato.id from Contato contato
+                       where contato.cliente = c
+                         and lower(contato.email) like lower(concat('%', :pesquisa, '%'))
+                   )
+                   or lower(api.numeroCnj) like lower(concat('%', :pesquisa, '%')))
+              and (statusCliente.nome is null or upper(statusCliente.nome) not in ('ATIVO', 'INATIVO'))
+              and (:dataInicio is null or p.dataHoraInicio >= :dataInicio)
+              and (:dataFim is null or p.dataHoraInicio < :dataFim)
+            """,
+            countQuery = """
+            select count(distinct p.id)
+            from ProcessoApp p
+            left join p.cliente c
+            left join c.statusCliente statusCliente
+            left join p.processoApi api
+            where lower(p.observacao) like lower(concat(:estadoPrefixo, '%'))
+              and (:estado is null or lower(p.observacao) = lower(concat(:estadoPrefixo, :estado)))
+              and (:pesquisa is null
+                   or lower(c.nomeRazaoSocial) like lower(concat('%', :pesquisa, '%'))
+                   or exists (
+                       select contato.id from Contato contato
+                       where contato.cliente = c
+                         and lower(contato.email) like lower(concat('%', :pesquisa, '%'))
+                   )
+                   or lower(api.numeroCnj) like lower(concat('%', :pesquisa, '%')))
+              and (statusCliente.nome is null or upper(statusCliente.nome) not in ('ATIVO', 'INATIVO'))
+              and (:dataInicio is null or p.dataHoraInicio >= :dataInicio)
+              and (:dataFim is null or p.dataHoraInicio < :dataFim)
+            """)
+    Page<ProcessoApp> buscarSolicitacoesFiltradas(
+            @Param("estado") String estado,
+            @Param("estadoPrefixo") String estadoPrefixo,
+            @Param("pesquisa") String pesquisa,
+            @Param("dataInicio") LocalDateTime dataInicio,
+            @Param("dataFim") LocalDateTime dataFim,
+            Pageable pageable);
 
     @Query("""
             select p

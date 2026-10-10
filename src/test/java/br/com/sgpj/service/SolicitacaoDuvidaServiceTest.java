@@ -6,6 +6,7 @@ import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaDetalhesResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaListarResponse;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.AceitarSolicitacao;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.CreateSolicitacaoDuvida;
+import br.com.sgpj.service.useCases.solicitacaoDuvida.FiltrarSolicitacoes;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.ListarSolicitacoesPendentes;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.NegarSolicitacao;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.ReadSolicitacaoDuvida;
@@ -43,6 +44,9 @@ class SolicitacaoDuvidaServiceTest {
 
     @Mock
     private ReadSolicitacaoDuvida readSolicitacaoDuvida;
+
+    @Mock
+    private FiltrarSolicitacoes filtrarSolicitacoes;
 
     @InjectMocks
     private SolicitacaoDuvidaService solicitacaoDuvidaService;

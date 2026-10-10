@@ -1,6 +1,8 @@
 package br.com.sgpj.repository;
 
 import br.com.sgpj.entity.Cliente;
+import br.com.sgpj.entity.Contato;
+import br.com.sgpj.entity.Processo.ProcessoApi;
 import br.com.sgpj.entity.Processo.ProcessoApp;
 import br.com.sgpj.entity.Processo.StatusProcesso;
 import br.com.sgpj.entity.StatusCliente;
@@ -12,6 +14,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -33,6 +36,9 @@ class ProcessoAppRepositoryTest {
 
     @Autowired
     private StatusClienteRepository statusClienteRepository;
+
+    @Autowired
+    private ContatoRepository contatoRepository;
 
     @Test
     void devePaginarLeadsOrdenandoPorDataEIdEContarSomenteLeads() {
@@ -63,6 +69,97 @@ class ProcessoAppRepositoryTest {
         assertEquals(1, segundaPagina.getContent().size());
         assertEquals(1, segundaPagina.getNumber());
         assertEquals(3, segundaPagina.getTotalElements());
+    }
+
+    @Test
+    void deveFiltrarSolicitacoesComPesquisaStatusEstadoPeriodoEOrdenacaoSemDuplicarContatos() {
+        StatusCliente leadStatus = statusClienteRepository.save(new StatusCliente(null, "LEAD"));
+        Cliente maria = criarCliente("Maria Silva", leadStatus);
+        Contato emailPrincipal = criarContato(maria, "maria@exemplo.com", true);
+        criarContato(maria, "alternativo@exemplo.com", false);
+        maria.setContatos(List.of(emailPrincipal));
+        LocalDateTime dataEnvio = LocalDateTime.of(2026, 6, 15, 9, 30);
+        ProcessoApp mariaProcesso = processoAppRepository.save(criarSolicitacao(maria, dataEnvio, "SP",
+                "00012345620268260001"));
+        processoAppRepository.save(criarSolicitacao(criarCliente("Outra pessoa", leadStatus),
+                dataEnvio.minusDays(1), "RJ", null));
+        processoAppRepository.flush();
+
+        Page<ProcessoApp> porEmail = processoAppRepository.buscarSolicitacoesFiltradas(
+                null, "Solicitação enviada pelo formulário público. Estado: ", "ALTERNATIVO",
+                LocalDateTime.of(2026, 6, 1, 0, 0),
+                LocalDateTime.of(2026, 7, 1, 0, 0), PageRequest.of(0, 10,
+                        Sort.by(Sort.Order.desc("dataHoraInicio"), Sort.Order.desc("id"))));
+        Page<ProcessoApp> porNome = processoAppRepository.buscarSolicitacoesFiltradas(
+                "SP", "Solicitação enviada pelo formulário público. Estado: ", "mArIa",
+                null, null, PageRequest.of(0, 10));
+        Page<ProcessoApp> porCnj = processoAppRepository.buscarSolicitacoesFiltradas(
+                null, "Solicitação enviada pelo formulário público. Estado: ", "4562026",
+                null, null, PageRequest.of(0, 10));
+        Page<ProcessoApp> porEstado = processoAppRepository.buscarSolicitacoesFiltradas(
+                "SP", "Solicitação enviada pelo formulário público. Estado: ", null,
+                null, null, PageRequest.of(0, 10));
+        Page<ProcessoApp> porData = processoAppRepository.buscarSolicitacoesFiltradas(
+                null, "Solicitação enviada pelo formulário público. Estado: ", null,
+                LocalDateTime.of(2026, 6, 15, 0, 0), LocalDateTime.of(2026, 6, 16, 0, 0),
+                PageRequest.of(0, 10));
+        Page<ProcessoApp> semFiltros = processoAppRepository.buscarSolicitacoesFiltradas(
+                null, "Solicitação enviada pelo formulário público. Estado: ", null,
+                null, null, PageRequest.of(0, 1, Sort.by(Sort.Order.desc("dataHoraInicio"),
+                        Sort.Order.desc("id"))));
+
+        assertEquals(1, porEmail.getTotalElements());
+        assertEquals(mariaProcesso.getId(), porEmail.getContent().getFirst().getId());
+        assertEquals(1, porNome.getTotalElements());
+        assertEquals(1, porCnj.getTotalElements());
+        assertEquals(1, porEstado.getTotalElements());
+        assertEquals(1, porData.getTotalElements());
+        assertEquals(2, semFiltros.getTotalElements());
+        assertEquals(1, semFiltros.getContent().size());
+        assertEquals(mariaProcesso.getId(), semFiltros.getContent().getFirst().getId());
+    }
+
+    @Test
+    void deveRetornarSomenteSolicitacoesPendentesEDevolverPaginaVazia() {
+        StatusCliente leadStatus = statusClienteRepository.save(new StatusCliente(null, "LEAD"));
+        StatusCliente ativoStatus = statusClienteRepository.save(new StatusCliente(null, "ATIVO"));
+        StatusCliente inativoStatus = statusClienteRepository.save(new StatusCliente(null, "INATIVO"));
+        processoAppRepository.save(criarSolicitacao(criarCliente("Lead", leadStatus), LocalDateTime.now(), "SP", null));
+        processoAppRepository.save(criarSolicitacao(criarCliente("Ativo", ativoStatus), LocalDateTime.now(), "SP", null));
+        processoAppRepository.save(criarSolicitacao(criarCliente("Inativo", inativoStatus), LocalDateTime.now(), "SP", null));
+        processoAppRepository.flush();
+
+        Page<ProcessoApp> pendentes = processoAppRepository.buscarSolicitacoesFiltradas(
+                null, "Solicitação enviada pelo formulário público. Estado: ", null,
+                null, null, PageRequest.of(0, 10));
+        Page<ProcessoApp> vazia = processoAppRepository.buscarSolicitacoesFiltradas(
+                "ZZ", "Solicitação enviada pelo formulário público. Estado: ", null,
+                null, null, PageRequest.of(3, 5));
+
+        assertEquals(1, pendentes.getTotalElements());
+        assertEquals(0, vazia.getTotalElements());
+        assertEquals(3, vazia.getNumber());
+        assertEquals(5, vazia.getSize());
+        assertEquals(0, vazia.getTotalPages());
+    }
+
+    private Contato criarContato(Cliente cliente, String email, boolean principal) {
+        Contato contato = new Contato();
+        contato.setCliente(cliente);
+        contato.setEmail(email);
+        contato.setPrincipal(principal);
+        return contatoRepository.save(contato);
+    }
+
+    private ProcessoApp criarSolicitacao(Cliente cliente, LocalDateTime dataHoraInicio, String estado, String cnj) {
+        ProcessoApp processo = criarProcesso(cliente, dataHoraInicio);
+        processo.setObservacao("Solicitação enviada pelo formulário público. Estado: " + estado);
+        if (cnj != null) {
+            ProcessoApi processoApi = new ProcessoApi();
+            processoApi.setNumeroCnj(cnj);
+            processo.setProcessoApi(processoApi);
+        }
+        return processo;
     }
 
     private Cliente criarCliente(String nome, StatusCliente status) {

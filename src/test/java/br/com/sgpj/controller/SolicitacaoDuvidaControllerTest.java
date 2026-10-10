@@ -26,6 +26,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
@@ -91,6 +92,54 @@ class SolicitacaoDuvidaControllerTest {
         assertEquals(0, response.getBody().getTotalElements());
         assertEquals(0, response.getBody().getTotalPages());
         verify(service).listarPendentes(pageable);
+    }
+
+    @Test
+    @DisplayName("GET filtrar deve validar e delegar filtros, paginação e ordenação estável")
+    void filtrarDeveDelegarFiltrosEPaginacao() {
+        Pageable pageable = PageRequest.of(1, 5,
+                Sort.by(Sort.Order.desc("dataHoraInicio"), Sort.Order.desc("id")));
+        Page<SolicitacaoDuvidaListarResponse> pagina = new PageImpl<>(List.of(), pageable, 7);
+        when(service.filtrar("SP", "maria",
+                LocalDateTime.of(2026, 1, 1, 0, 0), LocalDateTime.of(2027, 1, 1, 0, 0), pageable))
+                .thenReturn(pagina);
+
+        ResponseEntity<Page<SolicitacaoDuvidaListarResponse>> response = controller.filtrar(
+                "SP", "maria", java.time.LocalDate.of(2026, 1, 1),
+                java.time.LocalDate.of(2026, 12, 31), 1, 5, "dataSolicitacao,desc");
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(7, response.getBody().getTotalElements());
+        verify(service).filtrar("SP", "maria",
+                LocalDateTime.of(2026, 1, 1, 0, 0), LocalDateTime.of(2027, 1, 1, 0, 0), pageable);
+    }
+
+    @Test
+    @DisplayName("GET filtrar deve aceitar filtros ausentes e page vazia")
+    void filtrarDeveAceitarFiltrosAusentes() {
+        Pageable pageable = PageRequest.of(0, 20,
+                Sort.by(Sort.Order.desc("dataHoraInicio"), Sort.Order.desc("id")));
+        Page<SolicitacaoDuvidaListarResponse> paginaVazia = new PageImpl<>(List.of(), pageable, 0);
+        when(service.filtrar(" ", " ", null, null, pageable)).thenReturn(paginaVazia);
+
+        ResponseEntity<Page<SolicitacaoDuvidaListarResponse>> response = controller.filtrar(
+                " ", " ", null, null, 0, 20, "dataHoraInicio,desc");
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(0, response.getBody().getTotalElements());
+        assertEquals(0, response.getBody().getTotalPages());
+        verify(service).filtrar(" ", " ", null, null, pageable);
+    }
+
+    @Test
+    @DisplayName("GET filtrar deve rejeitar paginação fora dos limites")
+    void filtrarDeveRejeitarParametrosInvalidos() {
+        assertThrows(IllegalArgumentException.class, () -> controller.filtrar(
+                null, null, null, null, 0, 101, "id,asc"));
+        assertThrows(IllegalArgumentException.class, () -> controller.filtrar(
+                null, null, null, null, -1, 20, "id,asc"));
+        assertThrows(IllegalArgumentException.class, () -> controller.filtrar(
+                null, null, null, null, 0, 20, "nomeCompleto,asc"));
     }
 
     @Test

@@ -55,9 +55,9 @@ public class ProcessosController {
     @PostMapping("/processos/{id}/atualizar-dados")
     @PreAuthorize("hasAuthority('EDITAR PROCESSO') || hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
-    public ResponseEntity<ProcessoAppResponse> atualizarDadosOficiais(@PathVariable Long id) {
-        ProcessoAppResponse processoAtualizado = processoService.atualizarDadosDoDataJud(id);
-        return ResponseEntity.ok(processoAtualizado);
+    public ResponseEntity<SincronizacaoProcessoResponse> atualizarDadosOficiais(@PathVariable Long id) {
+        SincronizacaoProcessoResponse response = processoService.solicitarSincronizacaoDataJud(id);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
     }
 
     @DeleteMapping("/processos/{id}")

@@ -17,6 +17,7 @@ import br.com.sgpj.service.useCases.processo.UpdateProcesso;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import br.com.sgpj.producer.SincronizacaoProcessoProducer;
 
 import java.util.List;
 
@@ -31,6 +32,7 @@ public class ProcessoService {
     private final ListarDocumentosProcesso listarDocumentosProcesso;
     private final DeleteProcessoApp deleteProcessoApp;
     private final DeleteProcessoDocumento deleteProcessoDocumento;
+    private final SincronizacaoProcessoProducer sincronizacaoProducer;
 
     public ProcessoService(CreateProcesso createProcesso,
                            UsuarioRepository usuarioRepository,
@@ -42,12 +44,14 @@ public class ProcessoService {
                            AuthorizationUtil authorizationUtil,
                            DeleteProcessoApp deleteProcessoApp,
                            DeleteProcessoDocumento deleteProcessoDocumento,
-                           RegistroHistoricoProcesso registroHistorico) {
+                           RegistroHistoricoProcesso registroHistorico,
+                           SincronizacaoProcessoProducer sincronizacaoProducer) {
         this.createProcesso = createProcesso;
         this.updateProcesso = updateProcesso;
         this.readProcesso = readProcesso;
         this.deleteProcessoApp = deleteProcessoApp;
         this.deleteProcessoDocumento = deleteProcessoDocumento;
+        this.sincronizacaoProducer = sincronizacaoProducer;
         this.anexarDocumentoProcesso = new AnexarDocumentoProcesso(processoAppRepository, documentoRepository, usuarioRepository, processoDocumentoRepository, registroHistorico);
         this.listarDocumentosProcesso = new ListarDocumentosProcesso(processoDocumentoRepository, authorizationUtil);
     }
@@ -108,5 +112,15 @@ public class ProcessoService {
 
     public ProcessoAppResponse atualizarDadosDoDataJud(Long id) {
         return updateProcesso.atualizarDadosDoDataJud(id);
+    }
+
+    public SincronizacaoProcessoResponse solicitarSincronizacaoDataJud(Long id) {
+        buscarPorId(id);
+        sincronizacaoProducer.enviarSolicitacao(id);
+        return new SincronizacaoProcessoResponse(
+                id,
+                "Solicitação de sincronização enviada para a fila de processamento.",
+                "EM_PROCESSAMENTO"
+        );
     }
 }

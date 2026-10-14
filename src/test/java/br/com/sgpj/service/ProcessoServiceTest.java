@@ -20,6 +20,7 @@ import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.ProcessoDocumentoRepository;
 import br.com.sgpj.repository.UsuarioRepository;
 import br.com.sgpj.security.AuthorizationUtil;
+import br.com.sgpj.producer.SincronizacaoProcessoProducer;
 import br.com.sgpj.service.useCases.processo.CreateProcesso;
 import br.com.sgpj.service.useCases.processo.DeleteProcessoApp;
 import br.com.sgpj.service.useCases.processo.DeleteProcessoDocumento;
@@ -84,6 +85,9 @@ class ProcessoServiceTest {
     @Mock
     private RegistroHistoricoProcesso registroHistorico;
 
+    @Mock
+    private SincronizacaoProcessoProducer sincronizacaoProcessoProducer;
+
     private ProcessoService processoService;
 
     @BeforeEach
@@ -99,7 +103,8 @@ class ProcessoServiceTest {
                 authorizationUtil,
                 deleteProcessoApp,
                 deleteProcessoDocumento,
-                registroHistorico
+                registroHistorico,
+                sincronizacaoProcessoProducer
         );
     }
 
@@ -132,12 +137,12 @@ class ProcessoServiceTest {
         void deveDelegarListagem() {
             Page<ProcessoAppMiniResponse> lista = new PageImpl<>(List.of(mock(ProcessoAppMiniResponse.class)));
             PageRequest pageable = PageRequest.of(0, 20);
-            when(readProcesso.listarProcessos(pageable)).thenReturn(lista);
+            when(readProcesso.listarProcessos(pageable, null, null, null, null, null, null)).thenReturn(lista);
 
-            Page<ProcessoAppMiniResponse> resultado = processoService.listarProcessos(pageable);
+            Page<ProcessoAppMiniResponse> resultado = processoService.listarProcessos(pageable, null, null, null, null, null, null);
 
             assertEquals(lista, resultado);
-            verify(readProcesso).listarProcessos(pageable);
+            verify(readProcesso).listarProcessos(pageable, null, null, null, null, null, null);
         }
 
         @Test

@@ -144,22 +144,22 @@ class ProcessosControllerTest {
         @DisplayName("Deve retornar lista de processos com status 200 quando escopo é válido")
         void deveRetornarListaComStatus200QuandoEscopoValido() {
             Page<ProcessoAppMiniResponse> processos = new PageImpl<>(List.of(processoAppMiniResponse));
-            when(processoService.listarProcessos(any())).thenReturn(processos);
+            when(processoService.listarProcessos(any(), any(), any(), any(), any(), any(), any())).thenReturn(processos);
 
-            ResponseEntity<Page<ProcessoAppMiniResponse>> resposta = controller.listarProcessos(PageRequest.of(0, 20));
+            ResponseEntity<Page<ProcessoAppMiniResponse>> resposta = controller.listarProcessos(PageRequest.of(0, 20), null, null, null, null, null, null);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
             assertThat(resposta.getBody()).hasSize(1);
 
-            verify(processoService).listarProcessos(any());
+            verify(processoService).listarProcessos(any(), any(), any(), any(), any(), any(), any());
         }
 
         @Test
         @DisplayName("Deve retornar lista vazia com status 200 quando não há processos")
         void deveRetornarListaVaziaComStatus200QuandoNaoHaProcessos() {
-            when(processoService.listarProcessos(any())).thenReturn(Page.empty());
+            when(processoService.listarProcessos(any(), any(), any(), any(), any(), any(), any())).thenReturn(Page.empty());
 
-            ResponseEntity<Page<ProcessoAppMiniResponse>> resposta = controller.listarProcessos(PageRequest.of(0, 20));
+            ResponseEntity<Page<ProcessoAppMiniResponse>> resposta = controller.listarProcessos(PageRequest.of(0, 20), null, null, null, null, null, null);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
             assertThat(resposta.getBody().getContent()).isEmpty();

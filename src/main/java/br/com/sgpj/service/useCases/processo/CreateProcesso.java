@@ -74,7 +74,7 @@ public class CreateProcesso {
         if (cnjNormalizado != null) {
             ProcessoApi dadosOficiais = null;
             try {
-                dadosOficiais = processoApiGateway.buscarDadosOficiais(cnjNormalizado);
+                dadosOficiais = processoApiGateway.buscarDadosOficiais(cnjNormalizado, siglaTribunal);
             } catch (Exception e) {
                 log.warn("Falha ao buscar dados no DataJud para o CNJ {}: {}", cnjNormalizado, e.getMessage());
             }

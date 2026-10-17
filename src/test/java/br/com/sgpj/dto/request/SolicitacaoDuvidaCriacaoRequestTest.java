@@ -177,7 +177,7 @@ class SolicitacaoDuvidaCriacaoRequestTest {
                     ComoConheceuEnum.SITE,
                     true,
                     "Empresa Exemplo LTDA",
-                    "12.345.678/0001-95" // com pontuação
+                    "12.345.678/0001" // incompleto (apenas 12 dígitos)
             );
 
             Set<ConstraintViolation<SolicitacaoDuvidaCriacaoRequest>> violacoesCurto = validator.validate(requestCurto);

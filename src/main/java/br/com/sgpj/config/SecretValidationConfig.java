@@ -115,4 +115,8 @@ public class SecretValidationConfig {
     public void setDataJudApiKey(String dataJudApiKey) {
         this.dataJudApiKey = dataJudApiKey;
     }
+
+    public void setCloudflareSecretKey(String cloudflareSecretKey) {
+        this.cloudflareSecretKey = cloudflareSecretKey;
+    }
 }

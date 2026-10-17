@@ -85,6 +85,10 @@ public class ProcessosController {
         return ResponseEntity.ok(processos);
     }
 
+    public ResponseEntity<Page<ProcessoAppMiniResponse>> listarProcessos(Pageable pageable) {
+        return listarProcessos(pageable, null, null, null, null, null, null);
+    }
+
     @GetMapping("/processos/{id}")
     @SecurityRequirement(name = "Bearer")
     public ResponseEntity<ProcessoAppResponse> buscarProcessoPorId(@PathVariable Long id){

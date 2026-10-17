@@ -70,6 +70,10 @@ public class CreateProcesso {
             }
         }
 
+        if (cnjNormalizado != null && processoAppRepository.existsByCnj(cnjNormalizado)) {
+            throw new br.com.sgpj.exception.ProcessoJaExistenteException("Já existe um processo cadastrado com este número de CNJ.");
+        }
+
         boolean sincronizado = false;
         if (cnjNormalizado != null) {
             ProcessoApi dadosOficiais = null;

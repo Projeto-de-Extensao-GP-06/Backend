@@ -119,6 +119,13 @@ public class UpdateProcesso {
             processoEditado.setJustificativa(null);
         }
 
+        if (processoAtualizar.numeroCnj() != null && !processoAtualizar.numeroCnj().isBlank()) {
+            String cnjLimpo = processoAtualizar.numeroCnj().replaceAll("\\D", "");
+            if (!cnjLimpo.isBlank() && processoAppRepository.existsByCnjAndIdNot(cnjLimpo, id)) {
+                throw new br.com.sgpj.exception.ProcessoJaExistenteException("Já existe outro processo cadastrado com este número de CNJ.");
+            }
+        }
+
         if (processoEncontrado.getProcessoApi() == null) {
             if (processoAtualizar.numeroCnj() != null && !processoAtualizar.numeroCnj().isBlank()) {
                 ProcessoApi processoApi = null;
@@ -177,7 +184,7 @@ public class UpdateProcesso {
                 processoApiExistente.getNumeroCnj(), processoApp.getSiglaTribunal());
 
         if (dadosAtualizados == null) {
-            throw new DataJudIntegrationException("Não foi possível estabelecer conexão com o DataJud, tente novamente mais tarde.");
+            throw new DataJudIntegrationException("Não foi possível obter dados oficiais do DataJud no momento. Por favor, tente novamente mais tarde.");
         }
 
         processoApiExistente.setTribunalTramitacao(dadosAtualizados.getTribunalTramitacao());

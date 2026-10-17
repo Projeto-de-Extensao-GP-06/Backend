@@ -14,7 +14,7 @@ public class RestClientConfig {
     public RestClient restClient() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(Duration.ofSeconds(15));
-        factory.setReadTimeout(Duration.ofSeconds(75));
+        factory.setReadTimeout(Duration.ofSeconds(180));
 
         return RestClient.builder()
                 .baseUrl("https://api-publica.datajud.cnj.jus.br")

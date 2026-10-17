@@ -39,4 +39,29 @@ public interface ProcessoAppRepository extends JpaRepository<ProcessoApp, Long>,
             @Param("query") String query,
             @Param("faseId") Long faseId,
             @Param("tribunalId") Long tribunalId);
+
+    @Query("""
+            select count(p) > 0
+            from ProcessoApp p
+            join p.processoApi api
+            where api.numeroCnj is not null
+              and (
+                  api.numeroCnj = :cnjLimpo
+                  or replace(replace(replace(api.numeroCnj, '.', ''), '-', ''), '/', '') = :cnjLimpo
+              )
+            """)
+    boolean existsByCnj(@Param("cnjLimpo") String cnjLimpo);
+
+    @Query("""
+            select count(p) > 0
+            from ProcessoApp p
+            join p.processoApi api
+            where p.id <> :id
+              and api.numeroCnj is not null
+              and (
+                  api.numeroCnj = :cnjLimpo
+                  or replace(replace(replace(api.numeroCnj, '.', ''), '-', ''), '/', '') = :cnjLimpo
+              )
+            """)
+    boolean existsByCnjAndIdNot(@Param("cnjLimpo") String cnjLimpo, @Param("id") Long id);
 }

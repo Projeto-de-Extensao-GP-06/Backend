@@ -41,16 +41,19 @@ public class ProcessoApiGateway {
             return null;
         }
 
-        String siglaTribunal;
-        try {
-            siglaTribunal = mapearSiglaTribunalPorNumero(numeroProcesso.substring(14, 16));
-        } catch (Exception e) {
-            siglaTribunal = null;
+        String cnjLimpo = numeroProcesso.replaceAll("\\D", "");
+        String siglaTribunal = null;
+        if (cnjLimpo.length() >= 16) {
+            try {
+                siglaTribunal = mapearSiglaTribunalPorNumero(cnjLimpo.substring(14, 16));
+            } catch (Exception e) {
+                siglaTribunal = null;
+            }
         }
 
         try {
             DataJudApiResponse dataJudResponse = dataJudAdapter.buscarPorNumeroDeProcesso(
-                    numeroProcesso,
+                    cnjLimpo,
                     siglaTribunal
             );
 
@@ -61,7 +64,7 @@ public class ProcessoApiGateway {
             return ProcessoApiMapper.toEntity(dataJudResponse);
         } catch (Exception ex) {
             log.warn("Não foi possível obter dados oficiais do processo {} no tribunal {}: {}",
-                    numeroProcesso, siglaTribunal != null ? siglaTribunal : "null", ex.getMessage());
+                    cnjLimpo, siglaTribunal != null ? siglaTribunal : "null", ex.getMessage());
             return null;
         }
     }
@@ -76,17 +79,23 @@ public class ProcessoApiGateway {
             return null;
         }
 
-        String siglaTribunal;
-        try {
-            siglaTribunal = mapearSiglaTribunalPorNumero(numeroProcesso.substring(14, 16));
-        } catch (Exception e) {
-            // fallback para a entidade passada
-            siglaTribunal = siglaTribunalEntidade != null ? siglaTribunalEntidade.getNome() : null;
+        String cnjLimpo = numeroProcesso.replaceAll("\\D", "");
+        String siglaTribunal = null;
+        if (cnjLimpo.length() >= 16) {
+            try {
+                siglaTribunal = mapearSiglaTribunalPorNumero(cnjLimpo.substring(14, 16));
+            } catch (Exception e) {
+                siglaTribunal = null;
+            }
+        }
+
+        if (siglaTribunal == null && siglaTribunalEntidade != null) {
+            siglaTribunal = siglaTribunalEntidade.getNome();
         }
 
         try {
             DataJudApiResponse dataJudResponse = dataJudAdapter.buscarPorNumeroDeProcesso(
-                    numeroProcesso,
+                    cnjLimpo,
                     siglaTribunal
             );
 
@@ -97,7 +106,7 @@ public class ProcessoApiGateway {
             return ProcessoApiMapper.toEntity(dataJudResponse);
         } catch (Exception ex) {
             log.warn("Não foi possível obter dados oficiais do processo {} no tribunal {}: {}",
-                    numeroProcesso, siglaTribunal != null ? siglaTribunal : "null", ex.getMessage());
+                    cnjLimpo, siglaTribunal != null ? siglaTribunal : "null", ex.getMessage());
             return null;
         }
     }

@@ -125,7 +125,7 @@ class CreateProcessoTest {
             assertEquals(prioridade, salvo.getPrioridade());
             assertEquals(faseProcesso, salvo.getFaseProcesso());
             assertEquals(siglaTribunal, salvo.getSiglaTribunal());
-            verify(processoApiGateway, never()).buscarDadosOficiais(any(), any());
+            verify(processoApiGateway, never()).buscarDadosOficiais(any());
         }
 
         @Test
@@ -196,6 +196,7 @@ class CreateProcessoTest {
             assertEquals("00000010020268260001", salvo.getProcessoApi().getNumeroCnj());
             assertEquals("TJSP", salvo.getProcessoApi().getTribunalTramitacao());
             assertEquals(StatusProcesso.ATIVO, salvo.getStatus());
+            verify(processoApiGateway).buscarDadosOficiais("00000010020268260001", siglaTribunal);
         }
 
         @Test

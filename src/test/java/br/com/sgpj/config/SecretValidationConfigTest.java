@@ -30,6 +30,7 @@ class SecretValidationConfigTest {
             config.setClientId("valid-id");
             config.setClientSecret("valid-secret");
             config.setDataJudApiKey("valid-key");
+            config.setCloudflareSecretKey("valid-key");
             config.setValidateSecretsEnabled(true);
 
             assertThrows(IllegalStateException.class, config::validateSecrets);
@@ -44,6 +45,7 @@ class SecretValidationConfigTest {
             config.setClientId("valid-id");
             config.setClientSecret("valid-secret");
             config.setDataJudApiKey("valid-key");
+            config.setCloudflareSecretKey("valid-key");
             config.setValidateSecretsEnabled(true);
 
             assertThrows(IllegalStateException.class, config::validateSecrets);
@@ -58,6 +60,7 @@ class SecretValidationConfigTest {
             config.setClientId("valid-id");
             config.setClientSecret("valid-secret");
             config.setDataJudApiKey("valid-key");
+            config.setCloudflareSecretKey("valid-key");
             config.setValidateSecretsEnabled(true);
 
             assertThrows(IllegalStateException.class, config::validateSecrets);
@@ -72,6 +75,7 @@ class SecretValidationConfigTest {
             config.setClientId("valid-id");
             config.setClientSecret("");
             config.setDataJudApiKey("valid-key");
+            config.setCloudflareSecretKey("valid-key");
             config.setValidateSecretsEnabled(true);
 
             assertThrows(IllegalStateException.class, config::validateSecrets);
@@ -86,6 +90,22 @@ class SecretValidationConfigTest {
             config.setClientId("valid-id");
             config.setClientSecret("valid-secret");
             config.setDataJudApiKey("");
+            config.setCloudflareSecretKey("valid-key");
+            config.setValidateSecretsEnabled(true);
+
+            assertThrows(IllegalStateException.class, config::validateSecrets);
+        }
+
+        @Test
+        @DisplayName("Deve lançar exceção quando CLOUDFLARE_SECRET_KEY estiver vazio")
+        void deveLancarExcecaoQuandoCloudflareSecretKeyEstiverVazio() {
+            SecretValidationConfig config = new SecretValidationConfig();
+            config.setDbPassword("valid-password");
+            config.setJwtSecret("valid-secret");
+            config.setClientId("valid-id");
+            config.setClientSecret("valid-secret");
+            config.setDataJudApiKey("valid-key");
+            config.setCloudflareSecretKey("");
             config.setValidateSecretsEnabled(true);
 
             assertThrows(IllegalStateException.class, config::validateSecrets);
@@ -100,6 +120,7 @@ class SecretValidationConfigTest {
             config.setClientId("");
             config.setClientSecret("");
             config.setDataJudApiKey("");
+            config.setCloudflareSecretKey("");
             config.setValidateSecretsEnabled(false);
 
             assertDoesNotThrow(config::validateSecrets);
@@ -114,6 +135,7 @@ class SecretValidationConfigTest {
             config.setClientId("valid-client-id");
             config.setClientSecret("valid-client-secret");
             config.setDataJudApiKey("valid-api-key");
+            config.setCloudflareSecretKey("valid-cloudflare-key");
             config.setValidateSecretsEnabled(true);
 
             assertDoesNotThrow(config::validateSecrets);

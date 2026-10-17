@@ -14,11 +14,11 @@ public record ProcessoAppUpdateRequest(
         String numeroCnj,
 
         @NotBlank(message = "Descricao do caso e obrigatoria")
-        @Size(min = 10, max = 5000)
+        @Size(max = 10000, message = "A descrição não pode ter mais de 10000 caracteres")
         @Schema(description = "Descricao sobre o processo", example = "Esse processo e sobre divisao de bens")
         String descricaoCaso,
 
-        @Size(min = 10, max = 5000)
+        @Size(max = 10000, message = "A observação não pode ter mais de 10000 caracteres")
         @Schema(description = "observacao sobre o processo", example = "Cliente tem algum laudo")
         String observacao,
 

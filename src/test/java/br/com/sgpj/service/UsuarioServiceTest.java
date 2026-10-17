@@ -200,14 +200,12 @@ class UsuarioServiceTest {
     }
 
     @Test
-    @DisplayName("validarOtp delega para ValidarOtp e retorna boolean")
+    @DisplayName("validarOtp delega para ValidarOtp")
     void validarOtpDelega() {
         ValidarOtpRequest req = new ValidarOtpRequest("a", "1");
-        when(validarOtp.executar(req)).thenReturn(true);
 
-        boolean res = usuarioService.validarOtp(req);
+        usuarioService.validarOtp(req);
 
-        assertTrue(res);
         verify(validarOtp).executar(req);
     }
 

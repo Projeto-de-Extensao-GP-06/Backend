@@ -53,8 +53,13 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<Map<String, Object>> handleBadCredentials() {
-        return buildResponse(HttpStatus.UNAUTHORIZED, "E-mail ou senha inválidos");
+    public ResponseEntity<Map<String, Object>> handleBadCredentials(BadCredentialsException ex) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, "E-mail e/ou senha inválido(s)");
+    }
+
+    @ExceptionHandler(OtpInvalidaException.class)
+    public ResponseEntity<Map<String, Object>> handleOtpInvalida(OtpInvalidaException ex) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
     @ExceptionHandler(UsernameNotFoundException.class)
@@ -94,6 +99,11 @@ public class GlobalExceptionHandler {
 
         Map<String, Object> body = buildValidationResponse(fieldErrors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    @ExceptionHandler(CaptchaInvalidoException.class)
+    public ResponseEntity<Map<String, Object>> handleCaptchaInvalido(CaptchaInvalidoException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -233,6 +243,11 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, msg);
     }
 
+    @ExceptionHandler(TribunalInvalidoException.class)
+    public ResponseEntity<Map<String, Object>> handleTribunalInvalido(TribunalInvalidoException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
     private ResponseEntity<Map<String, Object>> buildResponse(HttpStatus status, String message) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", LocalDateTime.now().toString());
@@ -245,6 +260,8 @@ public class GlobalExceptionHandler {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", LocalDateTime.now().toString());
         body.put("status", HttpStatus.BAD_REQUEST.value());
+        String primeiraMensagem = fieldErrors.values().stream().findFirst().orElse("Dados inválidos na requisição.");
+        body.put("message", primeiraMensagem);
         body.put("errors", fieldErrors);
         return body;
     }

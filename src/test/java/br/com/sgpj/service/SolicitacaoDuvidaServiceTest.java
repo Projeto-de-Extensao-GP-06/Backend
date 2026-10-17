@@ -1,10 +1,12 @@
 package br.com.sgpj.service;
 
 import br.com.sgpj.dto.request.SolicitacaoDuvidaCriacaoRequest;
+import br.com.sgpj.dto.response.Solicitacao.SolicitacaoCandidatoDuplicidadeResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoClientePreenchimentoResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaDetalhesResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaListarResponse;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.AceitarSolicitacao;
+import br.com.sgpj.service.useCases.solicitacaoDuvida.BuscarCandidatosDuplicidadeSolicitacao;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.CreateSolicitacaoDuvida;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.FiltrarSolicitacoes;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.ListarSolicitacoesPendentes;
@@ -47,6 +49,9 @@ class SolicitacaoDuvidaServiceTest {
 
     @Mock
     private FiltrarSolicitacoes filtrarSolicitacoes;
+
+    @Mock
+    private BuscarCandidatosDuplicidadeSolicitacao buscarCandidatosDuplicidadeSolicitacao;
 
     @InjectMocks
     private SolicitacaoDuvidaService solicitacaoDuvidaService;
@@ -112,5 +117,31 @@ class SolicitacaoDuvidaServiceTest {
         solicitacaoDuvidaService.negar(1L);
 
         verify(negarSolicitacao).negar(1L);
+    }
+
+    @Test
+    @DisplayName("buscarDuplicidades deve delegar ao use case BuscarCandidatosDuplicidadeSolicitacao")
+    void deveDelegarBuscaDuplicidadesAoUseCase() {
+        List<SolicitacaoCandidatoDuplicidadeResponse> lista = List.of(mock(SolicitacaoCandidatoDuplicidadeResponse.class));
+        when(buscarCandidatosDuplicidadeSolicitacao.buscarPorSolicitacaoId(1L)).thenReturn(lista);
+
+        List<SolicitacaoCandidatoDuplicidadeResponse> resultado = solicitacaoDuvidaService.buscarDuplicidades(1L);
+
+        assertEquals(lista, resultado);
+        verify(buscarCandidatosDuplicidadeSolicitacao).buscarPorSolicitacaoId(1L);
+    }
+
+    @Test
+    @DisplayName("filtrar deve delegar ao use case FiltrarSolicitacoes")
+    void deveDelegarFiltragemAoUseCase() {
+        Pageable pageable = PageRequest.of(0, 20);
+        Page<SolicitacaoDuvidaListarResponse> pagina = new PageImpl<>(List.of(), pageable, 0);
+        when(filtrarSolicitacoes.filtrar("SP", "maria", null, null, pageable)).thenReturn(pagina);
+
+        Page<SolicitacaoDuvidaListarResponse> resultado =
+                solicitacaoDuvidaService.filtrar("SP", "maria", null, null, pageable);
+
+        assertEquals(pagina, resultado);
+        verify(filtrarSolicitacoes).filtrar("SP", "maria", null, null, pageable);
     }
 }

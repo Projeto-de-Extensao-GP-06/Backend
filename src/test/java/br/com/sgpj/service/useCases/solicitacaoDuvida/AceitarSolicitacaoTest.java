@@ -2,6 +2,7 @@ package br.com.sgpj.service.useCases.solicitacaoDuvida;
 
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoClientePreenchimentoResponse;
 import br.com.sgpj.entity.Cliente;
+import br.com.sgpj.entity.Contato;
 import br.com.sgpj.entity.Processo.ProcessoApp;
 import br.com.sgpj.entity.Processo.StatusProcesso;
 import br.com.sgpj.entity.StatusCliente;
@@ -20,10 +21,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -91,6 +94,82 @@ class AceitarSolicitacaoTest {
             assertEquals(statusAtivo, clienteCaptor.getValue().getStatusCliente());
             assertNotNull(clienteCaptor.getValue().getDataHoraTransformacaoEmCliente());
             assertNotNull(response);
+        }
+
+        @Test
+        @DisplayName("Deve preencher corretamente nomeRazaoSocial, nomeContato e cnpj para solicitação de PJ")
+        void deveAceitarSolicitacaoPjPreenchendoRazaoSocialNomeContatoECnpj() {
+            Cliente clientePj = new Cliente();
+            clientePj.setId(20L);
+            clientePj.setNomeRazaoSocial("Empresa Alpha LTDA");
+            clientePj.setPF(false);
+
+            Contato contato = new Contato();
+            contato.setId(100L);
+            contato.setNome("Roberto Representante");
+            contato.setEmail("roberto@empresaalpha.com");
+            contato.setTelefone("11988887777");
+            contato.setPrincipal(true);
+            clientePj.setContatos(List.of(contato));
+
+            ProcessoApp processoPj = new ProcessoApp();
+            processoPj.setId(2L);
+            processoPj.setCliente(clientePj);
+            processoPj.setStatus(StatusProcesso.SOLICITACAO);
+            processoPj.setCnpjInformadoFormulario("12345678000195");
+            processoPj.setObservacao("Solicitação enviada pelo formulário público. Estado: SP");
+
+            when(processoAppRepository.findById(2L)).thenReturn(Optional.of(processoPj));
+            when(statusClienteRepository.findByNomeIgnoreCase(StatusClienteEnum.ATIVO.getNome()))
+                    .thenReturn(Optional.of(statusAtivo));
+
+            SolicitacaoClientePreenchimentoResponse response = aceitarSolicitacao.aceitar(2L);
+
+            assertNotNull(response);
+            assertEquals("Empresa Alpha LTDA", response.nomeRazaoSocial());
+            assertEquals("Roberto Representante", response.nomeContato());
+            assertEquals("12345678000195", response.cnpj());
+            assertEquals("roberto@empresaalpha.com", response.email());
+            assertEquals("11988887777", response.telefone());
+            assertEquals("SP", response.estado());
+        }
+
+        @Test
+        @DisplayName("Deve retornar cnpj nulo e nome de contato correto para solicitação de PF")
+        void deveAceitarSolicitacaoPfComCnpjNuloENomeContato() {
+            Cliente clientePf = new Cliente();
+            clientePf.setId(30L);
+            clientePf.setNomeRazaoSocial("Maria Fernandes");
+            clientePf.setPF(true);
+
+            Contato contato = new Contato();
+            contato.setId(200L);
+            contato.setNome("Maria Fernandes");
+            contato.setEmail("maria@gmail.com");
+            contato.setTelefone("21977776666");
+            contato.setPrincipal(true);
+            clientePf.setContatos(List.of(contato));
+
+            ProcessoApp processoPf = new ProcessoApp();
+            processoPf.setId(3L);
+            processoPf.setCliente(clientePf);
+            processoPf.setStatus(StatusProcesso.SOLICITACAO);
+            processoPf.setCnpjInformadoFormulario(null);
+            processoPf.setObservacao("Solicitação enviada pelo formulário público. Estado: RJ");
+
+            when(processoAppRepository.findById(3L)).thenReturn(Optional.of(processoPf));
+            when(statusClienteRepository.findByNomeIgnoreCase(StatusClienteEnum.ATIVO.getNome()))
+                    .thenReturn(Optional.of(statusAtivo));
+
+            SolicitacaoClientePreenchimentoResponse response = aceitarSolicitacao.aceitar(3L);
+
+            assertNotNull(response);
+            assertEquals("Maria Fernandes", response.nomeRazaoSocial());
+            assertEquals("Maria Fernandes", response.nomeContato());
+            assertNull(response.cnpj());
+            assertEquals("maria@gmail.com", response.email());
+            assertEquals("21977776666", response.telefone());
+            assertEquals("RJ", response.estado());
         }
 
         @Test

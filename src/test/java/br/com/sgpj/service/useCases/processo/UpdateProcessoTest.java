@@ -37,6 +37,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -417,7 +419,7 @@ class UpdateProcessoTest {
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
             when(faseProcessoRepository.findById(1L)).thenReturn(Optional.of(faseProcesso));
-            when(processoApiGateway.buscarDadosOficiais("0000001-00.2026.8.26.0001", tribunal)).thenReturn(apiMock);
+            when(processoApiGateway.buscarDadosOficiais(eq("0000001-00.2026.8.26.0001"), nullable(SiglaTribunal.class))).thenReturn(apiMock);
             when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> inv.getArgument(0));
 
             updateProcesso.atualizarProcesso(1L, request);
@@ -425,7 +427,7 @@ class UpdateProcessoTest {
             ArgumentCaptor<ProcessoApp> captor = ArgumentCaptor.forClass(ProcessoApp.class);
             verify(processoAppRepository).save(captor.capture());
             assertEquals(apiMock, captor.getValue().getProcessoApi());
-            verify(processoApiGateway).buscarDadosOficiais("0000001-00.2026.8.26.0001", tribunal);
+            verify(processoApiGateway).buscarDadosOficiais(eq("0000001-00.2026.8.26.0001"), nullable(SiglaTribunal.class));
         }
 
         @Test
@@ -449,7 +451,7 @@ class UpdateProcessoTest {
             ArgumentCaptor<ProcessoApp> captor = ArgumentCaptor.forClass(ProcessoApp.class);
             verify(processoAppRepository).save(captor.capture());
             assertEquals(apiExistente, captor.getValue().getProcessoApi());
-            verify(processoApiGateway, never()).buscarDadosOficiais(any(), any());
+            verify(processoApiGateway, never()).buscarDadosOficiais(any());
         }
     }
 }

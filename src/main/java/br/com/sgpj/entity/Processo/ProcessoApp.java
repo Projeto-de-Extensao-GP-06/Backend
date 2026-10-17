@@ -6,7 +6,6 @@ import br.com.sgpj.entity.Usuario;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
 @Table(name = "processo_dados_aplicacao")
@@ -63,6 +62,9 @@ public class ProcessoApp {
     private SiglaTribunal siglaTribunal;
 
     private Double valorCausa;
+
+    @Column(name = "cnpj_informado_formulario", length = 14)
+    private String cnpjInformadoFormulario;
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "processo_dados_api_id")
@@ -139,6 +141,7 @@ public class ProcessoApp {
     public String getJustificativa() {return justificativa;}
     public SiglaTribunal getSiglaTribunal() {return siglaTribunal;}
     public ProcessoApi getProcessoApi() {return processoApi;}
+    public String getCnpjInformadoFormulario() {return cnpjInformadoFormulario;}
 
     public void setObservacao(String observacao) {this.observacao = observacao;}
     public void setCliente(Cliente cliente) {this.cliente = cliente;}
@@ -158,4 +161,5 @@ public class ProcessoApp {
     public void setMotivoStatus(MotivoStatusProcesso motivoStatus) {this.motivoStatus = motivoStatus;}
     public void setJustificativa(String justificativa) {this.justificativa = justificativa;}
     public void setSiglaTribunal(SiglaTribunal siglaTribunal) {this.siglaTribunal = siglaTribunal;}
+    public void setCnpjInformadoFormulario(String cnpjInformadoFormulario) {this.cnpjInformadoFormulario = cnpjInformadoFormulario;}
 }

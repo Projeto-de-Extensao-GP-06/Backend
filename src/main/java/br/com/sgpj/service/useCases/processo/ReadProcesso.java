@@ -37,18 +37,22 @@ public class ReadProcesso {
         this.clienteRepository = clienteRepository;
     }
 
+    public Page<ProcessoAppMiniResponse> listarProcessos(
+            Pageable pageable,
+            String query,
+            String status,
+            Long faseId,
+            Long tribunalId,
+            Long prioridadeId,
+            String audiencia
+    ) {
+        var spec = ProcessoSpecification.comFiltros(query, status, faseId, tribunalId, prioridadeId, audiencia);
+        Page<ProcessoApp> paginaEncontrada = processoAppRepository.findAll(spec, pageable);
+        return paginaEncontrada.map(ProcessoAppMapper::toMiniResponse);
+    }
+
     public Page<ProcessoAppMiniResponse> listarProcessos(Pageable pageable) {
-
-        Page<ProcessoApp> paginaEncontrada = processoAppRepository.findAll(pageable);
-        List<ProcessoAppMiniResponse> processosFiltrados = new ArrayList<>();
-
-        for (ProcessoApp processo : paginaEncontrada.getContent()) {
-            if (deveExibirComoProcesso(processo)) {
-                processosFiltrados.add(ProcessoAppMapper.toMiniResponse(processo));
-            }
-        }
-
-        return new PageImpl<>(processosFiltrados, pageable, paginaEncontrada.getTotalElements());
+        return listarProcessos(pageable, null, null, null, null, null, null);
     }
 
     public ProcessoAppResponse buscarPorId(Long id) {

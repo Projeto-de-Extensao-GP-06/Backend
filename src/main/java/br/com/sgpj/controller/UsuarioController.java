@@ -1,10 +1,12 @@
 package br.com.sgpj.controller;
 
+import br.com.sgpj.dto.request.UsuarioAlterarSenhaRequest;
 import br.com.sgpj.dto.request.UsuarioAtualizacaoRequest;
 import br.com.sgpj.dto.request.UsuarioCriacaoRequest;
 import br.com.sgpj.dto.response.Usuario.UsuarioListarResponse;
 import br.com.sgpj.service.UsuarioService;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -128,5 +130,14 @@ public class UsuarioController {
         return ResponseEntity.ok(
                 usuarioService.reativarUsuario(id)
         );
+    }
+
+    @RequestMapping(value = "/minha-senha", method = {RequestMethod.PATCH, RequestMethod.PUT})
+    @Operation(summary = "Altera a senha do usuário atualmente autenticado")
+    public ResponseEntity<Void> alterarMinhaSenha(
+            @RequestBody @Valid UsuarioAlterarSenhaRequest request
+    ) {
+        usuarioService.alterarMinhaSenha(request);
+        return ResponseEntity.noContent().build();
     }
 }

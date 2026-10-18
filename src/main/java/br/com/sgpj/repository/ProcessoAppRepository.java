@@ -19,6 +19,10 @@ public interface ProcessoAppRepository extends JpaRepository<ProcessoApp, Long>,
 
     List<ProcessoApp> findByClienteId(Long clienteId);
 
+      boolean existsByCliente_IdAndIdNot(Long clienteId, Long processoId);
+
+      boolean existsByProcessoApi_IdAndIdNot(Long processoApiId, Long processoId);
+
     Page<ProcessoApp> findByCliente_StatusCliente_NomeIgnoreCase(String statusNome, Pageable pageable);
 
     @Query(value = """

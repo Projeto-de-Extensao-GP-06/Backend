@@ -28,7 +28,7 @@ public interface ProcessoAppRepository extends JpaRepository<ProcessoApp, Long>,
             left join c.statusCliente statusCliente
             left join p.processoApi api
             where lower(p.observacao) like lower(concat(:estadoPrefixo, '%'))
-              and (:estado is null or lower(p.observacao) = lower(concat(:estadoPrefixo, :estado)))
+              and (:estado is null or lower(p.observacao) = lower(concat(:estadoPrefixo, ' Estado: ', :estado)))
               and (:pesquisa is null
                    or lower(c.nomeRazaoSocial) like lower(concat('%', :pesquisa, '%'))
                    or exists (
@@ -48,7 +48,7 @@ public interface ProcessoAppRepository extends JpaRepository<ProcessoApp, Long>,
             left join c.statusCliente statusCliente
             left join p.processoApi api
             where lower(p.observacao) like lower(concat(:estadoPrefixo, '%'))
-              and (:estado is null or lower(p.observacao) = lower(concat(:estadoPrefixo, :estado)))
+              and (:estado is null or lower(p.observacao) = lower(concat(:estadoPrefixo, ' Estado: ', :estado)))
               and (:pesquisa is null
                    or lower(c.nomeRazaoSocial) like lower(concat('%', :pesquisa, '%'))
                    or exists (

@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 public class FiltrarSolicitacoes {
 
     private static final String OBSERVACAO_SOLICITACAO_PREFIXO =
-            "Solicitação enviada pelo formulário público. Estado: ";
+            "Solicitação enviada pelo formulário público.";
 
     private final ProcessoAppRepository processoAppRepository;
 

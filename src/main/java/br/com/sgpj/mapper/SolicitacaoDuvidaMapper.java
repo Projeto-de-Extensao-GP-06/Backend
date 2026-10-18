@@ -26,7 +26,11 @@ public class SolicitacaoDuvidaMapper {
                 solicitacao.getDescricao(),
                 solicitacao.getComoConheceu(),
                 solicitacao.getDataSolicitacao(),
-                solicitacao.getStatus()
+                solicitacao.getStatus(),
+                solicitacao.getPF(),
+                Boolean.FALSE.equals(solicitacao.getPF()) ? solicitacao.getNomeCompleto() : null,
+                solicitacao.getNomeContato(),
+                solicitacao.getCnpj()
         );
     }
 
@@ -45,7 +49,11 @@ public class SolicitacaoDuvidaMapper {
                 solicitacao.getDataSolicitacao(),
                 solicitacao.getStatus(),
                 solicitacao.getDataResposta(),
-                processoApiResponse(solicitacao)
+                processoApiResponse(solicitacao),
+                solicitacao.getPF(),
+                Boolean.FALSE.equals(solicitacao.getPF()) ? solicitacao.getNomeCompleto() : null,
+                solicitacao.getNomeContato(),
+                solicitacao.getCnpj()
         );
     }
 

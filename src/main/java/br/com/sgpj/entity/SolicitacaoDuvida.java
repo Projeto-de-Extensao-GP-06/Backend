@@ -22,6 +22,15 @@ public class SolicitacaoDuvida {
     private ProcessoApi processoApi;
     private String cnpj;
     private String nomeContato;
+    private Boolean isPF;
+
+    public Boolean getPF() {
+        return isPF;
+    }
+
+    public void setPF(Boolean PF) {
+        isPF = PF;
+    }
 
     public Long getId() {
         return id;

@@ -3,6 +3,7 @@ package br.com.sgpj.security;
 import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
 import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Processo.ProcessoApp;
+import br.com.sgpj.entity.Processo.StatusProcesso;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.AcessoNegadoException;
 import br.com.sgpj.repository.ClienteRepository;
@@ -141,10 +142,25 @@ class AuthorizationUtilTest {
         }
 
         @Test
-        @DisplayName("Deve lançar AcessoNegadoException quando o processo não tiver responsável")
-        void deveLancarExcecaoQuandoProcessoSemResponsavel() {
+        @DisplayName("Deve permitir processo ativo sem responsável para registros legados")
+        void devePermitirProcessoAtivoSemResponsavel() {
             ProcessoApp processo = mock(ProcessoApp.class);
             when(processo.getUsuarioResponsavel()).thenReturn(null);
+            when(processo.getStatus()).thenReturn(StatusProcesso.ATIVO);
+
+            when(usuarioAutenticacaoAdapter.obterEmailUsuarioLogado()).thenReturn("logado@sgpj.com.br");
+            when(usuarioRepository.findByEmail("logado@sgpj.com.br")).thenReturn(usuarioLogado);
+            when(processoAppRepository.findById(7L)).thenReturn(Optional.of(processo));
+
+            assertDoesNotThrow(() -> authorizationUtil.verificarAcessoProcesso(7L));
+        }
+
+        @Test
+        @DisplayName("Deve negar acesso a solicitação pendente sem responsável")
+        void deveNegarSolicitacaoSemResponsavel() {
+            ProcessoApp processo = mock(ProcessoApp.class);
+            when(processo.getUsuarioResponsavel()).thenReturn(null);
+            when(processo.getStatus()).thenReturn(StatusProcesso.SOLICITACAO);
 
             when(usuarioAutenticacaoAdapter.obterEmailUsuarioLogado()).thenReturn("logado@sgpj.com.br");
             when(usuarioRepository.findByEmail("logado@sgpj.com.br")).thenReturn(usuarioLogado);

@@ -1,6 +1,7 @@
 package br.com.sgpj.controller;
 
 import br.com.sgpj.dto.request.SolicitacaoDuvidaCriacaoRequest;
+import br.com.sgpj.dto.request.SolicitacaoAceiteRequest;
 import br.com.sgpj.dto.response.Solicitacao.MotivoDuplicidadeEnum;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoCandidatoDuplicidadeResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoClientePreenchimentoResponse;
@@ -8,6 +9,8 @@ import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaDetalhesResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaListarResponse;
 import br.com.sgpj.entity.ComoConheceuEnum;
 import br.com.sgpj.entity.SolicitacaoStatus;
+import br.com.sgpj.entity.Usuario;
+import br.com.sgpj.security.AuthorizationUtil;
 import br.com.sgpj.security.RateLimiter;
 import br.com.sgpj.service.CloudflareTurnstileService;
 import br.com.sgpj.service.SolicitacaoDuvidaService;
@@ -47,6 +50,7 @@ class SolicitacaoDuvidaControllerTest {
     @Mock private SolicitacaoDuvidaService service;
     @Mock private RateLimiter rateLimiter;
     @Mock private CloudflareTurnstileService cloudflareTurnstileService;
+        @Mock private AuthorizationUtil authorizationUtil;
     @Mock private HttpServletRequest httpRequest;
     @InjectMocks private SolicitacaoDuvidaController controller;
 
@@ -198,7 +202,10 @@ class SolicitacaoDuvidaControllerTest {
     @Test
     @DisplayName("PATCH aceitar deve retornar dados para preenchimento de cliente")
     void aceitarDeveRetornarPreenchimentoCliente() {
-        when(service.aceitar(30L)).thenReturn(new SolicitacaoClientePreenchimentoResponse(
+        SolicitacaoAceiteRequest request = new SolicitacaoAceiteRequest(null, null);
+                Usuario usuario = new Usuario();
+                when(authorizationUtil.getUsuarioLogado()).thenReturn(usuario);
+                when(service.aceitar(30L, request, usuario)).thenReturn(new SolicitacaoClientePreenchimentoResponse(
                 30L,
                 10L,
                 "Maria Silva",
@@ -210,14 +217,19 @@ class SolicitacaoDuvidaControllerTest {
                 "10108901220228260292",
                 "Preciso de ajuda com meu processo",
                 ComoConheceuEnum.INSTAGRAM,
-                null
+                null,
+                30L,
+                "ATIVO",
+                "ATIVO"
         ));
 
-        ResponseEntity<SolicitacaoClientePreenchimentoResponse> response = controller.aceitar(30L);
+        ResponseEntity<SolicitacaoClientePreenchimentoResponse> response = controller.aceitar(30L, request);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(10L, response.getBody().clienteId());
         assertEquals("Maria Silva", response.getBody().nomeRazaoSocial());
+        assertEquals("ATIVO", response.getBody().statusProcesso());
+        verify(service).aceitar(30L, request, usuario);
     }
 
     @Test

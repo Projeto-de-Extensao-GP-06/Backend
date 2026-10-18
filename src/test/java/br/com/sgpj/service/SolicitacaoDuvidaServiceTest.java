@@ -1,10 +1,12 @@
 package br.com.sgpj.service;
 
 import br.com.sgpj.dto.request.SolicitacaoDuvidaCriacaoRequest;
+import br.com.sgpj.dto.request.SolicitacaoAceiteRequest;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoCandidatoDuplicidadeResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoClientePreenchimentoResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaDetalhesResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaListarResponse;
+import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.AceitarSolicitacao;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.BuscarCandidatosDuplicidadeSolicitacao;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.CreateSolicitacaoDuvida;
@@ -102,13 +104,15 @@ class SolicitacaoDuvidaServiceTest {
     @Test
     @DisplayName("aceitar deve delegar ao use case AceitarSolicitacao")
     void deveDelegarAceiteAoUseCase() {
+        SolicitacaoAceiteRequest request = mock(SolicitacaoAceiteRequest.class);
+        Usuario usuario = mock(Usuario.class);
         SolicitacaoClientePreenchimentoResponse resposta = mock(SolicitacaoClientePreenchimentoResponse.class);
-        when(aceitarSolicitacao.aceitar(1L)).thenReturn(resposta);
+        when(aceitarSolicitacao.aceitar(1L, request, usuario)).thenReturn(resposta);
 
-        SolicitacaoClientePreenchimentoResponse resultado = solicitacaoDuvidaService.aceitar(1L);
+        SolicitacaoClientePreenchimentoResponse resultado = solicitacaoDuvidaService.aceitar(1L, request, usuario);
 
         assertEquals(resposta, resultado);
-        verify(aceitarSolicitacao).aceitar(1L);
+        verify(aceitarSolicitacao).aceitar(1L, request, usuario);
     }
 
     @Test

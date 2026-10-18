@@ -17,6 +17,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:processo-app-repository;DB_CLOSE_DELAY=-1",
@@ -141,6 +143,33 @@ class ProcessoAppRepositoryTest {
         assertEquals(3, vazia.getNumber());
         assertEquals(5, vazia.getSize());
         assertEquals(0, vazia.getTotalPages());
+    }
+
+    @Test
+    void deveDetectarOutrosProcessosDoClienteEDadosOficiaisCompartilhados() {
+        StatusCliente leadStatus = statusClienteRepository.save(new StatusCliente(null, "LEAD"));
+        Cliente cliente = criarCliente("Cliente compartilhado", leadStatus);
+        ProcessoApi processoApi = new ProcessoApi();
+        processoApi.setNumeroCnj("00012345620268260002");
+
+        ProcessoApp processoSolicitacao = criarProcesso(cliente, LocalDateTime.now());
+        processoSolicitacao.setProcessoApi(processoApi);
+        processoSolicitacao = processoAppRepository.saveAndFlush(processoSolicitacao);
+
+        ProcessoApp outroProcesso = criarProcesso(cliente, LocalDateTime.now());
+        outroProcesso.setProcessoApi(processoApi);
+        outroProcesso = processoAppRepository.saveAndFlush(outroProcesso);
+        ProcessoApi processoApiExclusivo = new ProcessoApi();
+        processoApiExclusivo.setNumeroCnj("00012345620268260003");
+        ProcessoApp processoExclusivo = criarProcesso(cliente, LocalDateTime.now());
+        processoExclusivo.setProcessoApi(processoApiExclusivo);
+        processoExclusivo = processoAppRepository.saveAndFlush(processoExclusivo);
+
+        assertTrue(processoAppRepository.existsByCliente_IdAndIdNot(cliente.getId(), processoSolicitacao.getId()));
+        assertTrue(processoAppRepository.existsByProcessoApi_IdAndIdNot(
+                processoApi.getId(), processoSolicitacao.getId()));
+        assertFalse(processoAppRepository.existsByProcessoApi_IdAndIdNot(
+                processoApiExclusivo.getId(), processoExclusivo.getId()));
     }
 
     private Contato criarContato(Cliente cliente, String email, boolean principal) {

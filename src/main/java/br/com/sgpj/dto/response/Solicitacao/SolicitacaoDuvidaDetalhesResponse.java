@@ -20,6 +20,10 @@ public record SolicitacaoDuvidaDetalhesResponse(
         LocalDateTime dataSolicitacao,
         SolicitacaoStatus status,
         LocalDateTime dataResposta,
-        ProcessoApiCreateResponse processo
+        ProcessoApiCreateResponse processo,
+        Boolean isPF,
+        String nomeRazaoSocial,
+        String nomeContato,
+        String cnpj
 ) {
 }

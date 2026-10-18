@@ -25,6 +25,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 
 @Component
 public class CreateSolicitacaoDuvida {
@@ -79,7 +80,12 @@ public class CreateSolicitacaoDuvida {
         ProcessoApp processoApp = new ProcessoApp();
         processoApp.setCliente(cliente);
         processoApp.setDescricaoCaso(request.descricao().trim());
-        processoApp.setObservacao(OBSERVACAO_SOLICITACAO_PREFIXO);
+        String estado = request.estado() == null || request.estado().isBlank()
+            ? null
+            : request.estado().trim().toUpperCase(Locale.ROOT);
+        processoApp.setObservacao(estado == null
+            ? OBSERVACAO_SOLICITACAO_PREFIXO
+            : OBSERVACAO_SOLICITACAO_PREFIXO + " Estado: " + estado);
         processoApp.setDataHoraInicio(cliente.getDataHoraEnvioFormulario());
         processoApp.setUltimaAtualizacao(cliente.getDataHoraEnvioFormulario());
         processoApp.setStatus(StatusProcesso.SOLICITACAO);

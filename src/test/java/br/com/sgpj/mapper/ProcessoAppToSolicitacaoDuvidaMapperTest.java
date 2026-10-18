@@ -28,6 +28,7 @@ class ProcessoAppToSolicitacaoDuvidaMapperTest {
         Cliente cliente = new Cliente();
         cliente.setId(10L);
         cliente.setNomeRazaoSocial("Tecnologia LTDA");
+        cliente.setPF(false);
         cliente.setComoConheceu(ComoConheceuEnum.SITE);
 
         StatusCliente status = new StatusCliente();
@@ -69,6 +70,17 @@ class ProcessoAppToSolicitacaoDuvidaMapperTest {
         assertEquals(10L, solicitacao.getClienteId());
         assertEquals("Tecnologia LTDA", solicitacao.getNomeCompleto());
         assertEquals("Carlos Gerente", solicitacao.getNomeContato());
+        assertEquals(false, solicitacao.getPF());
+        var detalhes = SolicitacaoDuvidaMapper.toDetalhesResponse(solicitacao);
+        var listagem = SolicitacaoDuvidaMapper.toListarResponse(solicitacao);
+        assertEquals(false, detalhes.isPF());
+        assertEquals("Tecnologia LTDA", detalhes.nomeRazaoSocial());
+        assertEquals("Carlos Gerente", detalhes.nomeContato());
+        assertEquals("12345678000195", detalhes.cnpj());
+        assertEquals(false, listagem.isPF());
+        assertEquals("Tecnologia LTDA", listagem.nomeRazaoSocial());
+        assertEquals("Carlos Gerente", listagem.nomeContato());
+        assertEquals("12345678000195", listagem.cnpj());
         assertEquals("12345678000195", solicitacao.getCnpj());
         assertEquals("carlos@empresa.com", solicitacao.getEmail());
         assertEquals("11999998888", solicitacao.getTelefone());
@@ -88,6 +100,7 @@ class ProcessoAppToSolicitacaoDuvidaMapperTest {
         Cliente cliente = new Cliente();
         cliente.setId(15L);
         cliente.setNomeRazaoSocial("Fulano da Silva");
+        cliente.setPF(true);
 
         StatusCliente status = new StatusCliente();
         status.setNome("INATIVO");
@@ -103,6 +116,13 @@ class ProcessoAppToSolicitacaoDuvidaMapperTest {
 
         assertEquals(15L, solicitacao.getClienteId());
         assertEquals("Fulano da Silva", solicitacao.getNomeCompleto());
+        assertEquals(true, solicitacao.getPF());
+        var detalhes = SolicitacaoDuvidaMapper.toDetalhesResponse(solicitacao);
+        var listagem = SolicitacaoDuvidaMapper.toListarResponse(solicitacao);
+        assertEquals(true, detalhes.isPF());
+        assertNull(detalhes.nomeRazaoSocial());
+        assertEquals(true, listagem.isPF());
+        assertNull(listagem.nomeRazaoSocial());
         assertNull(solicitacao.getNomeContato());
         assertNull(solicitacao.getCnpj());
         assertNull(solicitacao.getEmail());

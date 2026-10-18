@@ -1,19 +1,25 @@
 package br.com.sgpj.service;
 
 import br.com.sgpj.dto.request.SolicitacaoDuvidaCriacaoRequest;
+import br.com.sgpj.dto.request.SolicitacaoAceiteRequest;
+import br.com.sgpj.dto.response.Solicitacao.SolicitacaoCandidatoDuplicidadeResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoClientePreenchimentoResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaDetalhesResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaListarResponse;
+import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.AceitarSolicitacao;
+import br.com.sgpj.service.useCases.solicitacaoDuvida.BuscarCandidatosDuplicidadeSolicitacao;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.CreateSolicitacaoDuvida;
+import br.com.sgpj.service.useCases.solicitacaoDuvida.FiltrarSolicitacoes;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.ListarSolicitacoesPendentes;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.NegarSolicitacao;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.ReadSolicitacaoDuvida;
-import br.com.sgpj.dto.response.Solicitacao.SolicitacaoCandidatoDuplicidadeResponse;
-import br.com.sgpj.service.useCases.solicitacaoDuvida.BuscarCandidatosDuplicidadeSolicitacao;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -24,6 +30,7 @@ public class SolicitacaoDuvidaService {
     private final AceitarSolicitacao aceitarSolicitacao;
     private final NegarSolicitacao negarSolicitacao;
     private final ReadSolicitacaoDuvida readSolicitacaoDuvida;
+    private final FiltrarSolicitacoes filtrarSolicitacoes;
     private final BuscarCandidatosDuplicidadeSolicitacao buscarCandidatosDuplicidadeSolicitacao;
 
     public SolicitacaoDuvidaService(CreateSolicitacaoDuvida createSolicitacaoDuvida,
@@ -31,12 +38,14 @@ public class SolicitacaoDuvidaService {
                                      AceitarSolicitacao aceitarSolicitacao,
                                      NegarSolicitacao negarSolicitacao,
                                      ReadSolicitacaoDuvida readSolicitacaoDuvida,
+                                     FiltrarSolicitacoes filtrarSolicitacoes,
                                      BuscarCandidatosDuplicidadeSolicitacao buscarCandidatosDuplicidadeSolicitacao) {
         this.createSolicitacaoDuvida = createSolicitacaoDuvida;
         this.listarSolicitacoesPendentes = listarSolicitacoesPendentes;
         this.aceitarSolicitacao = aceitarSolicitacao;
         this.negarSolicitacao = negarSolicitacao;
         this.readSolicitacaoDuvida = readSolicitacaoDuvida;
+        this.filtrarSolicitacoes = filtrarSolicitacoes;
         this.buscarCandidatosDuplicidadeSolicitacao = buscarCandidatosDuplicidadeSolicitacao;
     }
 
@@ -48,8 +57,18 @@ public class SolicitacaoDuvidaService {
 
     // READ OPERATIONS
     @Transactional(readOnly = true)
-    public List<SolicitacaoDuvidaListarResponse> listarPendentes() {
-        return listarSolicitacoesPendentes.listarPendentes();
+    public Page<SolicitacaoDuvidaListarResponse> listarPendentes(Pageable pageable) {
+        return listarSolicitacoesPendentes.listarPendentes(pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<SolicitacaoDuvidaListarResponse> filtrar(
+            String estado,
+            String pesquisa,
+            LocalDateTime dataInicio,
+            LocalDateTime dataFim,
+            Pageable pageable) {
+        return filtrarSolicitacoes.filtrar(estado, pesquisa, dataInicio, dataFim, pageable);
     }
 
     @Transactional(readOnly = true)
@@ -64,8 +83,8 @@ public class SolicitacaoDuvidaService {
 
     // UPDATE OPERATIONS
     @Transactional
-    public SolicitacaoClientePreenchimentoResponse aceitar(Long id) {
-        return aceitarSolicitacao.aceitar(id);
+    public SolicitacaoClientePreenchimentoResponse aceitar(Long id, SolicitacaoAceiteRequest request, Usuario usuarioResponsavel) {
+        return aceitarSolicitacao.aceitar(id, request, usuarioResponsavel);
     }
 
     @Transactional

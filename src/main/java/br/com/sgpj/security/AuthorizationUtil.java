@@ -3,6 +3,7 @@ package br.com.sgpj.security;
 import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
 import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Processo.ProcessoApp;
+import br.com.sgpj.entity.Processo.StatusProcesso;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.AcessoNegadoException;
 import br.com.sgpj.repository.ClienteRepository;
@@ -62,10 +63,11 @@ public class AuthorizationUtil {
     }
 
     private boolean usuarioHasAccessToProcesso(Usuario usuario, ProcessoApp processo) {
-        if (processo.getUsuarioResponsavel() != null && 
-            processo.getUsuarioResponsavel().getId().equals(usuario.getId())) {
-            return true;
+        if (processo.getUsuarioResponsavel() == null) {
+            return processo.getStatus() == StatusProcesso.ATIVO
+                    || processo.getStatus() == StatusProcesso.SUSPENSO
+                    || processo.getStatus() == StatusProcesso.ENCERRADO;
         }
-        return false;
+        return processo.getUsuarioResponsavel().getId().equals(usuario.getId());
     }
 }

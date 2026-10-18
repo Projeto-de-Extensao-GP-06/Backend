@@ -1,10 +1,12 @@
 package br.com.sgpj.service;
 
 import br.com.sgpj.dto.request.SolicitacaoDuvidaCriacaoRequest;
+import br.com.sgpj.dto.request.SolicitacaoAceiteRequest;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoCandidatoDuplicidadeResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoClientePreenchimentoResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaDetalhesResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaListarResponse;
+import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.AceitarSolicitacao;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.BuscarCandidatosDuplicidadeSolicitacao;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.CreateSolicitacaoDuvida;
@@ -81,8 +83,8 @@ public class SolicitacaoDuvidaService {
 
     // UPDATE OPERATIONS
     @Transactional
-    public SolicitacaoClientePreenchimentoResponse aceitar(Long id) {
-        return aceitarSolicitacao.aceitar(id);
+    public SolicitacaoClientePreenchimentoResponse aceitar(Long id, SolicitacaoAceiteRequest request, Usuario usuarioResponsavel) {
+        return aceitarSolicitacao.aceitar(id, request, usuarioResponsavel);
     }
 
     @Transactional

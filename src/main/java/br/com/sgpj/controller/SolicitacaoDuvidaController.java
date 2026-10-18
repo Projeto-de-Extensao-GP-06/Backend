@@ -3,8 +3,12 @@ package br.com.sgpj.controller;
 import br.com.sgpj.dto.request.SolicitacaoDuvidaCriacaoRequest;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoCandidatoDuplicidadeResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoClientePreenchimentoResponse;
+import br.com.sgpj.dto.request.SolicitacaoAceiteRequest;
+import jakarta.validation.Valid;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaDetalhesResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaListarResponse;
+import br.com.sgpj.entity.Usuario;
+import br.com.sgpj.security.AuthorizationUtil;
 import br.com.sgpj.security.IpAddressUtil;
 import br.com.sgpj.security.RateLimiter;
 import br.com.sgpj.service.CloudflareTurnstileService;
@@ -54,15 +58,18 @@ public class SolicitacaoDuvidaController {
     private final SolicitacaoDuvidaService solicitacaoDuvidaService;
     private final RateLimiter rateLimiter;
     private final CloudflareTurnstileService cloudflareTurnstileService;
+    private final AuthorizationUtil authorizationUtil;
 
     public SolicitacaoDuvidaController(
             SolicitacaoDuvidaService solicitacaoDuvidaService,
             RateLimiter rateLimiter,
-            CloudflareTurnstileService cloudflareTurnstileService
+            CloudflareTurnstileService cloudflareTurnstileService,
+            AuthorizationUtil authorizationUtil
     ) {
         this.solicitacaoDuvidaService = solicitacaoDuvidaService;
         this.rateLimiter = rateLimiter;
         this.cloudflareTurnstileService = cloudflareTurnstileService;
+        this.authorizationUtil = authorizationUtil;
     }
 
     @PostMapping
@@ -175,9 +182,15 @@ public class SolicitacaoDuvidaController {
     @PatchMapping("/{id}/aceitar")
     @SecurityRequirement(name = "Bearer")
     @PreAuthorize("hasAuthority('ACEITAR SOLICITAÇÃO') || hasAuthority('TODAS AS PERMISSÕES')")
-    @Operation(summary = "Aceita a solicitação e retorna dados para preencher o cadastro de cliente")
-    public ResponseEntity<SolicitacaoClientePreenchimentoResponse> aceitar(@PathVariable Long id) {
-        return ResponseEntity.ok(solicitacaoDuvidaService.aceitar(id));
+        @Operation(
+            summary = "Aceita a solicitação preenchendo dados ausentes de cliente e processo",
+            description = "Recebe os dados validados do modal. Cliente e processo são sempre os vinculados ao ID da solicitação na URL."
+        )
+    public ResponseEntity<SolicitacaoClientePreenchimentoResponse> aceitar(
+            @PathVariable Long id,
+            @Valid @RequestBody SolicitacaoAceiteRequest request) {
+        Usuario usuarioAutenticado = authorizationUtil.getUsuarioLogado();
+        return ResponseEntity.ok(solicitacaoDuvidaService.aceitar(id, request, usuarioAutenticado));
     }
 
     @PatchMapping("/{id}/negar")

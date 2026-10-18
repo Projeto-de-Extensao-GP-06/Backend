@@ -15,6 +15,9 @@ public record SolicitacaoClientePreenchimentoResponse(
         String numeroProcesso,
         String descricao,
         ComoConheceuEnum comoConheceu,
-        ProcessoApiCreateResponse processo
+        ProcessoApiCreateResponse processo,
+        Long processoId,
+        String statusCliente,
+        String statusProcesso
 ) {
 }

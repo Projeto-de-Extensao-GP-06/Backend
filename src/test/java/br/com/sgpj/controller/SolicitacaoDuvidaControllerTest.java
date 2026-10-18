@@ -261,6 +261,10 @@ class SolicitacaoDuvidaControllerTest {
                 LocalDateTime.of(2026, 5, 30, 10, 0),
                 SolicitacaoStatus.PENDENTE,
                 null,
+                null,
+                true,
+                null,
+                null,
                 null
         );
     }
@@ -277,7 +281,11 @@ class SolicitacaoDuvidaControllerTest {
                 "Preciso de ajuda com meu processo",
                 ComoConheceuEnum.INSTAGRAM,
                 LocalDateTime.of(2026, 5, 30, 10, 0),
-                SolicitacaoStatus.PENDENTE
+                SolicitacaoStatus.PENDENTE,
+                true,
+                null,
+                null,
+                null
         );
     }
 }

@@ -147,7 +147,45 @@ public class UpdateProcesso {
         } else {
             ProcessoApi processoApi = processoEncontrado.getProcessoApi();
             if (processoAtualizar.numeroCnj() != null && !processoAtualizar.numeroCnj().isBlank()) {
-                processoApi.setNumeroCnj(processoAtualizar.numeroCnj());
+                String cnjNovo = processoAtualizar.numeroCnj();
+                String cnjAntigo = processoApi.getNumeroCnj();
+                String cnjNovoLimpo = cnjNovo.replaceAll("\\D", "");
+                String cnjAntigoLimpo = cnjAntigo != null ? cnjAntigo.replaceAll("\\D", "") : "";
+
+                if (!cnjNovoLimpo.equals(cnjAntigoLimpo)) {
+                    try {
+                        ProcessoApi novosDados = processoApiGateway.buscarDadosOficiais(cnjNovoLimpo, siglaTribunal);
+                        if (novosDados != null) {
+                            processoApi.setNumeroCnj(novosDados.getNumeroCnj() != null ? novosDados.getNumeroCnj() : cnjNovoLimpo);
+                            processoApi.setClasseProcessual(novosDados.getClasseProcessual());
+                            processoApi.setAssunto(novosDados.getAssunto());
+                            processoApi.setTribunalTramitacao(novosDados.getTribunalTramitacao());
+                            processoApi.setOrgaoJulgador(novosDados.getOrgaoJulgador());
+                            processoApi.setDataAjuizamento(novosDados.getDataAjuizamento());
+                            processoApi.setInstancia(novosDados.getInstancia());
+                            processoApi.setSistemaTribunal(novosDados.getSistemaTribunal());
+                            processoApi.setNivelSigilo(novosDados.getNivelSigilo());
+                            processoApi.setFormato(novosDados.getFormato());
+                            if (processoApi.getMovimentacoes() != null && !processoApi.getMovimentacoes().isEmpty()) {
+                                movimentacoesOficiaisRepository.deleteAll(processoApi.getMovimentacoes());
+                            }
+                            List<MovimentacoesOficiais> novasMovimentacoes = novosDados.getMovimentacoes();
+                            if (novasMovimentacoes != null) {
+                                for (MovimentacoesOficiais mov : novasMovimentacoes) {
+                                    mov.setId(null);
+                                    mov.setProcessoApi(processoApi);
+                                }
+                            }
+                            processoApi.setMovimentacoes(novasMovimentacoes);
+                        } else {
+                            processoApi.setNumeroCnj(cnjNovoLimpo);
+                        }
+                    } catch (Exception e) {
+                        processoApi.setNumeroCnj(cnjNovoLimpo);
+                    }
+                }
+            } else {
+                processoApi.setNumeroCnj(null);
             }
             processoEditado.setProcessoApi(processoApi);
         }

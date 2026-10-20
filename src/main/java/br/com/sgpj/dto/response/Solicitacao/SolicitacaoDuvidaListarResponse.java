@@ -16,6 +16,10 @@ public record SolicitacaoDuvidaListarResponse(
         String descricao,
         ComoConheceuEnum comoConheceu,
         LocalDateTime dataSolicitacao,
-        SolicitacaoStatus status
+        SolicitacaoStatus status,
+        Boolean isPF,
+        String nomeRazaoSocial,
+        String nomeContato,
+        String cnpj
 ) {
 }

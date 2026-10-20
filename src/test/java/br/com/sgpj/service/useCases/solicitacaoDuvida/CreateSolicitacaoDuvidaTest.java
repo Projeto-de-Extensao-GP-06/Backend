@@ -85,7 +85,9 @@ class CreateSolicitacaoDuvidaTest {
                     ComoConheceuEnum.INSTAGRAM,
                     true,
                     null,
-                    null
+                    null,
+                    "SP",
+                    "dummy-test-token"
             );
 
             when(statusClienteRepository.findByNomeIgnoreCase(StatusClienteEnum.LEAD.getNome()))
@@ -114,7 +116,7 @@ class CreateSolicitacaoDuvidaTest {
             ProcessoApp salvo = processoCaptor.getValue();
             assertEquals(StatusProcesso.SOLICITACAO, salvo.getStatus());
             assertEquals("Descrição da dúvida", salvo.getDescricaoCaso());
-            assertEquals("Solicitação enviada pelo formulário público.", salvo.getObservacao());
+            assertEquals("Solicitação enviada pelo formulário público. Estado: SP", salvo.getObservacao());
             assertNotNull(response);
             verify(processoApiGateway, never()).buscarDadosOficiais(any());
         }

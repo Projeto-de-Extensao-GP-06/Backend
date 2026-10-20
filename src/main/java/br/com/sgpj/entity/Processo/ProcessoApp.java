@@ -66,7 +66,7 @@ public class ProcessoApp {
     @Column(name = "cnpj_informado_formulario", length = 14)
     private String cnpjInformadoFormulario;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "processo_dados_api_id")
     private ProcessoApi processoApi;
 

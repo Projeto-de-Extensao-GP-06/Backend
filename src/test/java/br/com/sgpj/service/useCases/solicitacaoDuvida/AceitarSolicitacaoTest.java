@@ -1,15 +1,25 @@
 package br.com.sgpj.service.useCases.solicitacaoDuvida;
 
+import br.com.sgpj.dto.request.SolicitacaoAceiteRequest;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoClientePreenchimentoResponse;
 import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Contato;
+import br.com.sgpj.entity.Endereco;
+import br.com.sgpj.entity.Processo.FaseProcesso;
+import br.com.sgpj.entity.Processo.Prioridade;
 import br.com.sgpj.entity.Processo.ProcessoApp;
 import br.com.sgpj.entity.Processo.StatusProcesso;
 import br.com.sgpj.entity.StatusCliente;
+import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.entity.StatusClienteEnum;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
+import br.com.sgpj.exception.OperacaoInvalidaException;
 import br.com.sgpj.repository.ClienteRepository;
+import br.com.sgpj.repository.ContatoRepository;
+import br.com.sgpj.repository.EnderecoRepository;
+import br.com.sgpj.repository.FaseProcessoRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
+import br.com.sgpj.repository.PrioridadeRepository;
 import br.com.sgpj.repository.StatusClienteRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,6 +33,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -44,6 +56,18 @@ class AceitarSolicitacaoTest {
     private ClienteRepository clienteRepository;
 
     @Mock
+    private ContatoRepository contatoRepository;
+
+    @Mock
+    private EnderecoRepository enderecoRepository;
+
+    @Mock
+    private PrioridadeRepository prioridadeRepository;
+
+    @Mock
+    private FaseProcessoRepository faseProcessoRepository;
+
+    @Mock
     private StatusClienteRepository statusClienteRepository;
 
     @InjectMocks
@@ -52,6 +76,7 @@ class AceitarSolicitacaoTest {
     private ProcessoApp processoApp;
     private Cliente cliente;
     private StatusCliente statusAtivo;
+    private Usuario usuarioResponsavel;
 
     @BeforeEach
     void setUp() {
@@ -68,7 +93,43 @@ class AceitarSolicitacaoTest {
         statusAtivo = new StatusCliente();
         statusAtivo.setId(1L);
         statusAtivo.setNome("ATIVO");
+
+        usuarioResponsavel = new Usuario();
+        usuarioResponsavel.setId(7L);
+        usuarioResponsavel.setNome("Usuário responsável");
     }
+
+        private void prepararReferencias() {
+        when(prioridadeRepository.findByNomeIgnoreCase("MEDIA"))
+            .thenReturn(Optional.of(new Prioridade(2L, "MEDIA")));
+        when(faseProcessoRepository.findByNomeIgnoreCase("INICIAL"))
+            .thenReturn(Optional.of(new FaseProcesso(1L, "INICIAL")));
+        when(enderecoRepository.save(any(Endereco.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(contatoRepository.save(any(Contato.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        }
+
+        private SolicitacaoAceiteRequest requestPf() {
+        return new SolicitacaoAceiteRequest(
+            new SolicitacaoAceiteRequest.Client(
+                "PF", "Nome informado", null, "novo@email.com", "(11) 99999-9999",
+                "52998224725", "123456789", null, "Advogada",
+                new SolicitacaoAceiteRequest.Address("01001-000", "Praça da Sé", "100", null,
+                    "Sé", "São Paulo", "SP"), List.of()),
+            new SolicitacaoAceiteRequest.Process(null, "média", "Inicial", null, null,
+                new BigDecimal("250.00")));
+        }
+
+        private SolicitacaoAceiteRequest requestPj() {
+        return new SolicitacaoAceiteRequest(
+            new SolicitacaoAceiteRequest.Client(
+                "PJ", "Empresa Alpha LTDA", "Empresa Alpha LTDA", "novo@empresa.com", "11999999999",
+                null, null, "11222333000181", "Diretora",
+                new SolicitacaoAceiteRequest.Address("01001000", "Nova Rua", "200", null,
+                    "Centro", "São Paulo", "SP"),
+                List.of(new SolicitacaoAceiteRequest.Contact("Novo Contato", "novo@empresa.com",
+                    "11999999999", "Diretora", true))),
+            new SolicitacaoAceiteRequest.Process(null, "média", "Inicial", null, null, null));
+        }
 
     @Nested
     @DisplayName("aceitar")
@@ -77,11 +138,12 @@ class AceitarSolicitacaoTest {
         @Test
         @DisplayName("Deve aceitar solicitação, mudar status do processo para ATIVO e cliente para ATIVO")
         void deveAceitarSolicitacaoComStatusAtivo() {
+            prepararReferencias();
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoApp));
             when(statusClienteRepository.findByNomeIgnoreCase(StatusClienteEnum.ATIVO.getNome()))
                     .thenReturn(Optional.of(statusAtivo));
 
-            SolicitacaoClientePreenchimentoResponse response = aceitarSolicitacao.aceitar(1L);
+            SolicitacaoClientePreenchimentoResponse response = aceitarSolicitacao.aceitar(1L, requestPf(), usuarioResponsavel);
 
             ArgumentCaptor<ProcessoApp> processoCaptor = ArgumentCaptor.forClass(ProcessoApp.class);
             verify(processoAppRepository).save(processoCaptor.capture());
@@ -90,10 +152,15 @@ class AceitarSolicitacaoTest {
             verify(clienteRepository).save(clienteCaptor.capture());
 
             assertEquals(StatusProcesso.ATIVO, processoCaptor.getValue().getStatus());
+            assertEquals(usuarioResponsavel, processoCaptor.getValue().getUsuarioResponsavel());
             assertNotNull(processoCaptor.getValue().getUltimaAtualizacao());
             assertEquals(statusAtivo, clienteCaptor.getValue().getStatusCliente());
             assertNotNull(clienteCaptor.getValue().getDataHoraTransformacaoEmCliente());
             assertNotNull(response);
+            assertEquals(1L, response.processoId());
+            assertEquals("ATIVO", response.statusCliente());
+            assertEquals("ATIVO", response.statusProcesso());
+            assertEquals("11999999999", cliente.getContatos().getFirst().getTelefone());
         }
 
         @Test
@@ -119,11 +186,12 @@ class AceitarSolicitacaoTest {
             processoPj.setCnpjInformadoFormulario("12345678000195");
             processoPj.setObservacao("Solicitação enviada pelo formulário público. Estado: SP");
 
+            prepararReferencias();
             when(processoAppRepository.findById(2L)).thenReturn(Optional.of(processoPj));
             when(statusClienteRepository.findByNomeIgnoreCase(StatusClienteEnum.ATIVO.getNome()))
                     .thenReturn(Optional.of(statusAtivo));
 
-            SolicitacaoClientePreenchimentoResponse response = aceitarSolicitacao.aceitar(2L);
+            SolicitacaoClientePreenchimentoResponse response = aceitarSolicitacao.aceitar(2L, requestPj(), usuarioResponsavel);
 
             assertNotNull(response);
             assertEquals("Empresa Alpha LTDA", response.nomeRazaoSocial());
@@ -132,6 +200,9 @@ class AceitarSolicitacaoTest {
             assertEquals("roberto@empresaalpha.com", response.email());
             assertEquals("11988887777", response.telefone());
             assertEquals("SP", response.estado());
+            assertEquals("Roberto Representante", contato.getNome());
+            assertEquals("roberto@empresaalpha.com", contato.getEmail());
+            assertEquals("11988887777", contato.getTelefone());
         }
 
         @Test
@@ -157,11 +228,12 @@ class AceitarSolicitacaoTest {
             processoPf.setCnpjInformadoFormulario(null);
             processoPf.setObservacao("Solicitação enviada pelo formulário público. Estado: RJ");
 
+            prepararReferencias();
             when(processoAppRepository.findById(3L)).thenReturn(Optional.of(processoPf));
             when(statusClienteRepository.findByNomeIgnoreCase(StatusClienteEnum.ATIVO.getNome()))
                     .thenReturn(Optional.of(statusAtivo));
 
-            SolicitacaoClientePreenchimentoResponse response = aceitarSolicitacao.aceitar(3L);
+            SolicitacaoClientePreenchimentoResponse response = aceitarSolicitacao.aceitar(3L, requestPf(), usuarioResponsavel);
 
             assertNotNull(response);
             assertEquals("Maria Fernandes", response.nomeRazaoSocial());
@@ -177,7 +249,7 @@ class AceitarSolicitacaoTest {
         void deveLancarExcecaoQuandoSolicitacaoNaoEncontrada() {
             when(processoAppRepository.findById(99L)).thenReturn(Optional.empty());
 
-            assertThrows(ObjetoNaoEncontradoException.class, () -> aceitarSolicitacao.aceitar(99L));
+            assertThrows(ObjetoNaoEncontradoException.class, () -> aceitarSolicitacao.aceitar(99L, requestPf(), usuarioResponsavel));
             verify(clienteRepository, never()).save(any());
             verify(processoAppRepository, never()).save(any());
         }
@@ -189,7 +261,55 @@ class AceitarSolicitacaoTest {
             when(statusClienteRepository.findByNomeIgnoreCase(StatusClienteEnum.ATIVO.getNome()))
                     .thenReturn(Optional.empty());
 
-            assertThrows(ObjetoNaoEncontradoException.class, () -> aceitarSolicitacao.aceitar(1L));
+            assertThrows(ObjetoNaoEncontradoException.class, () -> aceitarSolicitacao.aceitar(1L, requestPf(), usuarioResponsavel));
+            verify(clienteRepository, never()).save(any());
+            verify(processoAppRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Deve preservar endereço, contato e data de cliente ativo com outro processo")
+        void devePreservarDadosDeClienteAtivoComOutroProcesso() {
+            prepararReferencias();
+            LocalDateTime dataTransformacao = LocalDateTime.of(2024, 1, 15, 10, 0);
+            cliente.setPF(true);
+            cliente.setStatusCliente(statusAtivo);
+            cliente.setDataHoraTransformacaoEmCliente(dataTransformacao);
+            Endereco endereco = new Endereco();
+            endereco.setCep("22041001");
+            endereco.setLogradouro("Rua existente");
+            endereco.setNumero("10");
+            endereco.setBairro("Copacabana");
+            endereco.setCidade("Rio de Janeiro");
+            endereco.setEstado("RJ");
+            cliente.setEndereco(endereco);
+            Contato contato = new Contato();
+            contato.setNome("Contato existente");
+            contato.setEmail("existente@email.com");
+            contato.setTelefone("21988887777");
+            contato.setPrincipal(true);
+            cliente.setContatos(List.of(contato));
+            when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoApp));
+            when(processoAppRepository.existsByCliente_IdAndIdNot(10L, 1L)).thenReturn(true);
+
+            aceitarSolicitacao.aceitar(1L, requestPf(), usuarioResponsavel);
+
+            assertEquals(dataTransformacao, cliente.getDataHoraTransformacaoEmCliente());
+            assertEquals("22041001", cliente.getEndereco().getCep());
+            assertEquals("Rua existente", cliente.getEndereco().getLogradouro());
+            assertEquals("Contato existente", cliente.getContatos().getFirst().getNome());
+            assertEquals("existente@email.com", cliente.getContatos().getFirst().getEmail());
+            verify(statusClienteRepository, never()).findByNomeIgnoreCase(StatusClienteEnum.ATIVO.getNome());
+            verify(processoAppRepository).existsByCliente_IdAndIdNot(10L, 1L);
+        }
+
+        @Test
+        @DisplayName("Deve rejeitar aceite repetido sem persistir alterações")
+        void deveRejeitarAceiteRepetido() {
+            processoApp.setStatus(StatusProcesso.ATIVO);
+            when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoApp));
+
+            assertThrows(OperacaoInvalidaException.class, () -> aceitarSolicitacao.aceitar(1L, requestPf(), usuarioResponsavel));
+
             verify(clienteRepository, never()).save(any());
             verify(processoAppRepository, never()).save(any());
         }

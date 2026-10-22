@@ -70,10 +70,18 @@ public class DashboardService {
                         || s.getStatus() == StatusProcesso.SOLICITACAO)
                 .count();
 
+        int processosAtivos = (int) processos.stream()
+                .filter(p -> p.getStatus() == StatusProcesso.ATIVO)
+                .count();
+
+        int clientesAtivos = (int) clientes.stream()
+                .filter(c -> c.getStatusCliente() != null && "ATIVO".equalsIgnoreCase(c.getStatusCliente().getNome()))
+                .count();
+
         return new DadosIndependentesResponse(
-                processos.size(),
+                processosAtivos,
                 solicitacoesPendentes,
-                clientes.size(),
+                clientesAtivos,
                 audiencia.size(),
                 processosPorFase,
                 tempoDuracaoProcessos,

@@ -119,6 +119,13 @@ public class UpdateProcesso {
             processoEditado.setJustificativa(null);
         }
 
+        if (processoAtualizar.numeroCnj() != null && !processoAtualizar.numeroCnj().isBlank()) {
+            String cnjLimpo = processoAtualizar.numeroCnj().replaceAll("\\D", "");
+            if (!cnjLimpo.isBlank() && processoAppRepository.existsByCnjAndIdNot(cnjLimpo, id)) {
+                throw new br.com.sgpj.exception.ProcessoJaExistenteException("Já existe outro processo cadastrado com este número de CNJ.");
+            }
+        }
+
         if (processoEncontrado.getProcessoApi() == null) {
             if (processoAtualizar.numeroCnj() != null && !processoAtualizar.numeroCnj().isBlank()) {
                 ProcessoApi processoApi = null;
@@ -140,7 +147,45 @@ public class UpdateProcesso {
         } else {
             ProcessoApi processoApi = processoEncontrado.getProcessoApi();
             if (processoAtualizar.numeroCnj() != null && !processoAtualizar.numeroCnj().isBlank()) {
-                processoApi.setNumeroCnj(processoAtualizar.numeroCnj());
+                String cnjNovo = processoAtualizar.numeroCnj();
+                String cnjAntigo = processoApi.getNumeroCnj();
+                String cnjNovoLimpo = cnjNovo.replaceAll("\\D", "");
+                String cnjAntigoLimpo = cnjAntigo != null ? cnjAntigo.replaceAll("\\D", "") : "";
+
+                if (!cnjNovoLimpo.equals(cnjAntigoLimpo)) {
+                    try {
+                        ProcessoApi novosDados = processoApiGateway.buscarDadosOficiais(cnjNovoLimpo, siglaTribunal);
+                        if (novosDados != null) {
+                            processoApi.setNumeroCnj(novosDados.getNumeroCnj() != null ? novosDados.getNumeroCnj() : cnjNovoLimpo);
+                            processoApi.setClasseProcessual(novosDados.getClasseProcessual());
+                            processoApi.setAssunto(novosDados.getAssunto());
+                            processoApi.setTribunalTramitacao(novosDados.getTribunalTramitacao());
+                            processoApi.setOrgaoJulgador(novosDados.getOrgaoJulgador());
+                            processoApi.setDataAjuizamento(novosDados.getDataAjuizamento());
+                            processoApi.setInstancia(novosDados.getInstancia());
+                            processoApi.setSistemaTribunal(novosDados.getSistemaTribunal());
+                            processoApi.setNivelSigilo(novosDados.getNivelSigilo());
+                            processoApi.setFormato(novosDados.getFormato());
+                            if (processoApi.getMovimentacoes() != null && !processoApi.getMovimentacoes().isEmpty()) {
+                                movimentacoesOficiaisRepository.deleteAll(processoApi.getMovimentacoes());
+                            }
+                            List<MovimentacoesOficiais> novasMovimentacoes = novosDados.getMovimentacoes();
+                            if (novasMovimentacoes != null) {
+                                for (MovimentacoesOficiais mov : novasMovimentacoes) {
+                                    mov.setId(null);
+                                    mov.setProcessoApi(processoApi);
+                                }
+                            }
+                            processoApi.setMovimentacoes(novasMovimentacoes);
+                        } else {
+                            processoApi.setNumeroCnj(cnjNovoLimpo);
+                        }
+                    } catch (Exception e) {
+                        processoApi.setNumeroCnj(cnjNovoLimpo);
+                    }
+                }
+            } else {
+                processoApi.setNumeroCnj(null);
             }
             processoEditado.setProcessoApi(processoApi);
         }
@@ -177,7 +222,7 @@ public class UpdateProcesso {
                 processoApiExistente.getNumeroCnj(), processoApp.getSiglaTribunal());
 
         if (dadosAtualizados == null) {
-            throw new DataJudIntegrationException("Não foi possível estabelecer conexão com o DataJud, tente novamente mais tarde.");
+            throw new DataJudIntegrationException("Não foi possível obter dados oficiais do DataJud no momento. Por favor, tente novamente mais tarde.");
         }
 
         processoApiExistente.setTribunalTramitacao(dadosAtualizados.getTribunalTramitacao());

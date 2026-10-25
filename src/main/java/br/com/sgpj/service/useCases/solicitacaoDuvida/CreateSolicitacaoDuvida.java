@@ -18,12 +18,14 @@ import br.com.sgpj.repository.ContatoRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.StatusClienteRepository;
 import br.com.sgpj.service.useCases.processo.ProcessoApiGateway;
+import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 
 @Component
 public class CreateSolicitacaoDuvida {
@@ -49,11 +51,15 @@ public class CreateSolicitacaoDuvida {
         this.processoApiGateway = processoApiGateway;
     }
 
+    @Transactional
     public SolicitacaoDuvidaDetalhesResponse criarSolicitacao(SolicitacaoDuvidaCriacaoRequest request) {
-        String numeroProcesso = normalizarOpcional(request.numeroProcesso());
+        String numeroProcesso = request.numeroProcessoSanitizado();
+        String telefone = request.telefoneSanitizado();
+        String cnpj = request.cnpjSanitizado();
 
         Cliente cliente = new Cliente();
-        cliente.setNomeRazaoSocial(request.nomeCompleto().trim());
+        String nomeRazaoSocial = (request.isPF()) ? request.nomeCompleto().trim() : request.razaoSocial().trim();
+        cliente.setNomeRazaoSocial(nomeRazaoSocial);
         cliente.setPF(request.isPF());
         cliente.setComoConheceu(request.comoConheceu());
         cliente.setStatusCliente(buscarStatus(StatusClienteEnum.LEAD));
@@ -63,7 +69,7 @@ public class CreateSolicitacaoDuvida {
         Contato contato = ContatoMapper.toEntity(
                 request.nomeCompleto().trim(),
                 request.email().trim(),
-                request.telefone().trim(),
+                telefone,
                 null,
                 true,
                 cliente
@@ -74,10 +80,19 @@ public class CreateSolicitacaoDuvida {
         ProcessoApp processoApp = new ProcessoApp();
         processoApp.setCliente(cliente);
         processoApp.setDescricaoCaso(request.descricao().trim());
-        processoApp.setObservacao(OBSERVACAO_SOLICITACAO_PREFIXO);
+        String estado = request.estado() == null || request.estado().isBlank()
+            ? null
+            : request.estado().trim().toUpperCase(Locale.ROOT);
+        processoApp.setObservacao(estado == null
+            ? OBSERVACAO_SOLICITACAO_PREFIXO
+            : OBSERVACAO_SOLICITACAO_PREFIXO + " Estado: " + estado);
         processoApp.setDataHoraInicio(cliente.getDataHoraEnvioFormulario());
         processoApp.setUltimaAtualizacao(cliente.getDataHoraEnvioFormulario());
         processoApp.setStatus(StatusProcesso.SOLICITACAO);
+
+        if (!request.isPF() && cnpj != null) {
+            processoApp.setCnpjInformadoFormulario(cnpj);
+        }
 
         if (numeroProcesso != null) {
             processoApp.setProcessoApi(buscarProcessoOficial(numeroProcesso));

@@ -20,4 +20,12 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long>, JpaSpec
     Optional<Cliente> findByIdComDetalhes(Long id);
 
     boolean existsByCpfCnpj(String cpfCnpj);
+
+    @Query("SELECT c FROM Cliente c LEFT JOIN FETCH c.statusCliente LEFT JOIN FETCH c.contatos WHERE c.cpfCnpj = :cpfCnpj AND c.id <> :clienteIdSolicitacao")
+    List<Cliente> findCandidatosPorCpfCnpj(@org.springframework.data.repository.query.Param("cpfCnpj") String cpfCnpj,
+                                           @org.springframework.data.repository.query.Param("clienteIdSolicitacao") Long clienteIdSolicitacao);
+
+    @Query("SELECT c FROM Cliente c LEFT JOIN FETCH c.statusCliente LEFT JOIN FETCH c.contatos WHERE LOWER(TRIM(c.nomeRazaoSocial)) = LOWER(TRIM(:nome)) AND c.id <> :clienteIdSolicitacao")
+    List<Cliente> findCandidatosPorNome(@org.springframework.data.repository.query.Param("nome") String nome,
+                                        @org.springframework.data.repository.query.Param("clienteIdSolicitacao") Long clienteIdSolicitacao);
 }

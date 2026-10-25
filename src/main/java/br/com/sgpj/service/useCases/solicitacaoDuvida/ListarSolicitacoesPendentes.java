@@ -5,9 +5,9 @@ import br.com.sgpj.entity.StatusClienteEnum;
 import br.com.sgpj.mapper.ProcessoAppToSolicitacaoDuvidaMapper;
 import br.com.sgpj.mapper.SolicitacaoDuvidaMapper;
 import br.com.sgpj.repository.ProcessoAppRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 @Component
 public class ListarSolicitacoesPendentes {
@@ -18,11 +18,9 @@ public class ListarSolicitacoesPendentes {
         this.processoAppRepository = processoAppRepository;
     }
 
-    public List<SolicitacaoDuvidaListarResponse> listarPendentes() {
-        return processoAppRepository.findByCliente_StatusCliente_NomeIgnoreCaseOrderByDataHoraInicioDesc(StatusClienteEnum.LEAD.getNome())
-                .stream()
+    public Page<SolicitacaoDuvidaListarResponse> listarPendentes(Pageable pageable) {
+        return processoAppRepository.findByCliente_StatusCliente_NomeIgnoreCase(StatusClienteEnum.LEAD.getNome(), pageable)
                 .map(ProcessoAppToSolicitacaoDuvidaMapper::toSolicitacaoDuvida)
-                .map(SolicitacaoDuvidaMapper::toListarResponse)
-                .toList();
+                .map(SolicitacaoDuvidaMapper::toListarResponse);
     }
 }

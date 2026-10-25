@@ -1,11 +1,16 @@
 package br.com.sgpj.service;
 
 import br.com.sgpj.dto.request.SolicitacaoDuvidaCriacaoRequest;
+import br.com.sgpj.dto.request.SolicitacaoAceiteRequest;
+import br.com.sgpj.dto.response.Solicitacao.SolicitacaoCandidatoDuplicidadeResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoClientePreenchimentoResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaDetalhesResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaListarResponse;
+import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.AceitarSolicitacao;
+import br.com.sgpj.service.useCases.solicitacaoDuvida.BuscarCandidatosDuplicidadeSolicitacao;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.CreateSolicitacaoDuvida;
+import br.com.sgpj.service.useCases.solicitacaoDuvida.FiltrarSolicitacoes;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.ListarSolicitacoesPendentes;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.NegarSolicitacao;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.ReadSolicitacaoDuvida;
@@ -15,6 +20,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -40,6 +49,12 @@ class SolicitacaoDuvidaServiceTest {
     @Mock
     private ReadSolicitacaoDuvida readSolicitacaoDuvida;
 
+    @Mock
+    private FiltrarSolicitacoes filtrarSolicitacoes;
+
+    @Mock
+    private BuscarCandidatosDuplicidadeSolicitacao buscarCandidatosDuplicidadeSolicitacao;
+
     @InjectMocks
     private SolicitacaoDuvidaService solicitacaoDuvidaService;
 
@@ -59,13 +74,19 @@ class SolicitacaoDuvidaServiceTest {
     @Test
     @DisplayName("listarPendentes deve delegar ao use case ListarSolicitacoesPendentes")
     void deveDelegarListagemDePendentesAoUseCase() {
-        List<SolicitacaoDuvidaListarResponse> lista = List.of(mock(SolicitacaoDuvidaListarResponse.class));
-        when(listarSolicitacoesPendentes.listarPendentes()).thenReturn(lista);
+        Pageable pageable = PageRequest.of(1, 2);
+        Page<SolicitacaoDuvidaListarResponse> pagina = new PageImpl<>(
+                List.of(mock(SolicitacaoDuvidaListarResponse.class)), pageable, 3);
+        when(listarSolicitacoesPendentes.listarPendentes(pageable)).thenReturn(pagina);
 
-        List<SolicitacaoDuvidaListarResponse> resultado = solicitacaoDuvidaService.listarPendentes();
+        Page<SolicitacaoDuvidaListarResponse> resultado = solicitacaoDuvidaService.listarPendentes(pageable);
 
-        assertEquals(lista, resultado);
-        verify(listarSolicitacoesPendentes).listarPendentes();
+        assertEquals(pagina, resultado);
+        assertEquals(1, resultado.getNumber());
+        assertEquals(2, resultado.getSize());
+        assertEquals(3, resultado.getTotalElements());
+        assertEquals(2, resultado.getTotalPages());
+        verify(listarSolicitacoesPendentes).listarPendentes(pageable);
     }
 
     @Test
@@ -83,13 +104,15 @@ class SolicitacaoDuvidaServiceTest {
     @Test
     @DisplayName("aceitar deve delegar ao use case AceitarSolicitacao")
     void deveDelegarAceiteAoUseCase() {
+        SolicitacaoAceiteRequest request = mock(SolicitacaoAceiteRequest.class);
+        Usuario usuario = mock(Usuario.class);
         SolicitacaoClientePreenchimentoResponse resposta = mock(SolicitacaoClientePreenchimentoResponse.class);
-        when(aceitarSolicitacao.aceitar(1L)).thenReturn(resposta);
+        when(aceitarSolicitacao.aceitar(1L, request, usuario)).thenReturn(resposta);
 
-        SolicitacaoClientePreenchimentoResponse resultado = solicitacaoDuvidaService.aceitar(1L);
+        SolicitacaoClientePreenchimentoResponse resultado = solicitacaoDuvidaService.aceitar(1L, request, usuario);
 
         assertEquals(resposta, resultado);
-        verify(aceitarSolicitacao).aceitar(1L);
+        verify(aceitarSolicitacao).aceitar(1L, request, usuario);
     }
 
     @Test
@@ -98,5 +121,31 @@ class SolicitacaoDuvidaServiceTest {
         solicitacaoDuvidaService.negar(1L);
 
         verify(negarSolicitacao).negar(1L);
+    }
+
+    @Test
+    @DisplayName("buscarDuplicidades deve delegar ao use case BuscarCandidatosDuplicidadeSolicitacao")
+    void deveDelegarBuscaDuplicidadesAoUseCase() {
+        List<SolicitacaoCandidatoDuplicidadeResponse> lista = List.of(mock(SolicitacaoCandidatoDuplicidadeResponse.class));
+        when(buscarCandidatosDuplicidadeSolicitacao.buscarPorSolicitacaoId(1L)).thenReturn(lista);
+
+        List<SolicitacaoCandidatoDuplicidadeResponse> resultado = solicitacaoDuvidaService.buscarDuplicidades(1L);
+
+        assertEquals(lista, resultado);
+        verify(buscarCandidatosDuplicidadeSolicitacao).buscarPorSolicitacaoId(1L);
+    }
+
+    @Test
+    @DisplayName("filtrar deve delegar ao use case FiltrarSolicitacoes")
+    void deveDelegarFiltragemAoUseCase() {
+        Pageable pageable = PageRequest.of(0, 20);
+        Page<SolicitacaoDuvidaListarResponse> pagina = new PageImpl<>(List.of(), pageable, 0);
+        when(filtrarSolicitacoes.filtrar("SP", "maria", null, null, pageable)).thenReturn(pagina);
+
+        Page<SolicitacaoDuvidaListarResponse> resultado =
+                solicitacaoDuvidaService.filtrar("SP", "maria", null, null, pageable);
+
+        assertEquals(pagina, resultado);
+        verify(filtrarSolicitacoes).filtrar("SP", "maria", null, null, pageable);
     }
 }

@@ -1,9 +1,8 @@
 package br.com.sgpj.service;
 
+import br.com.sgpj.entity.Processo.ProcessoApp;
 import br.com.sgpj.exception.EmailSendException;
 import br.com.sgpj.service.useCases.email.RenderEmailBody;
-import br.com.sgpj.service.useCases.email.TemplateForgotPassword;
-import br.com.sgpj.service.useCases.email.TemplateSetPassword;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,6 +10,9 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.util.List;
 
 @Service
 public class EmailService {
@@ -46,8 +48,21 @@ public class EmailService {
         buildEmail(to, subject, body);
     }
 
+    public void sendWeeklyHearings(String to, String nomeUsuario, LocalDate inicioSemana, LocalDate fimSemana, List<ProcessoApp> processos) {
+        RenderEmailBody.EmailContent emailContent = renderEmailBody.renderWeeklyHearings(nomeUsuario, inicioSemana, fimSemana, processos);
+        String subject = emailContent.subject();
+        String body = emailContent.body();
 
+        buildEmail(to, subject, body);
+    }
 
+    public void sendDailyHearings(String to, String nomeUsuario, LocalDate dataReferencia, List<ProcessoApp> processos) {
+        RenderEmailBody.EmailContent emailContent = renderEmailBody.renderDailyHearings(nomeUsuario, dataReferencia, processos);
+        String subject = emailContent.subject();
+        String body = emailContent.body();
+
+        buildEmail(to, subject, body);
+    }
 
     public void buildEmail(String to, String subject, String body) {
         try {

@@ -51,6 +51,10 @@ public class ReadProcesso {
         return paginaEncontrada.map(ProcessoAppMapper::toMiniResponse);
     }
 
+    public Page<ProcessoAppMiniResponse> listarProcessos(Pageable pageable) {
+        return listarProcessos(pageable, null, null, null, null, null, null);
+    }
+
     public ProcessoAppResponse buscarPorId(Long id) {
         authorizationUtil.verificarAcessoProcesso(id);
         ProcessoApp processoAppEncontrado = processoAppRepository.findById(id)

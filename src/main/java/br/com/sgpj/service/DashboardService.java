@@ -2,6 +2,7 @@ package br.com.sgpj.service;
 
 import br.com.sgpj.dto.response.Dashboard.*;
 import br.com.sgpj.entity.Cliente;
+import br.com.sgpj.entity.ComoConheceuEnum;
 import br.com.sgpj.entity.Processo.FaseProcesso;
 import br.com.sgpj.entity.Processo.ProcessoApp;
 import br.com.sgpj.entity.Processo.StatusProcesso;
@@ -28,7 +29,7 @@ public class DashboardService {
     private final List<ProcessoApp> solicitacoes = new ArrayList<>();
 
 
-    public void popularVariaveisEscopoDash(){
+    public synchronized void popularVariaveisEscopoDash(){
         processos = processoAppRepository.findAll();
         clientes = clienteRepository.findAll();
         fasesProcessos = faseProcessoRepository.findAll();
@@ -56,7 +57,7 @@ public class DashboardService {
     }
 
     /*----------BUSCA DOS DADOS DOS GRÁFICOS PARA O CLIENT----------*/
-    public DadosIndependentesResponse listarDadosIndependentes(){
+    public synchronized DadosIndependentesResponse listarDadosIndependentes(){
         popularVariaveisEscopoDash();
         List<ProcessosPorFaseResponse> processosPorFase = extrairProcessosPorFase(processos, fasesProcessos);
         List<AudienciasResponse> audiencia = extrairAudiencias(processos);
@@ -82,7 +83,7 @@ public class DashboardService {
     }
 
 
-    public DadosFiltradosDashResponse listarDadosFiltradosDash(LocalDate dateFrom, LocalDate dateTo){
+    public synchronized DadosFiltradosDashResponse listarDadosFiltradosDash(LocalDate dateFrom, LocalDate dateTo){
         popularVariaveisEscopoDash();
         ProcessosEncerradosResponse processosEncerrados = extrairProcessosEncerrados(dateFrom, dateTo, processos);
         ProcessosSuspensosResponse processosSuspensos = extrairProcessosSuspensos(dateFrom, dateTo, processos);
@@ -186,20 +187,22 @@ public class DashboardService {
     ){
         int entradaPorInstagram = 0;
         int entradaPorSite = 0;
+        int entradaPorIndicacao = 0;
         int entradaPorOutros = 0;
 
         for (Cliente cliente : clientes){
             if (cliente.getComoConheceu() != null) {
-                switch (cliente.getComoConheceu().toLowerCase()){
-                    case "instagram" -> entradaPorInstagram++;
-                    case "site" -> entradaPorSite++;
-                    case "outros" -> entradaPorOutros++;
+                switch (cliente.getComoConheceu()){
+                    case ComoConheceuEnum.INSTAGRAM -> entradaPorInstagram++;
+                    case ComoConheceuEnum.SITE -> entradaPorSite++;
+                    case ComoConheceuEnum.INDICACAO -> entradaPorIndicacao++;
+                    case ComoConheceuEnum.OUTROS -> entradaPorOutros++;
                     default -> {}
                 }
             }
         }
 
-        return new FormasDeEntradaResponse(entradaPorInstagram, entradaPorSite, entradaPorOutros);
+        return new FormasDeEntradaResponse(entradaPorInstagram, entradaPorSite, entradaPorIndicacao, entradaPorOutros);
     }
 
 

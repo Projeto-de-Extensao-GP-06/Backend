@@ -47,7 +47,7 @@ public class CpfCnpjValidator implements ConstraintValidator<CpfCnpj, String> {
     // CPF — Mod11, pesos decrescentes de 10 até 2
     // -------------------------------------------------------------------------
 
-    private boolean isValidCpf(String cpf) {
+    public static boolean isValidCpf(String cpf) {
         // Rejeita sequências uniformes (ex: "11111111111")
         if (cpf.chars().distinct().count() == 1) {
             return false;
@@ -75,7 +75,7 @@ public class CpfCnpjValidator implements ConstraintValidator<CpfCnpj, String> {
     // Valor do char: dígito → 0-9, letra A-Z → 17-42  (char - '0')
     // -------------------------------------------------------------------------
 
-    private boolean isValidCnpj(String cnpj) {
+    public static boolean isValidCnpj(String cnpj) {
         // Rejeita sequências uniformes (ex: "00000000000000")
         if (cnpj.chars().distinct().count() == 1) {
             return false;

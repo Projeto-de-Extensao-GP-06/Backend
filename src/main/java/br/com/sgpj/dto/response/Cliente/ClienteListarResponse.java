@@ -1,5 +1,6 @@
 package br.com.sgpj.dto.response.Cliente;
 
+import br.com.sgpj.entity.ComoConheceuEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
@@ -25,7 +26,7 @@ public record ClienteListarResponse(
         String statusNome,
 
         @Schema(description = "Como conheceu o escritório", example = "Instagram")
-        String comoConheceu,
+        ComoConheceuEnum comoConheceu,
 
         @Schema(description = "Data e hora do envio do formulário", example = "2026-05-16T10:30:00")
         LocalDateTime dataHoraEnvioFormulario,

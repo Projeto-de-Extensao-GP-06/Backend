@@ -101,6 +101,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
+    @ExceptionHandler(CaptchaInvalidoException.class)
+    public ResponseEntity<Map<String, Object>> handleCaptchaInvalido(CaptchaInvalidoException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(IllegalArgumentException ex) {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
@@ -217,10 +222,17 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
+    @ExceptionHandler(ProcessoJaExistenteException.class)
+    public ResponseEntity<Map<String, Object>> handleProcessoJaExistente(ProcessoJaExistenteException ex) {
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
     @ExceptionHandler(DataJudIntegrationException.class)
     public ResponseEntity<Map<String, Object>> handleDataJudIntegration(DataJudIntegrationException ex) {
-        String msg = "Não foi possível estabelecer conexão com o DataJud para buscar os dados oficiais. Tente novamente mais tarde.";
-        return buildResponse(HttpStatus.BAD_GATEWAY, msg);
+        String msg = (ex.getMessage() != null && !ex.getMessage().isBlank())
+                ? ex.getMessage()
+                : "Não foi possível obter dados oficiais do DataJud no momento. Por favor, tente novamente mais tarde.";
+        return buildResponse(HttpStatus.SERVICE_UNAVAILABLE, msg);
     }
 
     @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)

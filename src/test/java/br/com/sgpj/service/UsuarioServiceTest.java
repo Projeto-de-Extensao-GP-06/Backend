@@ -1,6 +1,7 @@
 package br.com.sgpj.service;
 
 import br.com.sgpj.dto.request.DefinirNovaSenhaRequest;
+import br.com.sgpj.dto.request.UsuarioAlterarSenhaRequest;
 import br.com.sgpj.dto.request.UsuarioAtualizacaoRequest;
 import br.com.sgpj.dto.request.UsuarioCriacaoRequest;
 import br.com.sgpj.dto.request.UsuarioLoginRequest;
@@ -9,6 +10,7 @@ import br.com.sgpj.dto.response.AutenticacaoUsuarioResponse;
 import br.com.sgpj.dto.response.Usuario.UsuarioListarResponse;
 import br.com.sgpj.dto.response.Usuario.UsuarioTokenResponse;
 import br.com.sgpj.entity.Usuario;
+import br.com.sgpj.service.useCases.usuario.AlterarMinhaSenha;
 import br.com.sgpj.service.useCases.usuario.AutenticarOtp;
 import br.com.sgpj.service.useCases.usuario.AutenticarUsuario;
 import br.com.sgpj.service.useCases.usuario.CreateUsuario;
@@ -73,6 +75,9 @@ class UsuarioServiceTest {
 
     @Mock
     private DefinirNovaSenha definirNovaSenha;
+
+    @Mock
+    private AlterarMinhaSenha alterarMinhaSenha;
 
     @InjectMocks
     private UsuarioService usuarioService;
@@ -229,5 +234,15 @@ class UsuarioServiceTest {
 
         assertEquals(resp, res);
         verify(reativarUsuario).executar(2L);
+    }
+
+    @Test
+    @DisplayName("alterarMinhaSenha delega para AlterarMinhaSenha")
+    void alterarMinhaSenhaDelega() {
+        UsuarioAlterarSenhaRequest req = mock(UsuarioAlterarSenhaRequest.class);
+
+        usuarioService.alterarMinhaSenha(req);
+
+        verify(alterarMinhaSenha, times(1)).executar(req);
     }
 }

@@ -70,11 +70,15 @@ public class CreateProcesso {
             }
         }
 
+        if (cnjNormalizado != null && processoAppRepository.existsByCnj(cnjNormalizado)) {
+            throw new br.com.sgpj.exception.ProcessoJaExistenteException("Já existe um processo cadastrado com este número de CNJ.");
+        }
+
         boolean sincronizado = false;
         if (cnjNormalizado != null) {
             ProcessoApi dadosOficiais = null;
             try {
-                dadosOficiais = processoApiGateway.buscarDadosOficiais(cnjNormalizado);
+                dadosOficiais = processoApiGateway.buscarDadosOficiais(cnjNormalizado, siglaTribunal);
             } catch (Exception e) {
                 log.warn("Falha ao buscar dados no DataJud para o CNJ {}: {}", cnjNormalizado, e.getMessage());
             }

@@ -24,6 +24,7 @@ import br.com.sgpj.repository.FaseProcessoRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.PrioridadeRepository;
 import br.com.sgpj.repository.StatusClienteRepository;
+import br.com.sgpj.service.useCases.onedrive.GarantirPastasClienteOneDrive;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,6 +45,7 @@ public class AceitarSolicitacao {
     private final PrioridadeRepository prioridadeRepository;
     private final FaseProcessoRepository faseProcessoRepository;
     private final StatusClienteRepository statusClienteRepository;
+    private final GarantirPastasClienteOneDrive garantirPastasClienteOneDrive;
 
     public AceitarSolicitacao(ProcessoAppRepository processoAppRepository,
                               ClienteRepository clienteRepository,
@@ -51,7 +53,8 @@ public class AceitarSolicitacao {
                               EnderecoRepository enderecoRepository,
                               PrioridadeRepository prioridadeRepository,
                               FaseProcessoRepository faseProcessoRepository,
-                              StatusClienteRepository statusClienteRepository) {
+                              StatusClienteRepository statusClienteRepository,
+                              GarantirPastasClienteOneDrive garantirPastasClienteOneDrive) {
         this.processoAppRepository = processoAppRepository;
         this.clienteRepository = clienteRepository;
         this.contatoRepository = contatoRepository;
@@ -59,6 +62,7 @@ public class AceitarSolicitacao {
         this.prioridadeRepository = prioridadeRepository;
         this.faseProcessoRepository = faseProcessoRepository;
         this.statusClienteRepository = statusClienteRepository;
+        this.garantirPastasClienteOneDrive = garantirPastasClienteOneDrive;
     }
 
     @Transactional
@@ -91,6 +95,7 @@ public class AceitarSolicitacao {
         processoApp.setStatus(StatusProcesso.ATIVO);
         processoApp.setUltimaAtualizacao(LocalDateTime.now());
         processoAppRepository.save(processoApp);
+        garantirPastasClienteOneDrive.garantir(cliente, id);
 
         return SolicitacaoDuvidaMapper.toClientePreenchimentoResponse(
                 ProcessoAppToSolicitacaoDuvidaMapper.toSolicitacaoDuvida(processoApp),

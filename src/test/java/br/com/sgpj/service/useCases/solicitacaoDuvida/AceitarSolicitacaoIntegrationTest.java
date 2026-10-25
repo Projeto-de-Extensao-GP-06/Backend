@@ -18,6 +18,14 @@ import br.com.sgpj.repository.PrioridadeRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.StatusClienteRepository;
 import br.com.sgpj.repository.UsuarioRepository;
+import br.com.sgpj.repository.CaminhoPadraoDeArmazenamentoRepository;
+import br.com.sgpj.entity.documentos.CaminhoPadraoDeArmazenamento;
+import br.com.sgpj.exception.OneDriveErroException;
+import br.com.sgpj.service.useCases.onedrive.GarantirPastasClienteOneDrive;
+import br.com.sgpj.service.useCases.onedrive.RegistrarCaminhoArmazenamentoCliente;
+import br.com.sgpj.service.useCases.onedrive.OneDriveGraphGateway;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.annotation.DirtiesContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -33,6 +41,9 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @DataJpaTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:aceitar-solicitacao;DB_CLOSE_DELAY=-1",
@@ -42,7 +53,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.sql.init.mode=never"
 })
-@Import(AceitarSolicitacao.class)
+@Import({AceitarSolicitacao.class, GarantirPastasClienteOneDrive.class, RegistrarCaminhoArmazenamentoCliente.class})
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class AceitarSolicitacaoIntegrationTest {
 
     @Autowired private AceitarSolicitacao aceitarSolicitacao;
@@ -54,6 +66,8 @@ class AceitarSolicitacaoIntegrationTest {
     @Autowired private ProcessoAppRepository processoAppRepository;
     @Autowired private StatusClienteRepository statusClienteRepository;
     @Autowired private UsuarioRepository usuarioRepository;
+    @Autowired private CaminhoPadraoDeArmazenamentoRepository caminhoRepository;
+    @MockitoBean private OneDriveGraphGateway graphGateway;
 
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -90,6 +104,7 @@ class AceitarSolicitacaoIntegrationTest {
         assertEquals(usuarioResponsavel.getId(), solicitacaoPersistida.getUsuarioResponsavel().getId());
         assertEquals(StatusProcesso.ATIVO, outroProcessoPersistido.getStatus());
         assertEquals(cliente.getId(), outroProcessoPersistido.getCliente().getId());
+        verify(graphGateway).garantirPasta("root:/sgpj/usuarios:", "cliente-preservado");
     }
 
     @Test
@@ -116,6 +131,58 @@ class AceitarSolicitacaoIntegrationTest {
         assertEquals(0, contatoRepository.count());
         assertEquals(StatusProcesso.SOLICITACAO, solicitacaoPersistida.getStatus());
         assertEquals(0, enderecoRepository.count());
+        verifyNoInteractions(graphGateway);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void deveAceitarEPreservarCaminhoSalvoQuandoOneDriveFalhar() {
+        prepararReferencias();
+        status("ATIVO");
+        Usuario usuario = criarUsuarioResponsavel();
+        Cliente cliente = new Cliente();
+        cliente.setNomeRazaoSocial("Nome atual " + UUID.randomUUID());
+        cliente.setPF(true);
+        cliente.setStatusCliente(status("LEAD"));
+        cliente = clienteRepository.save(cliente);
+        String caminho = "nome-anterior-" + UUID.randomUUID();
+        caminhoRepository.save(new CaminhoPadraoDeArmazenamento(null, cliente, caminho, List.of()));
+        ProcessoApp solicitacao = processoAppRepository.save(criarProcesso(cliente, StatusProcesso.SOLICITACAO));
+        when(graphGateway.garantirPasta("root:/sgpj/usuarios:", caminho))
+                .thenThrow(new OneDriveErroException("Sem conexao"));
+
+        aceitarSolicitacao.aceitar(solicitacao.getId(), requestPf("Contato"), usuario);
+
+        assertEquals(StatusProcesso.ATIVO, processoAppRepository.findById(solicitacao.getId()).orElseThrow().getStatus());
+        assertEquals("ATIVO", clienteRepository.findById(cliente.getId()).orElseThrow().getStatusCliente().getNome());
+        assertEquals(caminho, caminhoRepository.findByClienteId(cliente.getId()).getFirst().getCaminho());
+        assertEquals(1, caminhoRepository.findByClienteId(cliente.getId()).size());
+        verify(graphGateway).garantirPasta("root:/sgpj/usuarios:", caminho);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void deveCadastrarCaminhoAusenteEAceitarMesmoSemOneDrive() {
+        prepararReferencias();
+        status("ATIVO");
+        Usuario usuario = criarUsuarioResponsavel();
+        Cliente cliente = new Cliente();
+        cliente.setNomeRazaoSocial("cliente-antigo-" + UUID.randomUUID());
+        cliente.setPF(true);
+        cliente.setStatusCliente(status("LEAD"));
+        cliente = clienteRepository.save(cliente);
+        ProcessoApp solicitacao = processoAppRepository.save(criarProcesso(cliente, StatusProcesso.SOLICITACAO));
+        String caminho = cliente.getNomeRazaoSocial();
+        when(graphGateway.garantirPasta("root:/sgpj/usuarios:", caminho))
+                .thenThrow(new OneDriveErroException("Sem conexao"));
+
+        aceitarSolicitacao.aceitar(solicitacao.getId(), requestPf("Contato"), usuario);
+
+        assertEquals(StatusProcesso.ATIVO, processoAppRepository.findById(solicitacao.getId()).orElseThrow().getStatus());
+        var caminhos = caminhoRepository.findByClienteId(cliente.getId());
+        assertEquals(1, caminhos.size());
+        assertEquals(caminho, caminhos.getFirst().getCaminho());
+        verify(graphGateway).garantirPasta("root:/sgpj/usuarios:", caminho);
     }
 
     private void prepararReferencias() {

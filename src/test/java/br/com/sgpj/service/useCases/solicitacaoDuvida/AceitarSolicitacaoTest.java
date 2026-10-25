@@ -21,6 +21,7 @@ import br.com.sgpj.repository.FaseProcessoRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.PrioridadeRepository;
 import br.com.sgpj.repository.StatusClienteRepository;
+import br.com.sgpj.service.useCases.onedrive.GarantirPastasClienteOneDrive;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -69,6 +70,9 @@ class AceitarSolicitacaoTest {
 
     @Mock
     private StatusClienteRepository statusClienteRepository;
+
+    @Mock
+    private GarantirPastasClienteOneDrive garantirPastasClienteOneDrive;
 
     @InjectMocks
     private AceitarSolicitacao aceitarSolicitacao;
@@ -144,6 +148,7 @@ class AceitarSolicitacaoTest {
                     .thenReturn(Optional.of(statusAtivo));
 
             SolicitacaoClientePreenchimentoResponse response = aceitarSolicitacao.aceitar(1L, requestPf(), usuarioResponsavel);
+            verify(garantirPastasClienteOneDrive).garantir(cliente, 1L);
 
             ArgumentCaptor<ProcessoApp> processoCaptor = ArgumentCaptor.forClass(ProcessoApp.class);
             verify(processoAppRepository).save(processoCaptor.capture());
@@ -252,6 +257,7 @@ class AceitarSolicitacaoTest {
             assertThrows(ObjetoNaoEncontradoException.class, () -> aceitarSolicitacao.aceitar(99L, requestPf(), usuarioResponsavel));
             verify(clienteRepository, never()).save(any());
             verify(processoAppRepository, never()).save(any());
+            org.mockito.Mockito.verifyNoInteractions(garantirPastasClienteOneDrive);
         }
 
         @Test
@@ -309,6 +315,7 @@ class AceitarSolicitacaoTest {
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoApp));
 
             assertThrows(OperacaoInvalidaException.class, () -> aceitarSolicitacao.aceitar(1L, requestPf(), usuarioResponsavel));
+            org.mockito.Mockito.verifyNoInteractions(garantirPastasClienteOneDrive);
 
             verify(clienteRepository, never()).save(any());
             verify(processoAppRepository, never()).save(any());

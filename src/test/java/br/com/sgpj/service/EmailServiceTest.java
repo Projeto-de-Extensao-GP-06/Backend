@@ -1,5 +1,6 @@
 package br.com.sgpj.service;
 
+import br.com.sgpj.entity.Processo.ProcessoApp;
 import br.com.sgpj.exception.EmailSendException;
 import br.com.sgpj.service.useCases.email.RenderEmailBody;
 import jakarta.mail.internet.MimeMessage;
@@ -12,6 +13,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mail.javamail.JavaMailSender;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -72,6 +75,49 @@ class EmailServiceTest {
             emailService.sendSetPasswordOtp("maria@sgpj.com.br", "Maria", "654321");
 
             verify(renderEmailBody).renderSetPasswordOtp("Maria", "654321");
+            verify(mailSender).send(any(MimeMessage.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("sendWeeklyHearings")
+    class SendWeeklyHearingsTest {
+
+        @Test
+        @DisplayName("Deve renderizar o template semanal e enviar o email")
+        void deveRenderizarEEnviarEmailSemanalDeAudiencias() {
+            LocalDate inicio = LocalDate.of(2026, 10, 25);
+            LocalDate fim = LocalDate.of(2026, 10, 31);
+            List<ProcessoApp> processos = List.of(new ProcessoApp());
+            RenderEmailBody.EmailContent conteudo = new RenderEmailBody.EmailContent(
+                    "Resumo semanal de audiências - SGPJ", "<p>audiencias semana</p>");
+
+            when(renderEmailBody.renderWeeklyHearings("Carlos", inicio, fim, processos)).thenReturn(conteudo);
+
+            emailService.sendWeeklyHearings("carlos@sgpj.com.br", "Carlos", inicio, fim, processos);
+
+            verify(renderEmailBody).renderWeeklyHearings("Carlos", inicio, fim, processos);
+            verify(mailSender).send(any(MimeMessage.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("sendDailyHearings")
+    class SendDailyHearingsTest {
+
+        @Test
+        @DisplayName("Deve renderizar o template diário e enviar o email")
+        void deveRenderizarEEnviarEmailDiarioDeAudiencias() {
+            LocalDate hoje = LocalDate.of(2026, 10, 26);
+            List<ProcessoApp> processos = List.of(new ProcessoApp());
+            RenderEmailBody.EmailContent conteudo = new RenderEmailBody.EmailContent(
+                    "Lembrete de audiências do dia - SGPJ", "<p>audiencias dia</p>");
+
+            when(renderEmailBody.renderDailyHearings("Ana", hoje, processos)).thenReturn(conteudo);
+
+            emailService.sendDailyHearings("ana@sgpj.com.br", "Ana", hoje, processos);
+
+            verify(renderEmailBody).renderDailyHearings("Ana", hoje, processos);
             verify(mailSender).send(any(MimeMessage.class));
         }
     }

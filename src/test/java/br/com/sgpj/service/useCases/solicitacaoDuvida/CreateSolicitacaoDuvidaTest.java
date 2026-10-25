@@ -15,6 +15,7 @@ import br.com.sgpj.repository.ClienteRepository;
 import br.com.sgpj.repository.ContatoRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.StatusClienteRepository;
+import br.com.sgpj.service.useCases.onedrive.ClienteCaminhoArmazenamento;
 import br.com.sgpj.service.useCases.processo.ProcessoApiGateway;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -55,6 +56,9 @@ class CreateSolicitacaoDuvidaTest {
 
     @Mock
     private ProcessoApiGateway processoApiGateway;
+
+    @Mock
+    private ClienteCaminhoArmazenamento clienteCaminhoArmazenamento;
 
     @InjectMocks
     private CreateSolicitacaoDuvida createSolicitacaoDuvida;
@@ -114,6 +118,7 @@ class CreateSolicitacaoDuvidaTest {
             verify(processoAppRepository).save(processoCaptor.capture());
 
             ProcessoApp salvo = processoCaptor.getValue();
+            verify(clienteCaminhoArmazenamento).registrar(salvo.getCliente());
             assertEquals(StatusProcesso.SOLICITACAO, salvo.getStatus());
             assertEquals("Descrição da dúvida", salvo.getDescricaoCaso());
             assertEquals("Solicitação enviada pelo formulário público. Estado: SP", salvo.getObservacao());
@@ -160,6 +165,7 @@ class CreateSolicitacaoDuvidaTest {
             ArgumentCaptor<Cliente> clienteCaptor = ArgumentCaptor.forClass(Cliente.class);
             verify(clienteRepository).save(clienteCaptor.capture());
             Cliente clienteSalvo = clienteCaptor.getValue();
+            verify(clienteCaminhoArmazenamento).registrar(clienteSalvo);
 
             ArgumentCaptor<Contato> contatoCaptor = ArgumentCaptor.forClass(Contato.class);
             verify(contatoRepository).save(contatoCaptor.capture());

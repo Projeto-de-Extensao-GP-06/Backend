@@ -17,6 +17,7 @@ import br.com.sgpj.repository.ClienteRepository;
 import br.com.sgpj.repository.ContatoRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.StatusClienteRepository;
+import br.com.sgpj.service.useCases.onedrive.ClienteCaminhoArmazenamento;
 import br.com.sgpj.service.useCases.processo.ProcessoApiGateway;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
@@ -38,17 +39,20 @@ public class CreateSolicitacaoDuvida {
     private final ProcessoAppRepository processoAppRepository;
     private final StatusClienteRepository statusClienteRepository;
     private final ProcessoApiGateway processoApiGateway;
+    private final ClienteCaminhoArmazenamento clienteCaminhoArmazenamento;
 
     public CreateSolicitacaoDuvida(ClienteRepository clienteRepository,
                                     ContatoRepository contatoRepository,
                                     ProcessoAppRepository processoAppRepository,
                                     StatusClienteRepository statusClienteRepository,
-                                    ProcessoApiGateway processoApiGateway) {
+                                    ProcessoApiGateway processoApiGateway,
+                                    ClienteCaminhoArmazenamento clienteCaminhoArmazenamento) {
         this.clienteRepository = clienteRepository;
         this.contatoRepository = contatoRepository;
         this.processoAppRepository = processoAppRepository;
         this.statusClienteRepository = statusClienteRepository;
         this.processoApiGateway = processoApiGateway;
+        this.clienteCaminhoArmazenamento = clienteCaminhoArmazenamento;
     }
 
     @Transactional
@@ -65,6 +69,7 @@ public class CreateSolicitacaoDuvida {
         cliente.setStatusCliente(buscarStatus(StatusClienteEnum.LEAD));
         cliente.setDataHoraEnvioFormulario(LocalDateTime.now());
         cliente = clienteRepository.save(cliente);
+        clienteCaminhoArmazenamento.registrar(cliente);
 
         Contato contato = ContatoMapper.toEntity(
                 request.nomeCompleto().trim(),

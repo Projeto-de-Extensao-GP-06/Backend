@@ -6,6 +6,7 @@ import br.com.sgpj.entity.Processo.ProcessoApi;
 import br.com.sgpj.entity.Processo.ProcessoApp;
 import br.com.sgpj.entity.Processo.StatusProcesso;
 import br.com.sgpj.entity.StatusCliente;
+import br.com.sgpj.entity.Usuario;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -41,6 +42,9 @@ class ProcessoAppRepositoryTest {
 
     @Autowired
     private ContatoRepository contatoRepository;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     @Test
     void devePaginarLeadsOrdenandoPorDataEIdEContarSomenteLeads() {
@@ -170,6 +174,60 @@ class ProcessoAppRepositoryTest {
                 processoApi.getId(), processoSolicitacao.getId()));
         assertFalse(processoAppRepository.existsByProcessoApi_IdAndIdNot(
                 processoApiExclusivo.getId(), processoExclusivo.getId()));
+    }
+
+    @Test
+    void deveBuscarAudienciasPorPeriodoFiltrandoStatusUsuarioAtivoEOrdenandoPorData() {
+        StatusCliente ativoStatus = statusClienteRepository.save(new StatusCliente(null, "ATIVO"));
+        Cliente cliente = criarCliente("Cliente Audiencia", ativoStatus);
+
+        Usuario usuarioAtivo = new Usuario("Advogado Ativo", "ativo@sgpj.com.br", "senha", null, true);
+        usuarioAtivo.setCriadoEm(LocalDateTime.now());
+        usuarioAtivo = usuarioRepository.save(usuarioAtivo);
+
+        Usuario usuarioInativo = new Usuario("Advogado Inativo", "inativo@sgpj.com.br", "senha", null, false);
+        usuarioInativo.setCriadoEm(LocalDateTime.now());
+        usuarioInativo = usuarioRepository.save(usuarioInativo);
+
+        LocalDateTime inicioPeriodo = LocalDateTime.of(2026, 10, 25, 0, 0);
+        LocalDateTime fimPeriodo = LocalDateTime.of(2026, 11, 1, 0, 0);
+
+        ProcessoApp audienciaMaisTarde = criarProcessoComAudiencia(
+                cliente, usuarioAtivo, StatusProcesso.ATIVO, LocalDateTime.of(2026, 10, 28, 15, 0));
+        ProcessoApp audienciaMaisCedo = criarProcessoComAudiencia(
+                cliente, usuarioAtivo, StatusProcesso.ATIVO, LocalDateTime.of(2026, 10, 26, 9, 30));
+        // Fora do período
+        criarProcessoComAudiencia(
+                cliente, usuarioAtivo, StatusProcesso.ATIVO, LocalDateTime.of(2026, 11, 1, 0, 0));
+        // Processo suspenso
+        criarProcessoComAudiencia(
+                cliente, usuarioAtivo, StatusProcesso.SUSPENSO, LocalDateTime.of(2026, 10, 27, 10, 0));
+        // Usuário inativo
+        criarProcessoComAudiencia(
+                cliente, usuarioInativo, StatusProcesso.ATIVO, LocalDateTime.of(2026, 10, 27, 11, 0));
+        processoAppRepository.flush();
+
+        List<ProcessoApp> resultado = processoAppRepository.buscarAudienciasPorPeriodo(
+                StatusProcesso.ATIVO, inicioPeriodo, fimPeriodo);
+
+        assertEquals(2, resultado.size());
+        assertEquals(audienciaMaisCedo.getId(), resultado.get(0).getId());
+        assertEquals(audienciaMaisTarde.getId(), resultado.get(1).getId());
+    }
+
+    private ProcessoApp criarProcessoComAudiencia(
+            Cliente cliente,
+            Usuario usuarioResponsavel,
+            StatusProcesso status,
+            LocalDateTime dataAudiencia
+    ) {
+        ProcessoApp processo = new ProcessoApp();
+        processo.setCliente(cliente);
+        processo.setUsuarioResponsavel(usuarioResponsavel);
+        processo.setStatus(status);
+        processo.setDataAudiencia(dataAudiencia);
+        processo.setDataHoraInicio(LocalDateTime.now());
+        return processoAppRepository.save(processo);
     }
 
     private Contato criarContato(Cliente cliente, String email, boolean principal) {

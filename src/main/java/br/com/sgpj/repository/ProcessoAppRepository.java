@@ -4,6 +4,7 @@ import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Processo.FaseProcesso;
 import br.com.sgpj.entity.Processo.ProcessoApp;
 import br.com.sgpj.entity.Processo.SiglaTribunal;
+import br.com.sgpj.entity.Processo.StatusProcesso;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -117,4 +118,22 @@ public interface ProcessoAppRepository extends JpaRepository<ProcessoApp, Long>,
               )
             """)
     boolean existsByCnjAndIdNot(@Param("cnjLimpo") String cnjLimpo, @Param("id") Long id);
+
+    @Query("""
+            select p
+            from ProcessoApp p
+            join fetch p.usuarioResponsavel u
+            join fetch p.cliente c
+            left join fetch p.processoApi api
+            where p.status = :status
+              and u.ativo = true
+              and p.dataAudiencia is not null
+              and p.dataAudiencia >= :dataInicio
+              and p.dataAudiencia < :dataFim
+            order by p.dataAudiencia asc, p.id asc
+            """)
+    List<ProcessoApp> buscarAudienciasPorPeriodo(
+            @Param("status") StatusProcesso status,
+            @Param("dataInicio") LocalDateTime dataInicio,
+            @Param("dataFim") LocalDateTime dataFim);
 }

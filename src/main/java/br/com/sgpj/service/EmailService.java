@@ -48,7 +48,6 @@ public class EmailService {
         buildEmail(to, subject, body);
     }
 
-    @Async
     public void sendWeeklyHearings(String to, String nomeUsuario, LocalDate inicioSemana, LocalDate fimSemana, List<ProcessoApp> processos) {
         RenderEmailBody.EmailContent emailContent = renderEmailBody.renderWeeklyHearings(nomeUsuario, inicioSemana, fimSemana, processos);
         String subject = emailContent.subject();
@@ -57,7 +56,6 @@ public class EmailService {
         buildEmail(to, subject, body);
     }
 
-    @Async
     public void sendDailyHearings(String to, String nomeUsuario, LocalDate dataReferencia, List<ProcessoApp> processos) {
         RenderEmailBody.EmailContent emailContent = renderEmailBody.renderDailyHearings(nomeUsuario, dataReferencia, processos);
         String subject = emailContent.subject();

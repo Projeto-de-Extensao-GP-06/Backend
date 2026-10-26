@@ -52,6 +52,15 @@ spring.mail.username.from=nao-responda@sgpj.com.br
 #spring.mail.properties.mail.smtp.writetimeout=5000
 #spring.mail.username.from=sistema.sgpj@gmail.com
 
+# Configurações do RabbitMQ e Fila de E-mail
+spring.rabbitmq.host=${RABBITMQ_HOST:localhost}
+spring.rabbitmq.port=${RABBITMQ_PORT:5672}
+spring.rabbitmq.username=${RABBITMQ_USERNAME:guest}
+spring.rabbitmq.password=${RABBITMQ_PASSWORD:guest}
+
+sgpj.email.queue.retry-ttl-ms=${EMAIL_RETRY_TTL_MS:30000}
+sgpj.email.queue.max-retries=${EMAIL_MAX_RETRIES:3}
+
 #Configuracao OTLP
 otel.service.name=sgpj-backend
 otel.exporter.otlp.endpoint=${OTEL_EXPORTER_OTLP_ENDPOINT:http://observability:4318}

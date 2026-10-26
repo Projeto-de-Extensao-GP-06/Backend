@@ -1,5 +1,7 @@
 package br.com.sgpj.service;
 
+import br.com.sgpj.config.RabbitMQEmailConfig;
+import br.com.sgpj.dto.EmailMessagePayload;
 import br.com.sgpj.entity.Processo.ProcessoApp;
 import br.com.sgpj.exception.EmailSendException;
 import br.com.sgpj.service.useCases.email.RenderEmailBody;
@@ -11,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.mail.javamail.JavaMailSender;
 
 import java.time.LocalDate;
@@ -30,34 +33,43 @@ class EmailServiceTest {
     @Mock
     private RenderEmailBody renderEmailBody;
 
+    @Mock
+    private RabbitTemplate rabbitTemplate;
+
     private EmailService emailService;
 
     private static final String REMETENTE = "nao-responda@sgpj.com.br";
 
     @BeforeEach
     void setUp() {
-        // remetente agora é injetado direto no construtor — sem precisar de reflexão
-        emailService = new EmailService(mailSender, renderEmailBody, REMETENTE);
+        emailService = new EmailService(mailSender, renderEmailBody, rabbitTemplate, REMETENTE);
 
         jakarta.mail.Session session = jakarta.mail.Session.getInstance(new Properties());
         MimeMessage mimeMessage = new MimeMessage(session);
         lenient().when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
     }
+
     @Nested
     @DisplayName("sendForgotPasswordOtp")
     class SendForgotPasswordOtpTest {
 
         @Test
-        @DisplayName("Deve renderizar o template correto e enviar o email")
-        void deveRenderizarEEnviarEmailDeRecuperacaoDeSenha() {
-            RenderEmailBody.EmailContent conteudo = new RenderEmailBody.EmailContent(
-                    "Código de verificação para recuperação de senha", "<p>corpo</p>");
+        @DisplayName("Deve renderizar o template correto e enfileirar o email no RabbitMQ")
+        void deveRenderizarEEnfileirarEmailDeRecuperacaoDeSenha() {
+            String assunto = "Código de verificação para recuperação de senha";
+            String corpo = "<p>corpo</p>";
+            RenderEmailBody.EmailContent conteudo = new RenderEmailBody.EmailContent(assunto, corpo);
             when(renderEmailBody.renderForgotPasswordOtp("João", "123456")).thenReturn(conteudo);
 
             emailService.sendForgotPasswordOtp("joao@sgpj.com.br", "João", "123456");
 
             verify(renderEmailBody).renderForgotPasswordOtp("João", "123456");
-            verify(mailSender).send(any(MimeMessage.class));
+            verify(rabbitTemplate).convertAndSend(
+                    RabbitMQEmailConfig.EMAIL_EXCHANGE,
+                    RabbitMQEmailConfig.ROUTING_KEY_SEND,
+                    new EmailMessagePayload("joao@sgpj.com.br", assunto, corpo)
+            );
+            verifyNoInteractions(mailSender);
         }
     }
 
@@ -66,16 +78,22 @@ class EmailServiceTest {
     class SendSetPasswordOtpTest {
 
         @Test
-        @DisplayName("Deve renderizar o template correto e enviar o email")
-        void deveRenderizarEEnviarEmailDeDefinicaoDeSenha() {
-            RenderEmailBody.EmailContent conteudo = new RenderEmailBody.EmailContent(
-                    "Código de verificação para definição de senha", "<p>corpo</p>");
+        @DisplayName("Deve renderizar o template correto e enfileirar o email no RabbitMQ")
+        void deveRenderizarEEnfileirarEmailDeDefinicaoDeSenha() {
+            String assunto = "Código de verificação para definição de senha";
+            String corpo = "<p>corpo</p>";
+            RenderEmailBody.EmailContent conteudo = new RenderEmailBody.EmailContent(assunto, corpo);
             when(renderEmailBody.renderSetPasswordOtp("Maria", "654321")).thenReturn(conteudo);
 
             emailService.sendSetPasswordOtp("maria@sgpj.com.br", "Maria", "654321");
 
             verify(renderEmailBody).renderSetPasswordOtp("Maria", "654321");
-            verify(mailSender).send(any(MimeMessage.class));
+            verify(rabbitTemplate).convertAndSend(
+                    RabbitMQEmailConfig.EMAIL_EXCHANGE,
+                    RabbitMQEmailConfig.ROUTING_KEY_SEND,
+                    new EmailMessagePayload("maria@sgpj.com.br", assunto, corpo)
+            );
+            verifyNoInteractions(mailSender);
         }
     }
 
@@ -84,20 +102,26 @@ class EmailServiceTest {
     class SendWeeklyHearingsTest {
 
         @Test
-        @DisplayName("Deve renderizar o template semanal e enviar o email")
-        void deveRenderizarEEnviarEmailSemanalDeAudiencias() {
+        @DisplayName("Deve renderizar o template semanal e enfileirar o email no RabbitMQ")
+        void deveRenderizarEEnfileirarEmailSemanalDeAudiencias() {
             LocalDate inicio = LocalDate.of(2026, 10, 25);
             LocalDate fim = LocalDate.of(2026, 10, 31);
             List<ProcessoApp> processos = List.of(new ProcessoApp());
-            RenderEmailBody.EmailContent conteudo = new RenderEmailBody.EmailContent(
-                    "Resumo semanal de audiências - SGPJ", "<p>audiencias semana</p>");
+            String assunto = "Resumo semanal de audiências - SGPJ";
+            String corpo = "<p>audiencias semana</p>";
+            RenderEmailBody.EmailContent conteudo = new RenderEmailBody.EmailContent(assunto, corpo);
 
             when(renderEmailBody.renderWeeklyHearings("Carlos", inicio, fim, processos)).thenReturn(conteudo);
 
             emailService.sendWeeklyHearings("carlos@sgpj.com.br", "Carlos", inicio, fim, processos);
 
             verify(renderEmailBody).renderWeeklyHearings("Carlos", inicio, fim, processos);
-            verify(mailSender).send(any(MimeMessage.class));
+            verify(rabbitTemplate).convertAndSend(
+                    RabbitMQEmailConfig.EMAIL_EXCHANGE,
+                    RabbitMQEmailConfig.ROUTING_KEY_SEND,
+                    new EmailMessagePayload("carlos@sgpj.com.br", assunto, corpo)
+            );
+            verifyNoInteractions(mailSender);
         }
     }
 
@@ -106,19 +130,25 @@ class EmailServiceTest {
     class SendDailyHearingsTest {
 
         @Test
-        @DisplayName("Deve renderizar o template diário e enviar o email")
-        void deveRenderizarEEnviarEmailDiarioDeAudiencias() {
+        @DisplayName("Deve renderizar o template diário e enfileirar o email no RabbitMQ")
+        void deveRenderizarEEnfileirarEmailDiarioDeAudiencias() {
             LocalDate hoje = LocalDate.of(2026, 10, 26);
             List<ProcessoApp> processos = List.of(new ProcessoApp());
-            RenderEmailBody.EmailContent conteudo = new RenderEmailBody.EmailContent(
-                    "Lembrete de audiências do dia - SGPJ", "<p>audiencias dia</p>");
+            String assunto = "Lembrete de audiências do dia - SGPJ";
+            String corpo = "<p>audiencias dia</p>";
+            RenderEmailBody.EmailContent conteudo = new RenderEmailBody.EmailContent(assunto, corpo);
 
             when(renderEmailBody.renderDailyHearings("Ana", hoje, processos)).thenReturn(conteudo);
 
             emailService.sendDailyHearings("ana@sgpj.com.br", "Ana", hoje, processos);
 
             verify(renderEmailBody).renderDailyHearings("Ana", hoje, processos);
-            verify(mailSender).send(any(MimeMessage.class));
+            verify(rabbitTemplate).convertAndSend(
+                    RabbitMQEmailConfig.EMAIL_EXCHANGE,
+                    RabbitMQEmailConfig.ROUTING_KEY_SEND,
+                    new EmailMessagePayload("ana@sgpj.com.br", assunto, corpo)
+            );
+            verifyNoInteractions(mailSender);
         }
     }
 
@@ -146,8 +176,6 @@ class EmailServiceTest {
         @Test
         @DisplayName("Deve lançar EmailSendException quando ocorrer uma MessagingException ao montar o email")
         void deveLancarEmailSendExceptionEmFalhaDeEnvio() {
-            // Um endereço contendo quebra de linha é rejeitado pelo parser de endereços do Jakarta Mail,
-            // simulando uma falha real de MessagingException (e também uma tentativa de header injection).
             String destinatarioInvalido = "invalido\ninjection@sgpj.com.br";
 
             EmailSendException ex = assertThrows(EmailSendException.class,

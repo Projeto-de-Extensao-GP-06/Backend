@@ -6,6 +6,7 @@ import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Processo.*;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
+import br.com.sgpj.exception.TribunalInvalidoException;
 import br.com.sgpj.mapper.ProcessoAppMapper;
 import br.com.sgpj.repository.*;
 import br.com.sgpj.service.RegistroHistoricoProcesso;
@@ -49,8 +50,6 @@ public class CreateProcesso {
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Prioridade nao encontrada para o ID: " + novoProcesso.prioridadeId()));
         FaseProcesso faseProcesso = faseProcessoRepository.findById(novoProcesso.faseProcessoId())
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Fase do processo nao encontrada para o ID: " + novoProcesso.faseProcessoId()));
-        SiglaTribunal siglaTribunal = siglaTribunalRepository.findById(novoProcesso.siglaTribunalId())
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Sigla do tribunal nao encontrada para o ID: " + novoProcesso.siglaTribunalId()));
         Cliente cliente = clienteRepository.findById(novoProcesso.clienteId())
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Cliente nao encontrada para o ID: " + novoProcesso.clienteId()));
 
@@ -60,7 +59,6 @@ public class CreateProcesso {
         processoApp.setCliente(cliente);
         processoApp.setPrioridade(prioridade);
         processoApp.setFaseProcesso(faseProcesso);
-        processoApp.setSiglaTribunal(siglaTribunal);
 
         String cnjNormalizado = null;
         if (novoProcesso.numeroProcesso() != null && !novoProcesso.numeroProcesso().isBlank()) {
@@ -76,9 +74,15 @@ public class CreateProcesso {
 
         boolean sincronizado = false;
         if (cnjNormalizado != null) {
+            String sigla = mapearSiglaTribunalPorNumero(cnjNormalizado.substring(14, 16));
+            SiglaTribunal siglaTribunal = siglaTribunalRepository.findByNomeIgnoreCase(sigla)
+                    .orElseThrow(() -> new ObjetoNaoEncontradoException("Sigla do tribunal nao encontrada: " + sigla));
+
+            processoApp.setSiglaTribunal(siglaTribunal);
+
             ProcessoApi dadosOficiais = null;
             try {
-                dadosOficiais = processoApiGateway.buscarDadosOficiais(cnjNormalizado, siglaTribunal);
+                dadosOficiais = processoApiGateway.buscarDadosOficiais(cnjNormalizado, siglaTribunal.getNome());
             } catch (Exception e) {
                 log.warn("Falha ao buscar dados no DataJud para o CNJ {}: {}", cnjNormalizado, e.getMessage());
             }
@@ -90,11 +94,8 @@ public class CreateProcesso {
             } else {
                 ProcessoApi processoApi = new ProcessoApi();
                 processoApi.setNumeroCnj(cnjNormalizado);
-                if (siglaTribunal != null) {
-                    processoApi.setTribunalTramitacao(siglaTribunal.getNome());
-                }
+                processoApi.setTribunalTramitacao(siglaTribunal.getNome());
                 processoApp.setProcessoApi(processoApi);
-                sincronizado = false;
             }
         }
 
@@ -102,5 +103,41 @@ public class CreateProcesso {
         registroHistorico.registrar(salvo, usuarioResponsavel, RegistroHistoricoProcesso.ABERTURA, "Processo criado.");
 
         return ProcessoAppMapper.toCreateResponse(salvo, sincronizado, cnjNormalizado);
+    }
+
+    private String mapearSiglaTribunalPorNumero(String numero) {
+        if (numero == null) {
+            return null;
+        }
+        return switch (numero.trim()) {
+            case "01" -> "TJAC";
+            case "02" -> "TJAL";
+            case "03" -> "TJAP";
+            case "04" -> "TJAM";
+            case "05" -> "TJBA";
+            case "06" -> "TJCE";
+            case "07" -> "TJDF";
+            case "08" -> "TJES";
+            case "09" -> "TJGO";
+            case "10" -> "TJMA";
+            case "11" -> "TJMT";
+            case "12" -> "TJMS";
+            case "13" -> "TJMG";
+            case "14" -> "TJPA";
+            case "15" -> "TJPB";
+            case "16" -> "TJPR";
+            case "17" -> "TJPE";
+            case "18" -> "TJPI";
+            case "19" -> "TJRJ";
+            case "20" -> "TJRN";
+            case "21" -> "TJRS";
+            case "22" -> "TJRO";
+            case "23" -> "TJRR";
+            case "24" -> "TJSC";
+            case "25" -> "TJSE";
+            case "26" -> "TJSP";
+            case "27" -> "TJTO";
+            default -> throw new TribunalInvalidoException("Código de tribunal inválido.");
+        };
     }
 }

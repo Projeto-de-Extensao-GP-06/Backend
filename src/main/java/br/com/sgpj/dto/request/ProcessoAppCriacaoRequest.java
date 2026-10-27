@@ -35,11 +35,7 @@ public record ProcessoAppCriacaoRequest(
 
         LocalDateTime dataAudiencia,
 
-        @NotNull(message = "Id da sigla do tribunal é obrigatório")
-        @Schema(description = "Id da sigla do tribunal responsavel pelo processo", example = "1")
-        Long siglaTribunalId,
-
-        @Pattern(regexp = "^$|^\\d{20}$|^\\d{7}-\\d{2}\\.\\d{4}\\.\\d\\.\\d{2}\\.\\d{4}$", message = "O CNJ deve conter exatamente 20 dígitos")
+        @Pattern(regexp = "^$|^\\d{20}$", message = "O CNJ deve conter exatamente 20 dígitos")
         @Schema(description = "Numero do processo para consulta em API", example = "10108901220228260292")
         String numeroProcesso,
 

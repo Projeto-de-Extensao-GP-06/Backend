@@ -11,6 +11,7 @@ import br.com.sgpj.entity.Processo.SiglaTribunal;
 import br.com.sgpj.entity.Processo.StatusProcesso;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
+import br.com.sgpj.exception.TribunalInvalidoException;
 import br.com.sgpj.repository.ClienteRepository;
 import br.com.sgpj.repository.FaseProcessoRepository;
 import br.com.sgpj.repository.PrioridadeRepository;
@@ -32,6 +33,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -97,12 +99,11 @@ class CreateProcessoTest {
             ProcessoAppCriacaoRequest request = new ProcessoAppCriacaoRequest(
                     4L, "Descrição", "Obs", 1L, 2L,
                     LocalDateTime.of(2026, 12, 1, 14, 0),
-                    3L, null, 10000.0
+                    null, 10000.0
             );
 
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
             when(faseProcessoRepository.findById(2L)).thenReturn(Optional.of(faseProcesso));
-            when(siglaTribunalRepository.findById(3L)).thenReturn(Optional.of(siglaTribunal));
             when(clienteRepository.findById(4L)).thenReturn(Optional.of(cliente));
             when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> {
                 ProcessoApp p = inv.getArgument(0);
@@ -124,8 +125,8 @@ class CreateProcessoTest {
             assertEquals(cliente, salvo.getCliente());
             assertEquals(prioridade, salvo.getPrioridade());
             assertEquals(faseProcesso, salvo.getFaseProcesso());
-            assertEquals(siglaTribunal, salvo.getSiglaTribunal());
-            verify(processoApiGateway, never()).buscarDadosOficiais(any());
+            assertNull(salvo.getSiglaTribunal());
+            verify(processoApiGateway, never()).buscarDadosOficiais(any(), any());
         }
 
         @Test
@@ -134,17 +135,17 @@ class CreateProcessoTest {
             ProcessoAppCriacaoRequest request = new ProcessoAppCriacaoRequest(
                     4L, "Descrição", "Obs", 1L, 2L,
                     LocalDateTime.of(2026, 12, 1, 14, 0),
-                    3L, "0000001-00.2026.8.26.0001", 10000.0
+                    "00000010020268260001", 10000.0
             );
 
             ProcessoApi apiMock = new ProcessoApi();
-            apiMock.setNumeroCnj("0000001-00.2026.8.26.0001");
+            apiMock.setNumeroCnj("00000010020268260001");
 
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
             when(faseProcessoRepository.findById(2L)).thenReturn(Optional.of(faseProcesso));
-            when(siglaTribunalRepository.findById(3L)).thenReturn(Optional.of(siglaTribunal));
+            when(siglaTribunalRepository.findByNomeIgnoreCase("TJSP")).thenReturn(Optional.of(siglaTribunal));
             when(clienteRepository.findById(4L)).thenReturn(Optional.of(cliente));
-            when(processoApiGateway.buscarDadosOficiais("00000010020268260001", siglaTribunal))
+            when(processoApiGateway.buscarDadosOficiais("00000010020268260001", "TJSP"))
                     .thenReturn(apiMock);
             when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> {
                 ProcessoApp p = inv.getArgument(0);
@@ -159,8 +160,9 @@ class CreateProcessoTest {
 
             ProcessoApp salvo = captor.getValue();
             assertEquals(apiMock, salvo.getProcessoApi());
+            assertEquals(siglaTribunal, salvo.getSiglaTribunal());
             assertEquals(StatusProcesso.ATIVO, salvo.getStatus());
-            verify(processoApiGateway).buscarDadosOficiais("00000010020268260001", siglaTribunal);
+            verify(processoApiGateway).buscarDadosOficiais("00000010020268260001", "TJSP");
         }
 
         @Test
@@ -169,14 +171,14 @@ class CreateProcessoTest {
             ProcessoAppCriacaoRequest request = new ProcessoAppCriacaoRequest(
                     4L, "Descrição", "Obs", 1L, 2L,
                     LocalDateTime.of(2026, 12, 1, 14, 0),
-                    3L, "0000001-00.2026.8.26.0001", 10000.0
+                    "00000010020268260001", 10000.0
             );
 
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
             when(faseProcessoRepository.findById(2L)).thenReturn(Optional.of(faseProcesso));
-            when(siglaTribunalRepository.findById(3L)).thenReturn(Optional.of(siglaTribunal));
+            when(siglaTribunalRepository.findByNomeIgnoreCase("TJSP")).thenReturn(Optional.of(siglaTribunal));
             when(clienteRepository.findById(4L)).thenReturn(Optional.of(cliente));
-            when(processoApiGateway.buscarDadosOficiais("00000010020268260001", siglaTribunal))
+            when(processoApiGateway.buscarDadosOficiais("00000010020268260001", "TJSP"))
                     .thenThrow(new RuntimeException("DataJud timeout"));
             when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> {
                 ProcessoApp p = inv.getArgument(0);
@@ -193,17 +195,32 @@ class CreateProcessoTest {
             assertNotNull(response);
             assertEquals(101L, response.id());
             assertNotNull(salvo.getProcessoApi());
+            assertEquals(siglaTribunal, salvo.getSiglaTribunal());
             assertEquals("00000010020268260001", salvo.getProcessoApi().getNumeroCnj());
             assertEquals("TJSP", salvo.getProcessoApi().getTribunalTramitacao());
             assertEquals(StatusProcesso.ATIVO, salvo.getStatus());
-            verify(processoApiGateway).buscarDadosOficiais("00000010020268260001", siglaTribunal);
+            verify(processoApiGateway).buscarDadosOficiais("00000010020268260001", "TJSP");
+        }
+
+        @Test
+        @DisplayName("Deve lançar TribunalInvalidoException quando código do tribunal no CNJ for inválido")
+        void deveLancarExcecaoQuandoCodigoTribunalInvalido() {
+            ProcessoAppCriacaoRequest request = new ProcessoAppCriacaoRequest(
+                    4L, "Descrição", "Obs", 1L, 2L, null, "00000010020268990001", 10000.0
+            );
+            when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
+            when(faseProcessoRepository.findById(2L)).thenReturn(Optional.of(faseProcesso));
+            when(clienteRepository.findById(4L)).thenReturn(Optional.of(cliente));
+
+            assertThrows(TribunalInvalidoException.class, () -> createProcesso.criarProcesso(request, usuarioAutenticado));
+            verify(processoAppRepository, never()).save(any());
         }
 
         @Test
         @DisplayName("Deve lançar exceção quando prioridade não for encontrada")
         void deveLancarExcecaoQuandoPrioridadeNaoEncontrada() {
             ProcessoAppCriacaoRequest request = new ProcessoAppCriacaoRequest(
-                    4L, "Descrição", "Obs", 99L, 2L, null, 3L, null, 10000.0
+                    4L, "Descrição", "Obs", 99L, 2L, null, null, 10000.0
             );
             when(prioridadeRepository.findById(99L)).thenReturn(Optional.empty());
 
@@ -215,11 +232,10 @@ class CreateProcessoTest {
         @DisplayName("Deve lançar exceção quando cliente não for encontrado")
         void deveLancarExcecaoQuandoClienteNaoEncontrado() {
             ProcessoAppCriacaoRequest request = new ProcessoAppCriacaoRequest(
-                    99L, "Descrição", "Obs", 1L, 2L, null, 3L, null, 10000.0
+                    99L, "Descrição", "Obs", 1L, 2L, null, null, 10000.0
             );
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
             when(faseProcessoRepository.findById(2L)).thenReturn(Optional.of(faseProcesso));
-            when(siglaTribunalRepository.findById(3L)).thenReturn(Optional.of(siglaTribunal));
             when(clienteRepository.findById(99L)).thenReturn(Optional.empty());
 
             assertThrows(ObjetoNaoEncontradoException.class, () -> createProcesso.criarProcesso(request, usuarioAutenticado));

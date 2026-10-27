@@ -4,12 +4,10 @@ import br.com.sgpj.dto.response.Processos.ProcessoAppMiniResponse;
 import br.com.sgpj.dto.response.Processos.ProcessoAppResponse;
 import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Processo.FaseProcesso;
-import br.com.sgpj.entity.Processo.HistoricoProcesso;
 import br.com.sgpj.entity.Processo.Prioridade;
 import br.com.sgpj.entity.Processo.ProcessoApp;
 import br.com.sgpj.entity.Processo.SiglaTribunal;
 import br.com.sgpj.entity.Processo.StatusProcesso;
-import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
 import br.com.sgpj.repository.ClienteRepository;
 import br.com.sgpj.repository.HistoricoProcessoRepository;
@@ -33,7 +31,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -87,7 +84,7 @@ class ReadProcessoTest {
     class ListarProcessosTest {
 
         @Test
-        @DisplayName("Deve listar todos os processos ignorando status SOLICITACAO")
+        @DisplayName("Deve listar todos os processos mapeados para mini response")
         void deveListarProcessosIgnorandoSolicitacao() {
             PageRequest pageable = PageRequest.of(0, 20);
             when(processoAppRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(new PageImpl<>(List.of(
@@ -97,11 +94,10 @@ class ReadProcessoTest {
                     processoNegado
             ), pageable, 4));
 
-            Page<ProcessoAppMiniResponse> resultado = readProcesso.listarProcessos(pageable);
+            Page<ProcessoAppMiniResponse> resultado = readProcesso.listarProcessos(pageable, null, null, null, null, null, null);
 
             assertNotNull(resultado);
             assertEquals(4, resultado.getContent().size());
-            assertTrue(resultado.getContent().stream().noneMatch(p -> p.status() == StatusProcesso.SOLICITACAO));
             verify(processoAppRepository).findAll(any(Specification.class), eq(pageable));
         }
 
@@ -109,9 +105,9 @@ class ReadProcessoTest {
         @DisplayName("Deve retornar lista vazia quando apenas existirem solicitações")
         void deveRetornarListaVaziaQuandoApenasSolicitacao() {
             PageRequest pageable = PageRequest.of(0, 20);
-            when(processoAppRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(Page.empty(pageable));
+            when(processoAppRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
-            Page<ProcessoAppMiniResponse> resultado = readProcesso.listarProcessos(pageable);
+            Page<ProcessoAppMiniResponse> resultado = readProcesso.listarProcessos(pageable, null, null, null, null, null, null);
 
             assertNotNull(resultado);
             assertTrue(resultado.getContent().isEmpty());

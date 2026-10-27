@@ -5,6 +5,7 @@ import br.com.sgpj.entity.Processo.StatusProcesso;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.service.EmailService;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -34,6 +35,11 @@ public class HearingNotificationScheduler {
     }
 
     @Scheduled(cron = "0 0 1 * * SUN", zone = TIMEZONE_BRASIL)
+    @SchedulerLock(
+            name = "HearingNotificationScheduler_enviarNotificacoesSemanais",
+            lockAtLeastFor = "PT1M",
+            lockAtMostFor = "PT15M"
+    )
     public void enviarNotificacoesSemanais() {
         enviarNotificacoesSemanais(LocalDate.now(ZONE_BRASIL));
     }
@@ -70,6 +76,11 @@ public class HearingNotificationScheduler {
     }
 
     @Scheduled(cron = "0 0 0 * * *", zone = TIMEZONE_BRASIL)
+    @SchedulerLock(
+            name = "HearingNotificationScheduler_enviarNotificacoesDiarias",
+            lockAtLeastFor = "PT1M",
+            lockAtMostFor = "PT15M"
+    )
     public void enviarNotificacoesDiarias() {
         enviarNotificacoesDiarias(LocalDate.now(ZONE_BRASIL));
     }

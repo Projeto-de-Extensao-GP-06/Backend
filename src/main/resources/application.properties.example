@@ -60,11 +60,3 @@ spring.rabbitmq.password=${RABBITMQ_PASSWORD:guest}
 
 sgpj.email.queue.retry-ttl-ms=${EMAIL_RETRY_TTL_MS:30000}
 sgpj.email.queue.max-retries=${EMAIL_MAX_RETRIES:3}
-
-#Configuracao OTLP
-otel.service.name=sgpj-backend
-otel.exporter.otlp.endpoint=${OTEL_EXPORTER_OTLP_ENDPOINT:http://observability:4318}
-otel.exporter.otlp.protocol=http/protobuf
-otel.traces.exporter=otlp
-otel.metrics.exporter=none
-otel.logs.exporter=none

@@ -68,7 +68,8 @@ public class AutenticacaoProvider implements AuthenticationProvider {
         UserDetails userDetails = usuarioAutorizacaoService.loadUserByUsername(username);
 
         // Lança exceção generica para não revelar se o erro foi no e-mail ou na senha
-        if (!passwordEncoder.matches(credentials.toString(), userDetails.getPassword())) {
+        if (userDetails.getPassword() == null || userDetails.getPassword().isBlank()
+                || !passwordEncoder.matches(credentials.toString(), userDetails.getPassword())) {
             throw new BadCredentialsException("Usuário ou Senha inválidos");
         }
 

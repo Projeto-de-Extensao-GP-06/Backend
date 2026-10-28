@@ -19,6 +19,7 @@ public class RegistroHistoricoProcesso {
     public static final String STATUS = "MUDANÇA DE STATUS";
     public static final String DOCUMENTO = "ADIÇÃO DE DOCUMENTO";
     public static final String OBSERVACAO = "OBSERVAÇÃO";
+    public static final String AUDIENCIA = "AUDIÊNCIA";
 
     private final HistoricoProcessoRepository historicoRepository;
     private final TipoAlteracaoRepository tipoAlteracaoRepository;

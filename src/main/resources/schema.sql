@@ -437,6 +437,12 @@ VALUES (1, 'ADMIN'),
 
 INSERT INTO usuario (nome, email, senha, cargo_id)
 VALUES (
+           'SISTEMA SGPJ',
+           'sistema.sgpj@gmail.com',
+           NULL,
+           1
+       ),
+       (
            'Thauany Bezerra',
            'thauany@gmail.com',
            '$2a$12$AD1HxQJj.U.dQaam6fntBOCko5p6vrk/6bLLsv79EgpqzqFt7I5D6',
@@ -536,7 +542,8 @@ INSERT INTO tipo_alteracao (nome) VALUES
                                       ('ADIÇÃO DE ARQUIVO'),
                                       ('OBSERVAÇÃO'),
                                       ('ATUALIZAÇÃO DE DADOS'),
-                                      ('ALTERAÇÃO DE RESPONSÁVEL');
+                                      ('ALTERAÇÃO DE RESPONSÁVEL'),
+                                      ('AUDIÊNCIA');
 
 INSERT INTO motivo_status_processo (nome, aplicavel_a) VALUES
                                                            ('ACORDO',                  'ENCERRADO'),

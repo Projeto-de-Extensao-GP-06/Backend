@@ -3,6 +3,7 @@ package br.com.sgpj.service.useCases.usuario;
 import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
 import br.com.sgpj.dto.request.DefinirNovaSenhaRequest;
 import br.com.sgpj.entity.Usuario;
+import br.com.sgpj.exception.OperacaoInvalidaException;
 import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.repository.UsuarioRepository;
 import br.com.sgpj.service.OtpService;
@@ -59,6 +60,11 @@ public class DefinirNovaSenha {
         if (usuario == null) {
             log.error("Falha na definição de senha. Motivo: email {} não encontrado.", email);
             throw new UsuarioNaoEncontradoException(email);
+        }
+
+        if (usuario.isUsuarioSistema()) {
+            log.warn("Tentativa bloqueada de definir senha para o usuário de sistema: {}.", email);
+            throw new OperacaoInvalidaException("Não é permitido definir senha para o usuário do sistema.");
         }
 
         log.info("Definindo nova senha para usuário {}.", usuario.getId());

@@ -136,4 +136,16 @@ public interface ProcessoAppRepository extends JpaRepository<ProcessoApp, Long>,
             @Param("status") StatusProcesso status,
             @Param("dataInicio") LocalDateTime dataInicio,
             @Param("dataFim") LocalDateTime dataFim);
+
+    @Query("""
+            select p
+            from ProcessoApp p
+            where p.status = :status
+              and p.dataAudiencia is not null
+              and p.dataAudiencia < :dataReferencia
+            order by p.dataAudiencia asc, p.id asc
+            """)
+    List<ProcessoApp> buscarAudienciasPassadas(
+            @Param("status") StatusProcesso status,
+            @Param("dataReferencia") LocalDateTime dataReferencia);
 }

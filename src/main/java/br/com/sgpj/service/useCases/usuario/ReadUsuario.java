@@ -25,6 +25,7 @@ public class ReadUsuario {
         return usuarioRepository
                 .findAll()
                 .stream()
+                .filter(u -> !u.isUsuarioSistema())
                 .map(UsuarioMapper::toListarDto)
                 .toList();
     }
@@ -34,6 +35,7 @@ public class ReadUsuario {
         return usuarioRepository
                 .findAllByCargoNome(cargo)
                 .stream()
+                .filter(u -> !u.isUsuarioSistema())
                 .map(UsuarioMapper::toListarDto)
                 .toList();
     }
@@ -48,6 +50,7 @@ public class ReadUsuario {
                         pesquisa
                 )
                 .stream()
+                .filter(u -> !u.isUsuarioSistema())
                 .map(UsuarioMapper::toListarDto)
                 .toList();
     }

@@ -8,6 +8,7 @@ import br.com.sgpj.entity.Processo.*;
 import br.com.sgpj.exception.DataJudIntegrationException;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
 import br.com.sgpj.exception.OperacaoInvalidaException;
+import br.com.sgpj.exception.TribunalInvalidoException;
 import br.com.sgpj.mapper.HistoricoProcessoMapper;
 import br.com.sgpj.mapper.ProcessoAppMapper;
 import br.com.sgpj.repository.*;
@@ -54,8 +55,6 @@ public class UpdateProcesso {
         this.registroHistorico = registroHistorico;
     }
 
-    // ... resto da classe continua igual
-
     @Transactional
     public ProcessoAppUpdateResponse atualizarProcesso(Long id, ProcessoAppUpdateRequest processoAtualizar) {
         ProcessoApp processoEncontrado = processoAppRepository.findById(id)
@@ -67,17 +66,13 @@ public class UpdateProcesso {
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Prioridade não encontrada para o ID: " + processoAtualizar.prioridadeId()));
         FaseProcesso faseProcesso = faseProcessoRepository.findById(processoAtualizar.faseProcessoId())
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Fase do processo nao encontrada para o ID: " + processoAtualizar.faseProcessoId()));
-        SiglaTribunal siglaTribunal = processoAtualizar.siglaTribunalId() == null
-                ? processoEncontrado.getSiglaTribunal()
-                : siglaTribunalRepository.findById(processoAtualizar.siglaTribunalId())
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Sigla do tribunal não encontrada para o ID: " + processoAtualizar.siglaTribunalId()));
 
         ProcessoApp processoEditado = ProcessoAppMapper.toUpdateEntity(processoAtualizar);
 
         processoEditado.setId(processoEncontrado.getId());
         processoEditado.setUsuarioResponsavel(processoEncontrado.getUsuarioResponsavel());
         processoEditado.setCliente(processoEncontrado.getCliente());
-        processoEditado.setSiglaTribunal(siglaTribunal);
+        processoEditado.setSiglaTribunal(processoEncontrado.getSiglaTribunal());
         processoEditado.setDataHoraInicio(processoEncontrado.getDataHoraInicio());
         processoEditado.setPrioridade(prioridade);
         processoEditado.setFaseProcesso(faseProcesso);
@@ -119,75 +114,39 @@ public class UpdateProcesso {
             processoEditado.setJustificativa(null);
         }
 
-        if (processoAtualizar.numeroCnj() != null && !processoAtualizar.numeroCnj().isBlank()) {
-            String cnjLimpo = processoAtualizar.numeroCnj().replaceAll("\\D", "");
-            if (!cnjLimpo.isBlank() && processoAppRepository.existsByCnjAndIdNot(cnjLimpo, id)) {
-                throw new br.com.sgpj.exception.ProcessoJaExistenteException("Já existe outro processo cadastrado com este número de CNJ.");
-            }
-        }
-
         if (processoEncontrado.getProcessoApi() == null) {
             if (processoAtualizar.numeroCnj() != null && !processoAtualizar.numeroCnj().isBlank()) {
-                ProcessoApi processoApi = null;
-                try {
-                    processoApi = processoApiGateway.buscarDadosOficiais(
-                            processoAtualizar.numeroCnj(), siglaTribunal);
-                } catch (Exception e) {
-                    // Ignora erro da API externa
-                }
-                if (processoApi == null) {
-                    processoApi = new ProcessoApi();
-                    processoApi.setNumeroCnj(processoAtualizar.numeroCnj());
-                    if (siglaTribunal != null) {
+                String cnjLimpo = processoAtualizar.numeroCnj().replaceAll("\\D", "");
+                if (!cnjLimpo.isBlank()) {
+                    if (processoAppRepository.existsByCnjAndIdNot(cnjLimpo, id)) {
+                        throw new br.com.sgpj.exception.ProcessoJaExistenteException("Já existe outro processo cadastrado com este número de CNJ.");
+                    }
+
+                    String sigla = mapearSiglaTribunalPorNumero(cnjLimpo.substring(14, 16));
+                    SiglaTribunal siglaTribunal = siglaTribunalRepository.findByNomeIgnoreCase(sigla)
+                            .orElseThrow(() -> new ObjetoNaoEncontradoException("Sigla do tribunal não encontrada: " + sigla));
+
+                    processoEditado.setSiglaTribunal(siglaTribunal);
+
+                    ProcessoApi processoApi = null;
+                    try {
+                        processoApi = processoApiGateway.buscarDadosOficiais(
+                                cnjLimpo, siglaTribunal.getNome());
+                    } catch (Exception e) {
+                        // Ignora erro da API externa
+                    }
+                    if (processoApi != null) {
+                        processoApi.setNumeroCnj(cnjLimpo);
+                    } else {
+                        processoApi = new ProcessoApi();
+                        processoApi.setNumeroCnj(cnjLimpo);
                         processoApi.setTribunalTramitacao(siglaTribunal.getNome());
                     }
+                    processoEditado.setProcessoApi(processoApi);
                 }
-                processoEditado.setProcessoApi(processoApi);
             }
         } else {
-            ProcessoApi processoApi = processoEncontrado.getProcessoApi();
-            if (processoAtualizar.numeroCnj() != null && !processoAtualizar.numeroCnj().isBlank()) {
-                String cnjNovo = processoAtualizar.numeroCnj();
-                String cnjAntigo = processoApi.getNumeroCnj();
-                String cnjNovoLimpo = cnjNovo.replaceAll("\\D", "");
-                String cnjAntigoLimpo = cnjAntigo != null ? cnjAntigo.replaceAll("\\D", "") : "";
-
-                if (!cnjNovoLimpo.equals(cnjAntigoLimpo)) {
-                    try {
-                        ProcessoApi novosDados = processoApiGateway.buscarDadosOficiais(cnjNovoLimpo, siglaTribunal);
-                        if (novosDados != null) {
-                            processoApi.setNumeroCnj(novosDados.getNumeroCnj() != null ? novosDados.getNumeroCnj() : cnjNovoLimpo);
-                            processoApi.setClasseProcessual(novosDados.getClasseProcessual());
-                            processoApi.setAssunto(novosDados.getAssunto());
-                            processoApi.setTribunalTramitacao(novosDados.getTribunalTramitacao());
-                            processoApi.setOrgaoJulgador(novosDados.getOrgaoJulgador());
-                            processoApi.setDataAjuizamento(novosDados.getDataAjuizamento());
-                            processoApi.setInstancia(novosDados.getInstancia());
-                            processoApi.setSistemaTribunal(novosDados.getSistemaTribunal());
-                            processoApi.setNivelSigilo(novosDados.getNivelSigilo());
-                            processoApi.setFormato(novosDados.getFormato());
-                            if (processoApi.getMovimentacoes() != null && !processoApi.getMovimentacoes().isEmpty()) {
-                                movimentacoesOficiaisRepository.deleteAll(processoApi.getMovimentacoes());
-                            }
-                            List<MovimentacoesOficiais> novasMovimentacoes = novosDados.getMovimentacoes();
-                            if (novasMovimentacoes != null) {
-                                for (MovimentacoesOficiais mov : novasMovimentacoes) {
-                                    mov.setId(null);
-                                    mov.setProcessoApi(processoApi);
-                                }
-                            }
-                            processoApi.setMovimentacoes(novasMovimentacoes);
-                        } else {
-                            processoApi.setNumeroCnj(cnjNovoLimpo);
-                        }
-                    } catch (Exception e) {
-                        processoApi.setNumeroCnj(cnjNovoLimpo);
-                    }
-                }
-            } else {
-                processoApi.setNumeroCnj(null);
-            }
-            processoEditado.setProcessoApi(processoApi);
+            processoEditado.setProcessoApi(processoEncontrado.getProcessoApi());
         }
 
         ProcessoApp processoSalvo = processoAppRepository.save(processoEditado);
@@ -214,12 +173,12 @@ public class UpdateProcesso {
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Processo não encontrado para o ID: " + id));
 
         ProcessoApi processoApiExistente = processoApp.getProcessoApi();
-        if (processoApiExistente == null || processoApiExistente.getNumeroCnj() == null) {
+        if (processoApiExistente == null || processoApiExistente.getNumeroCnj() == null || processoApiExistente.getNumeroCnj().isBlank()) {
             throw new OperacaoInvalidaException("Este processo não possui número CNJ vinculado para atualização.");
         }
 
         ProcessoApi dadosAtualizados = processoApiGateway.buscarDadosOficiais(
-                processoApiExistente.getNumeroCnj(), processoApp.getSiglaTribunal());
+                processoApiExistente.getNumeroCnj(), processoApp.getSiglaTribunal().getNome());
 
         if (dadosAtualizados == null) {
             throw new DataJudIntegrationException("Não foi possível obter dados oficiais do DataJud no momento. Por favor, tente novamente mais tarde.");
@@ -261,5 +220,41 @@ public class UpdateProcesso {
                 .toList();
 
         return ProcessoAppMapper.toResponse(processoApp, historico);
+    }
+
+    private String mapearSiglaTribunalPorNumero(String numero) {
+        if (numero == null) {
+            return null;
+        }
+        return switch (numero.trim()) {
+            case "01" -> "TJAC";
+            case "02" -> "TJAL";
+            case "03" -> "TJAP";
+            case "04" -> "TJAM";
+            case "05" -> "TJBA";
+            case "06" -> "TJCE";
+            case "07" -> "TJDF";
+            case "08" -> "TJES";
+            case "09" -> "TJGO";
+            case "10" -> "TJMA";
+            case "11" -> "TJMT";
+            case "12" -> "TJMS";
+            case "13" -> "TJMG";
+            case "14" -> "TJPA";
+            case "15" -> "TJPB";
+            case "16" -> "TJPR";
+            case "17" -> "TJPE";
+            case "18" -> "TJPI";
+            case "19" -> "TJRJ";
+            case "20" -> "TJRN";
+            case "21" -> "TJRS";
+            case "22" -> "TJRO";
+            case "23" -> "TJRR";
+            case "24" -> "TJSC";
+            case "25" -> "TJSE";
+            case "26" -> "TJSP";
+            case "27" -> "TJTO";
+            default -> throw new TribunalInvalidoException("Código de tribunal inválido.");
+        };
     }
 }

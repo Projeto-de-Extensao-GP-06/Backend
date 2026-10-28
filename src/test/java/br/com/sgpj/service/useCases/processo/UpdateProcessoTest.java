@@ -38,7 +38,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -336,32 +335,6 @@ class UpdateProcessoTest {
     }
 
     @Nested
-    @DisplayName("Atualização de tribunal")
-    class AtualizacaoTribunal {
-
-        @Test
-        @DisplayName("Deve persistir a sigla de tribunal selecionada")
-        void deveAtualizarSiglaTribunal() {
-            SiglaTribunal tribunalSelecionado = new SiglaTribunal(2L, "TJRJ");
-            ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    null, "Descrição atualizada", "Observação atualizada", 1L,
-                    StatusProcesso.ATIVO, 1L, 2L, null, 1000.0, null, null);
-
-            when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
-            when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
-            when(faseProcessoRepository.findById(1L)).thenReturn(Optional.of(faseProcesso));
-            when(siglaTribunalRepository.findById(2L)).thenReturn(Optional.of(tribunalSelecionado));
-            when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-            updateProcesso.atualizarProcesso(1L, request);
-
-            ArgumentCaptor<ProcessoApp> captor = ArgumentCaptor.forClass(ProcessoApp.class);
-            verify(processoAppRepository).save(captor.capture());
-            assertEquals(tribunalSelecionado, captor.getValue().getSiglaTribunal());
-        }
-    }
-
-    @Nested
     @DisplayName("Reativação para ATIVO")
     class ReativacaoParaAtivo {
 
@@ -402,24 +375,26 @@ class UpdateProcessoTest {
     }
 
     @Nested
-    @DisplayName("Integração com ProcessoApi")
+    @DisplayName("Integração com ProcessoApi e SiglaTribunal")
     class IntegracaoProcessoApi {
 
         @Test
-        @DisplayName("Deve buscar processo oficial quando não existir processoApi anterior e CNJ for informado")
+        @DisplayName("Deve atribuir sigla do tribunal pelo CNJ e buscar processo oficial quando não existir processoApi anterior")
         void deveBuscarProcessoOficialQuandoNaoExisteENumeroCnjInformado() {
             processoExistente.setProcessoApi(null);
+            processoExistente.setSiglaTribunal(null);
             ProcessoApi apiMock = new ProcessoApi();
-            apiMock.setNumeroCnj("0000001-00.2026.8.26.0001");
+            apiMock.setNumeroCnj("00000010020268260001");
 
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    "0000001-00.2026.8.26.0001", "Desc", "Obs", 1L, StatusProcesso.ATIVO, 1L, null, 1000.0,
+                    "00000010020268260001", "Desc", "Obs", 1L, StatusProcesso.ATIVO, 1L, null, 1000.0,
                     null, null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
             when(faseProcessoRepository.findById(1L)).thenReturn(Optional.of(faseProcesso));
-            when(processoApiGateway.buscarDadosOficiais(eq("0000001-00.2026.8.26.0001"), nullable(SiglaTribunal.class))).thenReturn(apiMock);
+            when(siglaTribunalRepository.findByNomeIgnoreCase("TJSP")).thenReturn(Optional.of(tribunal));
+            when(processoApiGateway.buscarDadosOficiais(eq("00000010020268260001"), eq("TJSP"))).thenReturn(apiMock);
             when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> inv.getArgument(0));
 
             updateProcesso.atualizarProcesso(1L, request);
@@ -427,18 +402,20 @@ class UpdateProcessoTest {
             ArgumentCaptor<ProcessoApp> captor = ArgumentCaptor.forClass(ProcessoApp.class);
             verify(processoAppRepository).save(captor.capture());
             assertEquals(apiMock, captor.getValue().getProcessoApi());
-            verify(processoApiGateway).buscarDadosOficiais(eq("0000001-00.2026.8.26.0001"), nullable(SiglaTribunal.class));
+            assertEquals(tribunal, captor.getValue().getSiglaTribunal());
+            verify(processoApiGateway).buscarDadosOficiais(eq("00000010020268260001"), eq("TJSP"));
         }
 
         @Test
-        @DisplayName("Deve manter processoApi existente quando já estiver associado")
+        @DisplayName("Deve manter processoApi e siglaTribunal existentes sem permitir alteração de CNJ quando já estiver associado")
         void deveManterProcessoApiExistente() {
             ProcessoApi apiExistente = new ProcessoApi();
-            apiExistente.setNumeroCnj("9999999-99.2026.8.26.0001");
+            apiExistente.setNumeroCnj("99999999920268260001");
             processoExistente.setProcessoApi(apiExistente);
+            processoExistente.setSiglaTribunal(tribunal);
 
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    "0000001-00.2026.8.26.0001", "Desc", "Obs", 1L, StatusProcesso.ATIVO, 1L, null, 1000.0,
+                    "00000010020268190001", "Desc", "Obs", 1L, StatusProcesso.ATIVO, 1L, null, 1000.0,
                     null, null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
@@ -451,7 +428,9 @@ class UpdateProcessoTest {
             ArgumentCaptor<ProcessoApp> captor = ArgumentCaptor.forClass(ProcessoApp.class);
             verify(processoAppRepository).save(captor.capture());
             assertEquals(apiExistente, captor.getValue().getProcessoApi());
-            verify(processoApiGateway, never()).buscarDadosOficiais(any());
+            assertEquals("99999999920268260001", captor.getValue().getProcessoApi().getNumeroCnj());
+            assertEquals(tribunal, captor.getValue().getSiglaTribunal());
+            verify(processoApiGateway, never()).buscarDadosOficiais(any(), any());
         }
     }
 }

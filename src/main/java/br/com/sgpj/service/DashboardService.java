@@ -12,9 +12,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class DashboardService {
@@ -95,16 +95,14 @@ public class DashboardService {
         popularVariaveisEscopoDash();
         ProcessosEncerradosResponse processosEncerrados = extrairProcessosEncerrados(dateFrom, dateTo, processos);
         ProcessosSuspensosResponse processosSuspensos = extrairProcessosSuspensos(dateFrom, dateTo, processos);
-        FormasDeEntradaResponse formasDeEntrada = extrairFormasDeEntrada(clientes);
+        FormasDeEntradaResponse formasDeEntrada = extrairFormasDeEntrada(dateFrom, dateTo, clientes);
         EvolucaoCarteiraResponse evolucaoCarteira = extrairEvolucaoCarteira(dateFrom, dateTo, processos);
-        FunilAtendimentoResponse funilAtendimento = extrairFunilAtendimento(dateFrom, dateTo, solicitacoes);
 
         return new DadosFiltradosDashResponse(
                 processosEncerrados,
                 processosSuspensos,
                 formasDeEntrada,
-                evolucaoCarteira,
-                funilAtendimento
+                evolucaoCarteira
         );
     }
 
@@ -123,7 +121,9 @@ public class DashboardService {
             int qtdProcessoFaseAtual = 0;
 
             for (ProcessoApp processo : processos) {
-                if (processo.getFaseProcesso() != null && processo.getFaseProcesso().equals(faseAtual)){
+                if (processo.getFaseProcesso() != null &&
+                        (processo.getFaseProcesso().equals(faseAtual) ||
+                         (faseAtual.getId() != null && Objects.equals(processo.getFaseProcesso().getId(), faseAtual.getId())))) {
                     qtdProcessoFaseAtual++;
                 }
             }
@@ -193,12 +193,29 @@ public class DashboardService {
     public FormasDeEntradaResponse extrairFormasDeEntrada(
             List<Cliente> clientes
     ){
+        return extrairFormasDeEntrada(null, null, clientes);
+    }
+
+    public FormasDeEntradaResponse extrairFormasDeEntrada(
+            LocalDate dateFrom,
+            LocalDate dateTo,
+            List<Cliente> clientes
+    ){
         int entradaPorInstagram = 0;
         int entradaPorSite = 0;
         int entradaPorIndicacao = 0;
         int entradaPorOutros = 0;
 
         for (Cliente cliente : clientes){
+            if (dateFrom != null && dateTo != null) {
+                LocalDateTime dataReferencia = cliente.getDataHoraEnvioFormulario() != null
+                        ? cliente.getDataHoraEnvioFormulario()
+                        : cliente.getDataHoraTransformacaoEmCliente();
+                if (!estaNoPeriodo(dataReferencia, dateFrom, dateTo)) {
+                    continue;
+                }
+            }
+
             if (cliente.getComoConheceu() != null) {
                 switch (cliente.getComoConheceu()){
                     case ComoConheceuEnum.INSTAGRAM -> entradaPorInstagram++;
@@ -221,43 +238,34 @@ public class DashboardService {
             LocalDate dateTo,
             List<ProcessoApp> processos
     ){
-        List<ProcessoApp> processosAtivos = new ArrayList<>();
-        List<ProcessoApp> processosEncerrados = new ArrayList<>();
-        List<ProcessoApp> processosSuspensos = new ArrayList<>();
-        List<ProcessoApp> processosNovos = new ArrayList<>();
-
-        String[] justificativasEncerrados = {"ACORDO", "SEM RESOLUÇÃO DO MÉRITO", "PENHORA TOTAL", "PAGAMENTO VOLUNTÁRIO"};
-        String[] justificativasSuspensos = {"ACORDO PARCELADO", "TRATATIVAS", "AUSÊNCIA DE BENS", "AUSÊNCIA DE BENSL", "DETERMINAÇÃO JUDICIAL"};
+        int processosAtivos = 0;
+        int processosEncerrados = 0;
+        int processosSuspensos = 0;
+        int processosNovos = 0;
 
         for (ProcessoApp processo : processos){
-            if (
-                    processo.getDataHoraInicio() != null &&
-                    processo.getDataHoraInicio().isAfter(dateFrom.atStartOfDay()) &&
-                    processo.getDataHoraInicio().isBefore(dateTo.atStartOfDay())
-            ) {
-                processosNovos.add(processo);
+            if (!estaNoPeriodo(processo.getDataHoraInicio(), dateFrom, dateTo)) {
+                continue;
+            }
 
-                if (processo.getEncerradoSuspensoEm() == null){
-                    processosAtivos.add(processo);
-                }
-                else if (processo.getJustificativa() != null &&
-                        Arrays.stream(justificativasEncerrados)
-                                .anyMatch(j -> j.equalsIgnoreCase(processo.getJustificativa()))) {
-                    processosEncerrados.add(processo);
-                }
-                else if (processo.getJustificativa() != null &&
-                        Arrays.stream(justificativasSuspensos)
-                                .anyMatch(j -> j.equalsIgnoreCase(processo.getJustificativa()))) {
-                    processosSuspensos.add(processo);
-                }
+            if (processo.getStatus() != StatusProcesso.SOLICITACAO && processo.getStatus() != StatusProcesso.NEGADO) {
+                processosNovos++;
+            }
+
+            if (processo.getStatus() == StatusProcesso.ATIVO) {
+                processosAtivos++;
+            } else if (processo.getStatus() == StatusProcesso.ENCERRADO) {
+                processosEncerrados++;
+            } else if (processo.getStatus() == StatusProcesso.SUSPENSO) {
+                processosSuspensos++;
             }
         }
 
         return new EvolucaoCarteiraResponse(
-                processosAtivos.size(),
-                processosEncerrados.size(),
-                processosSuspensos.size(),
-                processosNovos.size()
+                processosAtivos,
+                processosEncerrados,
+                processosSuspensos,
+                processosNovos
         );
     }
 
@@ -274,18 +282,18 @@ public class DashboardService {
         int encerradosPorOutros = 0;
 
         for (ProcessoApp processo : processos){
-            if (
-                    processo.getDataHoraInicio() != null &&
-                    processo.getDataHoraInicio().isAfter(dateFrom.atStartOfDay()) &&
-                    processo.getDataHoraInicio().isBefore(dateTo.atStartOfDay()) &&
-                    processo.getEncerradoSuspensoEm() != null
-            ){
-                if (processo.getJustificativa() != null) {
-                    switch (processo.getJustificativa()){
+            if (processo.getStatus() != StatusProcesso.ENCERRADO) {
+                continue;
+            }
+
+            if (estaNoPeriodo(processo.getDataHoraInicio(), dateFrom, dateTo)) {
+                String motivo = obterMotivo(processo);
+                if (motivo != null) {
+                    switch (motivo) {
                         case "ACORDO" -> encerradosPorAcordo++;
-                        case "SEM RESOLUÇÃO DO MÉRITO" -> encerradosPorSemResolucao++;
+                        case "SEM RESOLUÇÃO DO MÉRITO", "SEM RESOLUCAO DO MERITO" -> encerradosPorSemResolucao++;
                         case "PENHORA TOTAL" -> encerradosPorPenhoraTotal++;
-                        case "PAGAMENTO VOLUNTÁRIO" -> encerradosPorPagamentoVoluntario++;
+                        case "PAGAMENTO VOLUNTÁRIO", "PAGAMENTO VOLUNTARIO" -> encerradosPorPagamentoVoluntario++;
                         default -> encerradosPorOutros++;
                     }
                 } else {
@@ -316,18 +324,18 @@ public class DashboardService {
         int suspensosPorOutros = 0;
 
         for (ProcessoApp processo : processos){
-            if (
-                    processo.getDataHoraInicio() != null &&
-                    processo.getDataHoraInicio().isAfter(dateFrom.atStartOfDay()) &&
-                    processo.getDataHoraInicio().isBefore(dateTo.atStartOfDay()) &&
-                    processo.getEncerradoSuspensoEm() != null
-            ){
-                if (processo.getJustificativa() != null) {
-                    switch (processo.getJustificativa()){
+            if (processo.getStatus() != StatusProcesso.SUSPENSO) {
+                continue;
+            }
+
+            if (estaNoPeriodo(processo.getDataHoraInicio(), dateFrom, dateTo)) {
+                String motivo = obterMotivo(processo);
+                if (motivo != null) {
+                    switch (motivo) {
                         case "ACORDO PARCELADO" -> suspensosPorAcordoParcelado++;
                         case "TRATATIVAS" -> suspensosPorTratativas++;
-                        case "AUSÊNCIA DE BENS", "AUSÊNCIA DE BENSL" -> suspensosPorAusenciaDeBens++;
-                        case "DETERMINAÇÃO JUDICIAL" -> suspensosPorDeterminacaoJudicial++;
+                        case "AUSÊNCIA DE BENS", "AUSENCIA DE BENS", "AUSÊNCIA DE BENSL" -> suspensosPorAusenciaDeBens++;
+                        case "DETERMINAÇÃO JUDICIAL", "DETERMINACAO JUDICIAL" -> suspensosPorDeterminacaoJudicial++;
                         default -> suspensosPorOutros++;
                     }
                 } else {
@@ -345,31 +353,21 @@ public class DashboardService {
         );
     }
 
-    public FunilAtendimentoResponse extrairFunilAtendimento(
-            LocalDate dateFrom,
-            LocalDate dateTo,
-            List<ProcessoApp> solicitacoes
-    ){
-        int recebidas = 0;
-        int aceitas = 0;
-
-        for (ProcessoApp solicitacao : solicitacoes){
-            if (
-                    solicitacao.getDataHoraInicio() != null &&
-                    solicitacao.getDataHoraInicio().isAfter(dateFrom.atStartOfDay()) &&
-                    solicitacao.getDataHoraInicio().isBefore(dateTo.atStartOfDay())
-            ) {
-                recebidas++;
-
-                if (solicitacao.getStatus() == StatusProcesso.ATIVO ||
-                        (solicitacao.getCliente() != null &&
-                         solicitacao.getCliente().getStatusCliente() != null &&
-                         "ATIVO".equalsIgnoreCase(solicitacao.getCliente().getStatusCliente().getNome()))) {
-                    aceitas++;
-                }
-            }
+    private boolean estaNoPeriodo(LocalDateTime dataHora, LocalDate dateFrom, LocalDate dateTo) {
+        if (dataHora == null || dateFrom == null || dateTo == null) {
+            return false;
         }
+        LocalDate data = dataHora.toLocalDate();
+        return !data.isBefore(dateFrom) && !data.isAfter(dateTo);
+    }
 
-        return new FunilAtendimentoResponse(recebidas, aceitas);
+    private String obterMotivo(ProcessoApp processo) {
+        if (processo.getMotivoStatus() != null && processo.getMotivoStatus().getNome() != null) {
+            return processo.getMotivoStatus().getNome().trim().toUpperCase();
+        }
+        if (processo.getJustificativa() != null && !processo.getJustificativa().isBlank()) {
+            return processo.getJustificativa().trim().toUpperCase();
+        }
+        return null;
     }
 }

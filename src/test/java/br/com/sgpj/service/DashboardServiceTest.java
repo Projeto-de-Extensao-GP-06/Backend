@@ -1,18 +1,15 @@
 package br.com.sgpj.service;
 
 import br.com.sgpj.dto.response.Dashboard.DadosFiltradosDashResponse;
-import br.com.sgpj.dto.response.Dashboard.DadosIndependentesResponse;
-import br.com.sgpj.dto.response.Dashboard.FunilAtendimentoResponse;
-import br.com.sgpj.entity.Cliente;
-import br.com.sgpj.entity.Processo.FaseProcesso;
+import br.com.sgpj.dto.response.Dashboard.EvolucaoCarteiraResponse;
+import br.com.sgpj.dto.response.Dashboard.ProcessosEncerradosResponse;
+import br.com.sgpj.dto.response.Dashboard.ProcessosSuspensosResponse;
+import br.com.sgpj.entity.Processo.MotivoStatusProcesso;
 import br.com.sgpj.entity.Processo.ProcessoApp;
 import br.com.sgpj.entity.Processo.StatusProcesso;
-import br.com.sgpj.entity.StatusCliente;
-import br.com.sgpj.entity.StatusClienteEnum;
 import br.com.sgpj.repository.ClienteRepository;
 import br.com.sgpj.repository.FaseProcessoRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -46,90 +43,58 @@ class DashboardServiceTest {
     @InjectMocks
     private DashboardService dashboardService;
 
-    private StatusCliente statusLead;
-    private StatusCliente statusAtivo;
-
-    @BeforeEach
-    void setUp() {
-        statusLead = new StatusCliente();
-        statusLead.setId(1L);
-        statusLead.setNome("LEAD");
-
-        statusAtivo = new StatusCliente();
-        statusAtivo.setId(2L);
-        statusAtivo.setNome("ATIVO");
-    }
-
     @Nested
-    @DisplayName("extrairFunilAtendimento")
-    class ExtrairFunilAtendimentoTests {
+    @DisplayName("Processos Encerrados e Suspensos")
+    class ProcessosEncerradosESuspensosTests {
 
         @Test
-        @DisplayName("Deve extrair funil de atendimento calculando solicitacoes recebidas e aceitas no periodo")
-        void deveExtrairFunilAtendimentoComSucesso() {
-            LocalDate dateFrom = LocalDate.of(2026, 1, 1);
-            LocalDate dateTo = LocalDate.of(2026, 1, 31);
+        @DisplayName("Deve separar corretamente processos encerrados e suspensos filtrando pela data de criacao (dataHoraInicio)")
+        void deveSepararProcessosEncerradosESuspensosPorDataCriacao() {
+            LocalDate inicioSemana = LocalDate.of(2026, 10, 19);
+            LocalDate hoje = LocalDate.of(2026, 10, 22);
 
-            // Solicitação 1: recebida no período, pendente (LEAD)
-            Cliente cliente1 = new Cliente();
-            cliente1.setStatusCliente(statusLead);
-            cliente1.setDataHoraEnvioFormulario(LocalDateTime.of(2026, 1, 10, 10, 0));
+            MotivoStatusProcesso motivoAcordo = new MotivoStatusProcesso();
+            motivoAcordo.setNome("ACORDO");
+            motivoAcordo.setAplicavelA(MotivoStatusProcesso.AplicavelA.ENCERRADO);
 
-            ProcessoApp solicitacao1 = new ProcessoApp();
-            solicitacao1.setCliente(cliente1);
-            solicitacao1.setStatus(StatusProcesso.SOLICITACAO);
-            solicitacao1.setDataHoraInicio(LocalDateTime.of(2026, 1, 10, 10, 0));
+            ProcessoApp processoEncerrado = new ProcessoApp();
+            processoEncerrado.setStatus(StatusProcesso.ENCERRADO);
+            processoEncerrado.setDataHoraInicio(LocalDateTime.of(2026, 10, 20, 10, 30));
+            processoEncerrado.setEncerradoSuspensoEm(LocalDateTime.of(2026, 10, 22, 15, 0));
+            processoEncerrado.setMotivoStatus(motivoAcordo);
 
-            // Solicitação 2: recebida no período, aceita (ATIVO)
-            Cliente cliente2 = new Cliente();
-            cliente2.setStatusCliente(statusAtivo);
-            cliente2.setDataHoraEnvioFormulario(LocalDateTime.of(2026, 1, 15, 14, 30));
-            cliente2.setDataHoraTransformacaoEmCliente(LocalDateTime.of(2026, 1, 16, 9, 0));
+            MotivoStatusProcesso motivoTratativas = new MotivoStatusProcesso();
+            motivoTratativas.setNome("TRATATIVAS");
+            motivoTratativas.setAplicavelA(MotivoStatusProcesso.AplicavelA.SUSPENSO);
 
-            ProcessoApp solicitacao2 = new ProcessoApp();
-            solicitacao2.setCliente(cliente2);
-            solicitacao2.setStatus(StatusProcesso.ATIVO);
-            solicitacao2.setDataHoraInicio(LocalDateTime.of(2026, 1, 15, 14, 30));
+            ProcessoApp processoSuspenso = new ProcessoApp();
+            processoSuspenso.setStatus(StatusProcesso.SUSPENSO);
+            processoSuspenso.setDataHoraInicio(LocalDateTime.of(2026, 10, 22, 14, 20));
+            processoSuspenso.setEncerradoSuspensoEm(LocalDateTime.of(2026, 10, 22, 16, 0));
+            processoSuspenso.setMotivoStatus(motivoTratativas);
 
-            // Solicitação 3: recebida fora do período (em fevereiro)
-            Cliente cliente3 = new Cliente();
-            cliente3.setStatusCliente(statusLead);
-            cliente3.setDataHoraEnvioFormulario(LocalDateTime.of(2026, 2, 5, 8, 0));
+            // Processo criado em outro mês (não deve entrar no filtro da semana)
+            ProcessoApp processoMesAnterior = new ProcessoApp();
+            processoMesAnterior.setStatus(StatusProcesso.ENCERRADO);
+            processoMesAnterior.setDataHoraInicio(LocalDateTime.of(2026, 2, 10, 10, 30));
+            processoMesAnterior.setEncerradoSuspensoEm(LocalDateTime.of(2026, 10, 22, 15, 0));
+            processoMesAnterior.setMotivoStatus(motivoAcordo);
 
-            ProcessoApp solicitacao3 = new ProcessoApp();
-            solicitacao3.setCliente(cliente3);
-            solicitacao3.setStatus(StatusProcesso.SOLICITACAO);
-            solicitacao3.setDataHoraInicio(LocalDateTime.of(2026, 2, 5, 8, 0));
+            List<ProcessoApp> lista = List.of(processoEncerrado, processoSuspenso, processoMesAnterior);
 
-            List<ProcessoApp> solicitacoes = List.of(solicitacao1, solicitacao2, solicitacao3);
+            ProcessosEncerradosResponse encerrados = dashboardService.extrairProcessosEncerrados(inicioSemana, hoje, lista);
+            ProcessosSuspensosResponse suspensos = dashboardService.extrairProcessosSuspensos(inicioSemana, hoje, lista);
+            EvolucaoCarteiraResponse evolucao = dashboardService.extrairEvolucaoCarteira(inicioSemana, hoje, lista);
 
-            FunilAtendimentoResponse funil = dashboardService.extrairFunilAtendimento(dateFrom, dateTo, solicitacoes);
+            assertEquals(1, encerrados.encerradosPorAcordo());
+            assertEquals(0, encerrados.encerradosPorOutros());
 
-            assertNotNull(funil);
-            assertEquals(2, funil.recebidas());
-            assertEquals(1, funil.aceitas());
-        }
+            assertEquals(1, suspensos.suspensosPorTratativas());
+            assertEquals(0, suspensos.suspensosPorOutros());
 
-        @Test
-        @DisplayName("Deve retornar zeros quando nenhuma solicitacao estiver no periodo")
-        void deveRetornarZerosQuandoNenhumaNoPeriodo() {
-            LocalDate dateFrom = LocalDate.of(2026, 3, 1);
-            LocalDate dateTo = LocalDate.of(2026, 3, 31);
-
-            Cliente cliente = new Cliente();
-            cliente.setStatusCliente(statusLead);
-            cliente.setDataHoraEnvioFormulario(LocalDateTime.of(2026, 1, 10, 10, 0));
-
-            ProcessoApp solicitacao = new ProcessoApp();
-            solicitacao.setCliente(cliente);
-            solicitacao.setStatus(StatusProcesso.SOLICITACAO);
-            solicitacao.setDataHoraInicio(LocalDateTime.of(2026, 1, 10, 10, 0));
-
-            FunilAtendimentoResponse funil = dashboardService.extrairFunilAtendimento(dateFrom, dateTo, List.of(solicitacao));
-
-            assertNotNull(funil);
-            assertEquals(0, funil.recebidas());
-            assertEquals(0, funil.aceitas());
+            assertEquals(1, evolucao.encerrados());
+            assertEquals(1, evolucao.suspensos());
+            assertEquals(2, evolucao.novos());
         }
     }
 
@@ -138,7 +103,7 @@ class DashboardServiceTest {
     class ListarDadosFiltradosDashTests {
 
         @Test
-        @DisplayName("Deve retornar dados filtrados incluindo o funil de atendimento")
+        @DisplayName("Deve retornar dados filtrados da dashboard")
         void deveListarDadosFiltradosDash() {
             LocalDate dateFrom = LocalDate.of(2026, 1, 1);
             LocalDate dateTo = LocalDate.of(2026, 1, 31);
@@ -150,7 +115,6 @@ class DashboardServiceTest {
             DadosFiltradosDashResponse response = dashboardService.listarDadosFiltradosDash(dateFrom, dateTo);
 
             assertNotNull(response);
-            assertNotNull(response.funilAtendimento());
             assertNotNull(response.processosEncerrados());
             assertNotNull(response.processosSuspensos());
             assertNotNull(response.evolucaoCarteira());

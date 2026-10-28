@@ -585,8 +585,8 @@ VALUES (
           AND logradouro = 'Avenida Paulista'
           AND numero = '1000'
     ),
-    NOW(),
-    NOW()
+    '2026-02-10 10:30:00',
+    '2026-02-10 10:30:00'
 );
 
 INSERT INTO contato (
@@ -658,8 +658,8 @@ VALUES (
           AND logradouro = 'Rua Funchal'
           AND numero = '250'
     ),
-    NOW(),
-    NOW()
+    '2026-03-15 14:20:00',
+    '2026-03-15 14:20:00'
 );
 
 INSERT INTO contato (
@@ -731,8 +731,8 @@ VALUES (
           AND logradouro = 'Rua Haddock Lobo'
           AND numero = '850'
     ),
-    NOW(),
-    NOW()
+    '2026-01-20 09:15:00',
+    '2026-01-20 09:15:00'
 );
 
 INSERT INTO contato (

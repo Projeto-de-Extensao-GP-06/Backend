@@ -73,11 +73,11 @@ class DashboardServiceTest {
             processoSuspenso.setEncerradoSuspensoEm(LocalDateTime.of(2026, 10, 22, 16, 0));
             processoSuspenso.setMotivoStatus(motivoTratativas);
 
-            // Processo criado em outro mês (não deve entrar no filtro da semana)
+            // Processo encerrado em outro mês (não deve entrar no filtro da semana)
             ProcessoApp processoMesAnterior = new ProcessoApp();
             processoMesAnterior.setStatus(StatusProcesso.ENCERRADO);
             processoMesAnterior.setDataHoraInicio(LocalDateTime.of(2026, 2, 10, 10, 30));
-            processoMesAnterior.setEncerradoSuspensoEm(LocalDateTime.of(2026, 10, 22, 15, 0));
+            processoMesAnterior.setEncerradoSuspensoEm(LocalDateTime.of(2026, 2, 15, 15, 0));
             processoMesAnterior.setMotivoStatus(motivoAcordo);
 
             List<ProcessoApp> lista = List.of(processoEncerrado, processoSuspenso, processoMesAnterior);

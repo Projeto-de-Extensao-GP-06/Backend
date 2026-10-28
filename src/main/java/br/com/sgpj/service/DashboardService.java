@@ -244,20 +244,32 @@ public class DashboardService {
         int processosNovos = 0;
 
         for (ProcessoApp processo : processos){
-            if (!estaNoPeriodo(processo.getDataHoraInicio(), dateFrom, dateTo)) {
-                continue;
-            }
-
-            if (processo.getStatus() != StatusProcesso.SOLICITACAO && processo.getStatus() != StatusProcesso.NEGADO) {
-                processosNovos++;
+            // Novos: processos criados dentro do período selecionado
+            if (estaNoPeriodo(processo.getDataHoraInicio(), dateFrom, dateTo)) {
+                if (processo.getStatus() != StatusProcesso.SOLICITACAO && processo.getStatus() != StatusProcesso.NEGADO) {
+                    processosNovos++;
+                }
             }
 
             if (processo.getStatus() == StatusProcesso.ATIVO) {
-                processosAtivos++;
+                // Ativos: processos ativos cuja data de início ocorreu até a data final do período
+                if (processo.getDataHoraInicio() != null && !processo.getDataHoraInicio().toLocalDate().isAfter(dateTo)) {
+                    processosAtivos++;
+                }
             } else if (processo.getStatus() == StatusProcesso.ENCERRADO) {
-                processosEncerrados++;
+                LocalDateTime dataEncerrado = processo.getEncerradoSuspensoEm() != null
+                        ? processo.getEncerradoSuspensoEm()
+                        : processo.getDataHoraInicio();
+                if (estaNoPeriodo(dataEncerrado, dateFrom, dateTo)) {
+                    processosEncerrados++;
+                }
             } else if (processo.getStatus() == StatusProcesso.SUSPENSO) {
-                processosSuspensos++;
+                LocalDateTime dataSuspenso = processo.getEncerradoSuspensoEm() != null
+                        ? processo.getEncerradoSuspensoEm()
+                        : processo.getDataHoraInicio();
+                if (estaNoPeriodo(dataSuspenso, dateFrom, dateTo)) {
+                    processosSuspensos++;
+                }
             }
         }
 
@@ -286,7 +298,11 @@ public class DashboardService {
                 continue;
             }
 
-            if (estaNoPeriodo(processo.getDataHoraInicio(), dateFrom, dateTo)) {
+            LocalDateTime dataReferencia = processo.getEncerradoSuspensoEm() != null
+                    ? processo.getEncerradoSuspensoEm()
+                    : processo.getDataHoraInicio();
+
+            if (estaNoPeriodo(dataReferencia, dateFrom, dateTo)) {
                 String motivo = obterMotivo(processo);
                 if (motivo != null) {
                     switch (motivo) {
@@ -328,7 +344,11 @@ public class DashboardService {
                 continue;
             }
 
-            if (estaNoPeriodo(processo.getDataHoraInicio(), dateFrom, dateTo)) {
+            LocalDateTime dataReferencia = processo.getEncerradoSuspensoEm() != null
+                    ? processo.getEncerradoSuspensoEm()
+                    : processo.getDataHoraInicio();
+
+            if (estaNoPeriodo(dataReferencia, dateFrom, dateTo)) {
                 String motivo = obterMotivo(processo);
                 if (motivo != null) {
                     switch (motivo) {

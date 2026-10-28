@@ -56,7 +56,6 @@ public class ReadProcesso {
     }
 
     public ProcessoAppResponse buscarPorId(Long id) {
-        authorizationUtil.verificarAcessoProcesso(id);
         ProcessoApp processoAppEncontrado = processoAppRepository.findById(id)
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Processo não encontrado para o ID: " + id));
         if (!deveExibirComoProcesso(processoAppEncontrado)) {

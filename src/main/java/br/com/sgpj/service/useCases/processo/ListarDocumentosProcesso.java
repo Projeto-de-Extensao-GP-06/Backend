@@ -19,7 +19,6 @@ public class ListarDocumentosProcesso {
     }
 
     public List<ProcessoDocumentoResponse> listarDocumentosDoProcesso(Long processoAppId) {
-        authorizationUtil.verificarAcessoProcesso(processoAppId);
         List<ProcessoDocumento> processosDocumento = processoDocumentoRepository.findByProcessoAppId(processoAppId);
         return ProcessoDocumentoMapper.toResponseList(processosDocumento);
     }

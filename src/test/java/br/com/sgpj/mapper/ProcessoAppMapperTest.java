@@ -44,7 +44,6 @@ class ProcessoAppMapperTest {
                     2L,
                     3L,
                     dataAudiencia,
-                    4L,
                     "0000000-00.0000.0.00.0000",
                     5000.0
             );

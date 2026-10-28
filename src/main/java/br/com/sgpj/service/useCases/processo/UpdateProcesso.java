@@ -8,9 +8,9 @@ import br.com.sgpj.entity.Processo.*;
 import br.com.sgpj.exception.DataJudIntegrationException;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
 import br.com.sgpj.exception.OperacaoInvalidaException;
-import br.com.sgpj.exception.TribunalInvalidoException;
 import br.com.sgpj.mapper.HistoricoProcessoMapper;
 import br.com.sgpj.mapper.ProcessoAppMapper;
+import br.com.sgpj.mapper.SiglaTribunalMapper;
 import br.com.sgpj.repository.*;
 import br.com.sgpj.service.RegistroHistoricoProcesso;
 import jakarta.transaction.Transactional;
@@ -122,7 +122,7 @@ public class UpdateProcesso {
                         throw new br.com.sgpj.exception.ProcessoJaExistenteException("Já existe outro processo cadastrado com este número de CNJ.");
                     }
 
-                    String sigla = mapearSiglaTribunalPorNumero(cnjLimpo.substring(14, 16));
+                    String sigla = SiglaTribunalMapper.mapearSiglaTribunalPorNumero(cnjLimpo.substring(14, 16));
                     SiglaTribunal siglaTribunal = siglaTribunalRepository.findByNomeIgnoreCase(sigla)
                             .orElseThrow(() -> new ObjetoNaoEncontradoException("Sigla do tribunal não encontrada: " + sigla));
 
@@ -220,41 +220,5 @@ public class UpdateProcesso {
                 .toList();
 
         return ProcessoAppMapper.toResponse(processoApp, historico);
-    }
-
-    private String mapearSiglaTribunalPorNumero(String numero) {
-        if (numero == null) {
-            return null;
-        }
-        return switch (numero.trim()) {
-            case "01" -> "TJAC";
-            case "02" -> "TJAL";
-            case "03" -> "TJAP";
-            case "04" -> "TJAM";
-            case "05" -> "TJBA";
-            case "06" -> "TJCE";
-            case "07" -> "TJDF";
-            case "08" -> "TJES";
-            case "09" -> "TJGO";
-            case "10" -> "TJMA";
-            case "11" -> "TJMT";
-            case "12" -> "TJMS";
-            case "13" -> "TJMG";
-            case "14" -> "TJPA";
-            case "15" -> "TJPB";
-            case "16" -> "TJPR";
-            case "17" -> "TJPE";
-            case "18" -> "TJPI";
-            case "19" -> "TJRJ";
-            case "20" -> "TJRN";
-            case "21" -> "TJRS";
-            case "22" -> "TJRO";
-            case "23" -> "TJRR";
-            case "24" -> "TJSC";
-            case "25" -> "TJSE";
-            case "26" -> "TJSP";
-            case "27" -> "TJTO";
-            default -> throw new TribunalInvalidoException("Código de tribunal inválido.");
-        };
     }
 }

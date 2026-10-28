@@ -12,6 +12,7 @@ import br.com.sgpj.entity.StatusClienteEnum;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
 import br.com.sgpj.mapper.ContatoMapper;
 import br.com.sgpj.mapper.ProcessoAppToSolicitacaoDuvidaMapper;
+import br.com.sgpj.mapper.SiglaTribunalMapper;
 import br.com.sgpj.mapper.SolicitacaoDuvidaMapper;
 import br.com.sgpj.repository.ClienteRepository;
 import br.com.sgpj.repository.ContatoRepository;
@@ -25,7 +26,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Locale;
 
 @Component
 public class CreateSolicitacaoDuvida {
@@ -80,12 +80,7 @@ public class CreateSolicitacaoDuvida {
         ProcessoApp processoApp = new ProcessoApp();
         processoApp.setCliente(cliente);
         processoApp.setDescricaoCaso(request.descricao().trim());
-        String estado = request.estado() == null || request.estado().isBlank()
-            ? null
-            : request.estado().trim().toUpperCase(Locale.ROOT);
-        processoApp.setObservacao(estado == null
-            ? OBSERVACAO_SOLICITACAO_PREFIXO
-            : OBSERVACAO_SOLICITACAO_PREFIXO + " Estado: " + estado);
+        processoApp.setObservacao(OBSERVACAO_SOLICITACAO_PREFIXO);
         processoApp.setDataHoraInicio(cliente.getDataHoraEnvioFormulario());
         processoApp.setUltimaAtualizacao(cliente.getDataHoraEnvioFormulario());
         processoApp.setStatus(StatusProcesso.SOLICITACAO);
@@ -110,7 +105,8 @@ public class CreateSolicitacaoDuvida {
 
     private ProcessoApi buscarProcessoOficial(String numeroProcesso) {
         try {
-            return processoApiGateway.buscarDadosOficiais(numeroProcesso);
+            String siglaTribunal = SiglaTribunalMapper.mapearSiglaTribunalPorNumero(numeroProcesso.substring(14, 16));
+            return processoApiGateway.buscarDadosOficiais(numeroProcesso, siglaTribunal);
         } catch (RuntimeException exception) {
             logger.warn("Não foi possível buscar processo oficial. Número: {}. Motivo: {}",
                     numeroProcesso, exception.getMessage());

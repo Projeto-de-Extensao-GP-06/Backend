@@ -86,7 +86,6 @@ class CreateSolicitacaoDuvidaTest {
                     true,
                     null,
                     null,
-                    "SP",
                     "dummy-test-token"
             );
 
@@ -116,9 +115,9 @@ class CreateSolicitacaoDuvidaTest {
             ProcessoApp salvo = processoCaptor.getValue();
             assertEquals(StatusProcesso.SOLICITACAO, salvo.getStatus());
             assertEquals("Descrição da dúvida", salvo.getDescricaoCaso());
-            assertEquals("Solicitação enviada pelo formulário público. Estado: SP", salvo.getObservacao());
+            assertEquals("Solicitação enviada pelo formulário público.", salvo.getObservacao());
             assertNotNull(response);
-            verify(processoApiGateway, never()).buscarDadosOficiais(any());
+            verify(processoApiGateway, never()).buscarDadosOficiais(any(), any());
         }
 
         @Test
@@ -249,7 +248,7 @@ class CreateSolicitacaoDuvidaTest {
             );
 
             ProcessoApi apiMock = new ProcessoApi();
-            apiMock.setNumeroCnj("0000001-00.2026.8.26.0001");
+            apiMock.setNumeroCnj("00000010020268260001");
 
             when(statusClienteRepository.findByNomeIgnoreCase(StatusClienteEnum.LEAD.getNome()))
                     .thenReturn(Optional.of(statusLead));
@@ -263,7 +262,7 @@ class CreateSolicitacaoDuvidaTest {
                 c.setId(20L);
                 return c;
             });
-            when(processoApiGateway.buscarDadosOficiais(any())).thenReturn(apiMock);
+            when(processoApiGateway.buscarDadosOficiais("00000010020268260001", "TJSP")).thenReturn(apiMock);
             when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> {
                 ProcessoApp p = inv.getArgument(0);
                 p.setId(30L);
@@ -278,6 +277,7 @@ class CreateSolicitacaoDuvidaTest {
             assertEquals(apiMock, processoCaptor.getValue().getProcessoApi());
             assertEquals(StatusProcesso.SOLICITACAO, processoCaptor.getValue().getStatus());
             assertNotNull(response);
+            verify(processoApiGateway).buscarDadosOficiais("00000010020268260001", "TJSP");
         }
 
         @Test
@@ -308,7 +308,7 @@ class CreateSolicitacaoDuvidaTest {
                 c.setId(20L);
                 return c;
             });
-            when(processoApiGateway.buscarDadosOficiais(any()))
+            when(processoApiGateway.buscarDadosOficiais("00000010020268260001", "TJSP"))
                     .thenThrow(new RuntimeException("API indisponível"));
             when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> {
                 ProcessoApp p = inv.getArgument(0);

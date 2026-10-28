@@ -14,9 +14,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import br.com.sgpj.service.SincronizacaoStatusService;
 
 import java.util.List;
 
@@ -26,10 +29,14 @@ public class ProcessosController {
 
     private final ProcessoService processoService;
     private final AuthorizationUtil authorizationUtil;
+    private final SincronizacaoStatusService sincronizacaoStatusService;
 
-    public ProcessosController(ProcessoService processoService, AuthorizationUtil authorizationUtil) {
+    public ProcessosController(ProcessoService processoService,
+                               AuthorizationUtil authorizationUtil,
+                               SincronizacaoStatusService sincronizacaoStatusService) {
         this.processoService = processoService;
         this.authorizationUtil = authorizationUtil;
+        this.sincronizacaoStatusService = sincronizacaoStatusService;
     }
 
     @PostMapping("/processos")
@@ -55,9 +62,14 @@ public class ProcessosController {
     @PostMapping("/processos/{id}/atualizar-dados")
     @PreAuthorize("hasAuthority('EDITAR PROCESSO') || hasAuthority('TODAS AS PERMISSÕES')")
     @SecurityRequirement(name = "Bearer")
-    public ResponseEntity<ProcessoAppResponse> atualizarDadosOficiais(@PathVariable Long id) {
-        ProcessoAppResponse processoAtualizado = processoService.atualizarDadosDoDataJud(id);
-        return ResponseEntity.ok(processoAtualizado);
+    public ResponseEntity<SincronizacaoProcessoResponse> atualizarDadosOficiais(@PathVariable Long id) {
+        SincronizacaoProcessoResponse response = processoService.solicitarSincronizacaoDataJud(id);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+    }
+
+    @GetMapping(value = "/processos/{id}/sincronizacao-status", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter statusSincronizacaoEmTempoReal(@PathVariable Long id) {
+        return sincronizacaoStatusService.criarConexao(id);
     }
 
     @DeleteMapping("/processos/{id}")

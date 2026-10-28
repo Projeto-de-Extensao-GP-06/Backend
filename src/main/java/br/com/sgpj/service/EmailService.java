@@ -1,53 +1,69 @@
 package br.com.sgpj.service;
 
+import br.com.sgpj.config.RabbitMQEmailConfig;
+import br.com.sgpj.dto.EmailMessagePayload;
+import br.com.sgpj.entity.Processo.ProcessoApp;
 import br.com.sgpj.exception.EmailSendException;
 import br.com.sgpj.service.useCases.email.RenderEmailBody;
-import br.com.sgpj.service.useCases.email.TemplateForgotPassword;
-import br.com.sgpj.service.useCases.email.TemplateSetPassword;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.util.List;
 
 @Service
 public class EmailService {
 
     private final JavaMailSender mailSender;
     private final RenderEmailBody renderEmailBody;
+    private final RabbitTemplate rabbitTemplate;
     private final String remetente;
 
-
-
-    public EmailService(JavaMailSender mailSender, RenderEmailBody renderEmailBody, @Value("${spring.mail.username.from}")
-    String remetente) {
+    public EmailService(
+            JavaMailSender mailSender,
+            RenderEmailBody renderEmailBody,
+            RabbitTemplate rabbitTemplate,
+            @Value("${spring.mail.username.from}") String remetente
+    ) {
         this.mailSender = mailSender;
         this.renderEmailBody = renderEmailBody;
+        this.rabbitTemplate = rabbitTemplate;
         this.remetente = remetente;
     }
 
-    @Async
     public void sendForgotPasswordOtp(String to, String nomeUsuario, String otp) {
         RenderEmailBody.EmailContent emailContent = renderEmailBody.renderForgotPasswordOtp(nomeUsuario, otp);
-        String subject = emailContent.subject();
-        String body = emailContent.body();
-
-        buildEmail(to, subject, body);
+        enqueueEmail(to, emailContent.subject(), emailContent.body());
     }
 
-    @Async
     public void sendSetPasswordOtp(String to, String nomeUsuario, String otp) {
         RenderEmailBody.EmailContent emailContent = renderEmailBody.renderSetPasswordOtp(nomeUsuario, otp);
-        String subject = emailContent.subject();
-        String body = emailContent.body();
-
-        buildEmail(to, subject, body);
+        enqueueEmail(to, emailContent.subject(), emailContent.body());
     }
 
+    public void sendWeeklyHearings(String to, String nomeUsuario, LocalDate inicioSemana, LocalDate fimSemana, List<ProcessoApp> processos) {
+        RenderEmailBody.EmailContent emailContent = renderEmailBody.renderWeeklyHearings(nomeUsuario, inicioSemana, fimSemana, processos);
+        enqueueEmail(to, emailContent.subject(), emailContent.body());
+    }
 
+    public void sendDailyHearings(String to, String nomeUsuario, LocalDate dataReferencia, List<ProcessoApp> processos) {
+        RenderEmailBody.EmailContent emailContent = renderEmailBody.renderDailyHearings(nomeUsuario, dataReferencia, processos);
+        enqueueEmail(to, emailContent.subject(), emailContent.body());
+    }
 
+    private void enqueueEmail(String to, String subject, String body) {
+        EmailMessagePayload payload = new EmailMessagePayload(to, subject, body);
+        rabbitTemplate.convertAndSend(
+                RabbitMQEmailConfig.EMAIL_EXCHANGE,
+                RabbitMQEmailConfig.ROUTING_KEY_SEND,
+                payload
+        );
+    }
 
     public void buildEmail(String to, String subject, String body) {
         try {

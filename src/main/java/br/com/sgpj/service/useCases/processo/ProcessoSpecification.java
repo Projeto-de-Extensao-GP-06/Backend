@@ -36,7 +36,7 @@ public class ProcessoSpecification {
                         cb.like(cb.lower(clienteJoin.get("nomeRazaoSocial")), termo),
                         cb.like(cb.lower(apiJoin.get("numeroCnj")), termo)
                 ));
-                criteriaQuery.distinct(true);
+                // Sem DISTINCT: joins to-one nao duplicam linhas e DISTINCT quebra o ORDER BY por colunas do join (MySQL 3065).
             }
 
             // Filtro por status (enum)

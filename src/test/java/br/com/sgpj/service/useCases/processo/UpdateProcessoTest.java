@@ -18,6 +18,7 @@ import br.com.sgpj.repository.MotivoStatusProcessoRepository;
 import br.com.sgpj.repository.PrioridadeRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.SiglaTribunalRepository;
+import br.com.sgpj.security.AuthorizationUtil;
 import br.com.sgpj.service.RegistroHistoricoProcesso;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -38,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -66,6 +68,9 @@ class UpdateProcessoTest {
 
     @Mock
     private RegistroHistoricoProcesso registroHistorico;
+
+    @Mock
+    private AuthorizationUtil authorizationUtil;
 
     @InjectMocks
     private UpdateProcesso updateProcesso;
@@ -100,6 +105,7 @@ class UpdateProcessoTest {
         processoExistente.setSiglaTribunal(tribunal);
         processoExistente.setStatus(StatusProcesso.ATIVO);
         processoExistente.setDataHoraInicio(LocalDateTime.now().minusDays(30));
+        lenient().when(authorizationUtil.getUsuarioLogado()).thenReturn(usuarioResponsavel);
     }
 
     @Nested
@@ -110,7 +116,7 @@ class UpdateProcessoTest {
         @DisplayName("Deve lançar exceção quando processo não for encontrado")
         void deveLancarExcecaoQuandoProcessoNaoEncontrado() {
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    null, "Desc", "Obs", 1L, StatusProcesso.ATIVO, 1L, null, 1000.0, null, null);
+                    null, "Desc", "Obs", 1L, StatusProcesso.ATIVO, 1L, null, 1000.0, null, null, null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.empty());
 
@@ -122,7 +128,7 @@ class UpdateProcessoTest {
         @DisplayName("Deve lançar exceção quando prioridade não for encontrada")
         void deveLancarExcecaoQuandoPrioridadeNaoEncontrada() {
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    null, "Desc", "Obs", 99L, StatusProcesso.ATIVO, 1L, null, 1000.0, null, null);
+                    null, "Desc", "Obs", 99L, StatusProcesso.ATIVO, 1L, null, 1000.0, null, null, null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(99L)).thenReturn(Optional.empty());
@@ -135,7 +141,7 @@ class UpdateProcessoTest {
         @DisplayName("Deve lançar exceção quando fase do processo não for encontrada")
         void deveLancarExcecaoQuandoFaseNaoEncontrada() {
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    null, "Desc", "Obs", 1L, StatusProcesso.ATIVO, 99L, null, 1000.0, null, null);
+                    null, "Desc", "Obs", 1L, StatusProcesso.ATIVO, 99L, null, 1000.0, null, null, null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
@@ -154,7 +160,7 @@ class UpdateProcessoTest {
         @DisplayName("Deve lançar exceção quando motivoStatusProcessoId for nulo ao suspender")
         void deveLancarExcecaoQuandoMotivoNuloAoSuspender() {
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    null, "Desc", "Obs", 1L, StatusProcesso.SUSPENSO, 1L, null, 1000.0, null, "Justificativa");
+                    null, "Desc", "Obs", 1L, StatusProcesso.SUSPENSO, 1L, null, 1000.0, null, "Justificativa", null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
@@ -171,7 +177,7 @@ class UpdateProcessoTest {
         @DisplayName("Deve lançar exceção quando motivo de status não for encontrado no banco")
         void deveLancarExcecaoQuandoMotivoNaoEncontrado() {
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    null, "Desc", "Obs", 1L, StatusProcesso.SUSPENSO, 1L, null, 1000.0, 999, "Justificativa");
+                    null, "Desc", "Obs", 1L, StatusProcesso.SUSPENSO, 1L, null, 1000.0, 999, "Justificativa", null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
@@ -191,7 +197,7 @@ class UpdateProcessoTest {
             motivoEncerrado.setAplicavelA(MotivoStatusProcesso.AplicavelA.ENCERRADO);
 
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    null, "Desc", "Obs", 1L, StatusProcesso.SUSPENSO, 1L, null, 1000.0, 1, "Justificativa");
+                    null, "Desc", "Obs", 1L, StatusProcesso.SUSPENSO, 1L, null, 1000.0, 1, "Justificativa", null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
@@ -214,7 +220,7 @@ class UpdateProcessoTest {
             motivoSuspenso.setAplicavelA(MotivoStatusProcesso.AplicavelA.SUSPENSO);
 
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    null, "Desc", "Obs", 1L, StatusProcesso.SUSPENSO, 1L, null, 1000.0, 2, "Justificativa");
+                    null, "Desc", "Obs", 1L, StatusProcesso.SUSPENSO, 1L, null, 1000.0, 2, "Justificativa", null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
@@ -245,7 +251,7 @@ class UpdateProcessoTest {
             motivoAmbos.setAplicavelA(MotivoStatusProcesso.AplicavelA.AMBOS);
 
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    null, "Desc", "Obs", 1L, StatusProcesso.SUSPENSO, 1L, null, 1000.0, 3, "Outros motivos");
+                    null, "Desc", "Obs", 1L, StatusProcesso.SUSPENSO, 1L, null, 1000.0, 3, "Outros motivos", null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
@@ -268,7 +274,7 @@ class UpdateProcessoTest {
         @DisplayName("Deve lançar exceção quando motivoStatusProcessoId for nulo ao encerrar")
         void deveLancarExcecaoQuandoMotivoNuloAoEncerrar() {
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    null, "Desc", "Obs", 1L, StatusProcesso.ENCERRADO, 1L, null, 1000.0, null, "Justificativa");
+                    null, "Desc", "Obs", 1L, StatusProcesso.ENCERRADO, 1L, null, 1000.0, null, "Justificativa", null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
@@ -289,7 +295,7 @@ class UpdateProcessoTest {
             motivoSuspenso.setAplicavelA(MotivoStatusProcesso.AplicavelA.SUSPENSO);
 
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    null, "Desc", "Obs", 1L, StatusProcesso.ENCERRADO, 1L, null, 1000.0, 2, "Justificativa");
+                    null, "Desc", "Obs", 1L, StatusProcesso.ENCERRADO, 1L, null, 1000.0, 2, "Justificativa", null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
@@ -311,7 +317,7 @@ class UpdateProcessoTest {
             motivoEncerrado.setAplicavelA(MotivoStatusProcesso.AplicavelA.ENCERRADO);
 
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    null, "Desc", "Obs", 1L, StatusProcesso.ENCERRADO, 1L, null, 1000.0, 1, "Justificativa encerramento");
+                    null, "Desc", "Obs", 1L, StatusProcesso.ENCERRADO, 1L, null, 1000.0, 1, "Justificativa encerramento", null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
@@ -347,7 +353,7 @@ class UpdateProcessoTest {
             processoExistente.setJustificativa("Motivo anterior");
 
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    null, "Desc atualizada", "Obs", 1L, StatusProcesso.ATIVO, 1L, null, 2000.0, null, null);
+                    null, "Desc atualizada", "Obs", 1L, StatusProcesso.ATIVO, 1L, null, 2000.0, null, null, null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
@@ -388,7 +394,7 @@ class UpdateProcessoTest {
 
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
                     "00000010020268260001", "Desc", "Obs", 1L, StatusProcesso.ATIVO, 1L, null, 1000.0,
-                    null, null);
+                    null, null, null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
@@ -416,7 +422,7 @@ class UpdateProcessoTest {
 
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
                     "00000010020268190001", "Desc", "Obs", 1L, StatusProcesso.ATIVO, 1L, null, 1000.0,
-                    null, null);
+                    null, null, null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
@@ -431,6 +437,98 @@ class UpdateProcessoTest {
             assertEquals("99999999920268260001", captor.getValue().getProcessoApi().getNumeroCnj());
             assertEquals(tribunal, captor.getValue().getSiglaTribunal());
             verify(processoApiGateway, never()).buscarDadosOficiais(any(), any());
+        }
+    }
+
+    @Nested
+    @DisplayName("Descrição personalizada da alteração")
+    class DescricaoAlteracao {
+
+        private void prepararMocks() {
+            when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
+            when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
+            when(faseProcessoRepository.findById(1L)).thenReturn(Optional.of(faseProcesso));
+            when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> inv.getArgument(0));
+        }
+
+        private ProcessoAppUpdateRequest requestComDescricao(String descricaoAlteracao) {
+            return new ProcessoAppUpdateRequest(
+                    null, "Desc", null, 1L, StatusProcesso.ATIVO, 1L, null, 1000.0, null, null, descricaoAlteracao);
+        }
+
+        private void assertHistoricoAtualizacao(String descricaoEsperada) {
+            verify(registroHistorico).registrar(any(ProcessoApp.class), eq(usuarioResponsavel),
+                    eq(RegistroHistoricoProcesso.ATUALIZACAO), eq(descricaoEsperada));
+        }
+
+        @Test
+        @DisplayName("Deve registrar a descrição personalizada quando informada")
+        void deveRegistrarDescricaoPersonalizada() {
+            prepararMocks();
+
+            updateProcesso.atualizarProcesso(1L, requestComDescricao("Altera fase do processo."));
+
+            assertHistoricoAtualizacao("Altera fase do processo.");
+        }
+
+        @Test
+        @DisplayName("Deve remover espaços nas extremidades da descrição")
+        void deveAplicarTrimNaDescricao() {
+            prepararMocks();
+
+            updateProcesso.atualizarProcesso(1L, requestComDescricao("  Ajuste de prioridade  "));
+
+            assertHistoricoAtualizacao("Ajuste de prioridade");
+        }
+
+        @Test
+        @DisplayName("Deve registrar mensagem padrão quando descrição for nula")
+        void deveRegistrarMensagemPadraoQuandoNula() {
+            prepararMocks();
+
+            updateProcesso.atualizarProcesso(1L, requestComDescricao(null));
+
+            assertHistoricoAtualizacao("Dados do processo atualizados.");
+        }
+
+        @Test
+        @DisplayName("Deve registrar mensagem padrão quando descrição for vazia")
+        void deveRegistrarMensagemPadraoQuandoVazia() {
+            prepararMocks();
+
+            updateProcesso.atualizarProcesso(1L, requestComDescricao(""));
+
+            assertHistoricoAtualizacao("Dados do processo atualizados.");
+        }
+
+        @Test
+        @DisplayName("Deve registrar mensagem padrão quando descrição contiver apenas espaços")
+        void deveRegistrarMensagemPadraoQuandoEmBranco() {
+            prepararMocks();
+
+            updateProcesso.atualizarProcesso(1L, requestComDescricao("   "));
+
+            assertHistoricoAtualizacao("Dados do processo atualizados.");
+        }
+
+        @Test
+        @DisplayName("Deve ignorar a descrição personalizada quando o status for alterado")
+        void deveIgnorarDescricaoQuandoStatusAlterado() {
+            MotivoStatusProcesso motivo = new MotivoStatusProcesso();
+            motivo.setId(3);
+            motivo.setNome("OUTROS");
+            motivo.setAplicavelA(MotivoStatusProcesso.AplicavelA.AMBOS);
+            prepararMocks();
+            when(motivoStatusProcessoRepository.findById(3)).thenReturn(Optional.of(motivo));
+
+            ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
+                    null, "Desc", null, 1L, StatusProcesso.SUSPENSO, 1L, null, 1000.0, 3, "Just", "Minha descrição");
+
+            updateProcesso.atualizarProcesso(1L, request);
+
+            verify(registroHistorico).registrar(any(ProcessoApp.class), eq(usuarioResponsavel),
+                    eq(RegistroHistoricoProcesso.STATUS), eq("Status alterado de ATIVO para SUSPENSO."));
+            verify(registroHistorico, never()).registrar(any(), any(), eq(RegistroHistoricoProcesso.ATUALIZACAO), any());
         }
     }
 }

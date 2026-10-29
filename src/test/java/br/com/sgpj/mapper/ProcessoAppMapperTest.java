@@ -79,7 +79,8 @@ class ProcessoAppMapperTest {
                     dataAudiencia,
                     7500.0,
                     1,
-                    "Justificativa de suspensão"
+                    "Justificativa de suspensão",
+                    null
             );
 
             ProcessoApp entidade = ProcessoAppMapper.toUpdateEntity(request);

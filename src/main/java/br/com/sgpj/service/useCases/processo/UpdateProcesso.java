@@ -153,11 +153,11 @@ public class UpdateProcesso {
         }
 
         ProcessoApp processoSalvo = processoAppRepository.save(processoEditado);
-        registrarAlteracao(statusAnterior, observacaoAnterior, processoSalvo);
+        registrarAlteracao(statusAnterior, observacaoAnterior, processoSalvo, processoAtualizar.descricaoAlteracao());
         return ProcessoAppMapper.toUpdateResponse(processoSalvo);
     }
 
-    private void registrarAlteracao(StatusProcesso statusAnterior, String observacaoAnterior, ProcessoApp atual) {
+    private void registrarAlteracao(StatusProcesso statusAnterior, String observacaoAnterior, ProcessoApp atual, String descricao) {
         if (statusAnterior != atual.getStatus()) {
             registroHistorico.registrar(atual, atual.getUsuarioResponsavel(), RegistroHistoricoProcesso.STATUS,
                     "Status alterado de " + statusAnterior + " para " + atual.getStatus() + ".");
@@ -165,9 +165,17 @@ public class UpdateProcesso {
             registroHistorico.registrar(atual, atual.getUsuarioResponsavel(), RegistroHistoricoProcesso.OBSERVACAO,
                     "Observações atualizadas.");
         } else {
+            String descricaoNormalizada = normalizarDescricao(descricao);
             registroHistorico.registrar(atual, atual.getUsuarioResponsavel(), RegistroHistoricoProcesso.ATUALIZACAO,
-                    "Dados do processo atualizados.");
+                    descricaoNormalizada != null ? descricaoNormalizada : "Dados do processo atualizados.");
         }
+    }
+
+    private String normalizarDescricao(String descricao) {
+        if (descricao == null || descricao.isBlank()) {
+            return null;
+        }
+        return descricao.trim();
     }
 
     @Transactional

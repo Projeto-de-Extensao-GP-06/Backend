@@ -45,6 +45,10 @@ public record ProcessoAppUpdateRequest(
         Integer motivoStatusProcessoId,
 
         @Schema(description = "Justificativa complementar (opcional)", example = "Aguardando documentação do cliente")
-        String justificativa
+        String justificativa,
+
+        @Size(max = 80, message = "A descrição da alteração não pode ter mais de 80 caracteres")
+        @Schema(description = "Descrição personalizada da alteração de dados do processo (opcional, máx. 80 caracteres). Quando não informada, é registrada a mensagem padrão.", example = "Altera fase do processo.", maxLength = 80, nullable = true)
+        String descricaoAlteracao
 ) {
 }

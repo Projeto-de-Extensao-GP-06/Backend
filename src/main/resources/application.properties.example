@@ -19,6 +19,7 @@ jwt.refresh.validity=${JWT_REFRESH_VALIDITY:86400}
 jwt.secret=${JWT_SECRET}
 cookie.secure=${COOKIE_SECURE:false}
 
+cloudflare.secret-key=${CLOUDFLARE_SECRET_KEY}
 
 # Configurações para autenticação com Microsoft (Graph API)
 microsoft.client-id=${CLIENT_ID}

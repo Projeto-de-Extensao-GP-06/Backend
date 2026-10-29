@@ -12,6 +12,7 @@ import br.com.sgpj.mapper.HistoricoProcessoMapper;
 import br.com.sgpj.mapper.ProcessoAppMapper;
 import br.com.sgpj.mapper.SiglaTribunalMapper;
 import br.com.sgpj.repository.*;
+import br.com.sgpj.security.AuthorizationUtil;
 import br.com.sgpj.service.RegistroHistoricoProcesso;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Component;
@@ -32,17 +33,18 @@ public class UpdateProcesso {
     private final ProcessoApiRepository processoApiRepository;
     private final HistoricoProcessoRepository historicoProcessoRepository;
     private final RegistroHistoricoProcesso registroHistorico;
+    private final AuthorizationUtil authorizationUtil;
 
     public UpdateProcesso(ProcessoAppRepository processoAppRepository,
-                           PrioridadeRepository prioridadeRepository,
-                           FaseProcessoRepository faseProcessoRepository,
-                           SiglaTribunalRepository siglaTribunalRepository,
-                           ProcessoApiGateway processoApiGateway,
+                          PrioridadeRepository prioridadeRepository,
+                          FaseProcessoRepository faseProcessoRepository,
+                          SiglaTribunalRepository siglaTribunalRepository,
+                          ProcessoApiGateway processoApiGateway,
                           MotivoStatusProcessoRepository motivoStatusProcessoRepository,
-                           MovimentacoesOficiaisRepository movimentacoesOficiaisRepository,
-                           ProcessoApiRepository processoApiRepository,
-                           HistoricoProcessoRepository historicoProcessoRepository,
-                           RegistroHistoricoProcesso registroHistorico) {
+                          MovimentacoesOficiaisRepository movimentacoesOficiaisRepository,
+                          ProcessoApiRepository processoApiRepository,
+                          HistoricoProcessoRepository historicoProcessoRepository,
+                          RegistroHistoricoProcesso registroHistorico, AuthorizationUtil authorizationUtil) {
         this.processoAppRepository = processoAppRepository;
         this.prioridadeRepository = prioridadeRepository;
         this.faseProcessoRepository = faseProcessoRepository;
@@ -53,6 +55,7 @@ public class UpdateProcesso {
         this.processoApiRepository = processoApiRepository;
         this.historicoProcessoRepository = historicoProcessoRepository;
         this.registroHistorico = registroHistorico;
+        this.authorizationUtil = authorizationUtil;
     }
 
     @Transactional
@@ -103,7 +106,7 @@ public class UpdateProcesso {
             }
             processoEditado.setMotivoStatus(motivo);
             processoEditado.setEncerradoSuspensoEm(LocalDateTime.now());
-            processoEditado.setEncerradoSuspensoPorUsuario(processoEncontrado.getUsuarioResponsavel());
+            processoEditado.setEncerradoSuspensoPorUsuario(authorizationUtil.getUsuarioLogado());
         }
 
         // Reativação: limpar campos de suspensão/encerramento

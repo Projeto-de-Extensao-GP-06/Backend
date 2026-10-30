@@ -792,7 +792,7 @@ INSERT INTO processo_dados_api (
     assunto
 )
 VALUES (
-    '1000001-12.2026.8.26.0100',
+    '10000011220268260100',
     'Tribunal de Justiça de São Paulo',
     '1º Grau',
     '2026-02-10 10:30:00',
@@ -855,7 +855,7 @@ VALUES (
     (
         SELECT id
         FROM processo_dados_api
-        WHERE numero_cnj = '1000001-12.2026.8.26.0100'
+        WHERE numero_cnj = '10000011220268260100'
     )
 );
 
@@ -876,7 +876,7 @@ INSERT INTO processo_dados_api (
     assunto
 )
 VALUES (
-    '1000002-23.2026.8.26.0100',
+    '10000022320268260100',
     'Tribunal de Justiça de São Paulo',
     '1º Grau',
     '2026-03-15 14:20:00',
@@ -939,7 +939,7 @@ VALUES (
     (
         SELECT id
         FROM processo_dados_api
-        WHERE numero_cnj = '1000002-23.2026.8.26.0100'
+        WHERE numero_cnj = '10000022320268260100'
     )
 );
 
@@ -960,7 +960,7 @@ INSERT INTO processo_dados_api (
     assunto
 )
 VALUES (
-    '1000003-34.2026.8.26.0100',
+    '10000033420268260100',
     'Tribunal de Justiça de São Paulo',
     '1º Grau',
     '2026-01-20 09:15:00',
@@ -1023,7 +1023,7 @@ VALUES (
     (
         SELECT id
         FROM processo_dados_api
-        WHERE numero_cnj = '1000003-34.2026.8.26.0100'
+        WHERE numero_cnj = '10000033420268260100'
     )
 );
 
@@ -1044,7 +1044,7 @@ INSERT INTO processo_dados_api (
     assunto
 )
 VALUES (
-    '1000004-45.2026.8.26.0100',
+    '10000044520268260100',
     'Tribunal de Justiça de São Paulo',
     '1º Grau',
     '2026-04-05 11:40:00',
@@ -1105,7 +1105,7 @@ VALUES (
     (
         SELECT id
         FROM processo_dados_api
-        WHERE numero_cnj = '1000004-45.2026.8.26.0100'
+        WHERE numero_cnj = '10000044520268260100'
     )
 );
 
@@ -1126,7 +1126,7 @@ INSERT INTO processo_dados_api (
     assunto
 )
 VALUES (
-    '1000005-56.2026.8.26.0100',
+    '10000055620268260100',
     'Tribunal de Justiça de São Paulo',
     '1º Grau',
     '2026-05-18 16:10:00',
@@ -1187,6 +1187,6 @@ VALUES (
     (
         SELECT id
         FROM processo_dados_api
-        WHERE numero_cnj = '1000005-56.2026.8.26.0100'
+        WHERE numero_cnj = '10000055620268260100'
     )
 );

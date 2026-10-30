@@ -20,8 +20,8 @@ public class SincronizacaoStatusService {
     private final Map<Long, List<SseEmitter>> emitters = new ConcurrentHashMap<>();
 
     public SseEmitter criarConexao(Long processoId) {
-        // Timeout de 2 minutos (DataJud pode levar até 40s)
-        SseEmitter emitter = new SseEmitter(120_000L);
+        // Timeout de 5 minutos (Considera tempo de consulta no DataJud + retries)
+        SseEmitter emitter = new SseEmitter(300_000L);
 
         emitters.computeIfAbsent(processoId, k -> new CopyOnWriteArrayList<>()).add(emitter);
 

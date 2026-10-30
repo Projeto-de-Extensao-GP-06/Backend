@@ -159,14 +159,14 @@ public class UpdateProcesso {
     }
 
     private void registrarAlteracao(StatusProcesso statusAnterior, String observacaoAnterior, ProcessoApp atual, String descricao) {
+        String descricaoNormalizada = normalizarDescricao(descricao);
         if (statusAnterior != atual.getStatus()) {
             registroHistorico.registrar(atual, atual.getUsuarioResponsavel(), RegistroHistoricoProcesso.STATUS,
-                    "Status alterado de " + statusAnterior + " para " + atual.getStatus() + ".");
+                    descricaoNormalizada != null ? descricaoNormalizada :"Status alterado de " + statusAnterior + " para " + atual.getStatus() + ".");
         } else if (!java.util.Objects.equals(observacaoAnterior, atual.getObservacao())) {
             registroHistorico.registrar(atual, atual.getUsuarioResponsavel(), RegistroHistoricoProcesso.OBSERVACAO,
-                    "Observações atualizadas.");
+                    descricaoNormalizada != null ? descricaoNormalizada :"Observações atualizadas.");
         } else {
-            String descricaoNormalizada = normalizarDescricao(descricao);
             registroHistorico.registrar(atual, atual.getUsuarioResponsavel(), RegistroHistoricoProcesso.ATUALIZACAO,
                     descricaoNormalizada != null ? descricaoNormalizada : "Dados do processo atualizados.");
         }

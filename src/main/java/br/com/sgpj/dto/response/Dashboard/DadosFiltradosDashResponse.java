@@ -14,9 +14,6 @@ public record DadosFiltradosDashResponse(
     FormasDeEntradaResponse formasDeEntrada,
 
     @Schema(description = "Contagem de processos que estiveram ativos, suspensos ou encerrados em cada periodo do filtro selecionado")
-    EvolucaoCarteiraResponse evolucaoCarteira,
-
-    @Schema(description = "Contagem de quantas solicitações foram recebidas e/ou aceitas, e quantos clientes novos entraram no sistema no período selecionado")
-    FunilAtendimentoResponse funilAtendimento
+    EvolucaoCarteiraResponse evolucaoCarteira
 
     ) {}

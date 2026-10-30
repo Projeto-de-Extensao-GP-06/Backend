@@ -5,12 +5,13 @@ import br.com.sgpj.dto.response.Processos.HistoricoProcessoResponse;
 import br.com.sgpj.dto.response.Processos.ProcessoAppResponse;
 import br.com.sgpj.dto.response.Processos.ProcessoAppUpdateResponse;
 import br.com.sgpj.entity.Processo.*;
-import br.com.sgpj.exception.DataJudIntegrationException;
+import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
 import br.com.sgpj.exception.OperacaoInvalidaException;
 import br.com.sgpj.mapper.HistoricoProcessoMapper;
 import br.com.sgpj.mapper.ProcessoAppMapper;
 import br.com.sgpj.mapper.SiglaTribunalMapper;
+import br.com.sgpj.producer.SincronizacaoProcessoProducer;
 import br.com.sgpj.repository.*;
 import br.com.sgpj.security.AuthorizationUtil;
 import br.com.sgpj.service.RegistroHistoricoProcesso;
@@ -34,6 +35,8 @@ public class UpdateProcesso {
     private final HistoricoProcessoRepository historicoProcessoRepository;
     private final RegistroHistoricoProcesso registroHistorico;
     private final AuthorizationUtil authorizationUtil;
+    private final SincronizacaoProcessoProducer sincronizacaoProducer;
+    private final UsuarioRepository usuarioRepository;
 
     public UpdateProcesso(ProcessoAppRepository processoAppRepository,
                           PrioridadeRepository prioridadeRepository,
@@ -44,7 +47,10 @@ public class UpdateProcesso {
                           MovimentacoesOficiaisRepository movimentacoesOficiaisRepository,
                           ProcessoApiRepository processoApiRepository,
                           HistoricoProcessoRepository historicoProcessoRepository,
-                          RegistroHistoricoProcesso registroHistorico, AuthorizationUtil authorizationUtil) {
+                          RegistroHistoricoProcesso registroHistorico, AuthorizationUtil authorizationUtil,
+                          SincronizacaoProcessoProducer sincronizacaoProducer,
+                          UsuarioRepository usuarioRepository) {
+        this.sincronizacaoProducer = sincronizacaoProducer;
         this.processoAppRepository = processoAppRepository;
         this.prioridadeRepository = prioridadeRepository;
         this.faseProcessoRepository = faseProcessoRepository;
@@ -56,6 +62,7 @@ public class UpdateProcesso {
         this.historicoProcessoRepository = historicoProcessoRepository;
         this.registroHistorico = registroHistorico;
         this.authorizationUtil = authorizationUtil;
+        this.usuarioRepository = usuarioRepository;
     }
 
     @Transactional
@@ -117,6 +124,7 @@ public class UpdateProcesso {
             processoEditado.setJustificativa(null);
         }
 
+        boolean sincronizarDataJud = false;
         if (processoEncontrado.getProcessoApi() == null) {
             if (processoAtualizar.numeroCnj() != null && !processoAtualizar.numeroCnj().isBlank()) {
                 String cnjLimpo = processoAtualizar.numeroCnj().replaceAll("\\D", "");
@@ -131,21 +139,11 @@ public class UpdateProcesso {
 
                     processoEditado.setSiglaTribunal(siglaTribunal);
 
-                    ProcessoApi processoApi = null;
-                    try {
-                        processoApi = processoApiGateway.buscarDadosOficiais(
-                                cnjLimpo, siglaTribunal.getNome());
-                    } catch (Exception e) {
-                        // Ignora erro da API externa
-                    }
-                    if (processoApi != null) {
-                        processoApi.setNumeroCnj(cnjLimpo);
-                    } else {
-                        processoApi = new ProcessoApi();
-                        processoApi.setNumeroCnj(cnjLimpo);
-                        processoApi.setTribunalTramitacao(siglaTribunal.getNome());
-                    }
+                    ProcessoApi processoApi = new ProcessoApi();
+                    processoApi.setNumeroCnj(cnjLimpo);
+                    processoApi.setTribunalTramitacao(siglaTribunal.getNome());
                     processoEditado.setProcessoApi(processoApi);
+                    sincronizarDataJud = true;
                 }
             }
         } else {
@@ -154,6 +152,9 @@ public class UpdateProcesso {
 
         ProcessoApp processoSalvo = processoAppRepository.save(processoEditado);
         registrarAlteracao(statusAnterior, observacaoAnterior, processoSalvo, processoAtualizar.descricaoAlteracao());
+        if (sincronizarDataJud) {
+            sincronizacaoProducer.enviarAposCommit(processoSalvo.getId());
+        }
         return ProcessoAppMapper.toUpdateResponse(processoSalvo);
     }
 
@@ -188,12 +189,12 @@ public class UpdateProcesso {
             throw new OperacaoInvalidaException("Este processo não possui número CNJ vinculado para atualização.");
         }
 
-        ProcessoApi dadosAtualizados = processoApiGateway.buscarDadosOficiais(
-                processoApiExistente.getNumeroCnj(), processoApp.getSiglaTribunal().getNome());
-
-        if (dadosAtualizados == null) {
-            throw new DataJudIntegrationException("Não foi possível obter dados oficiais do DataJud no momento. Por favor, tente novamente mais tarde.");
+        if (processoApp.getSiglaTribunal() == null) {
+            throw new OperacaoInvalidaException("Este processo não possui tribunal vinculado para atualização.");
         }
+
+        ProcessoApi dadosAtualizados = processoApiGateway.buscarDadosOficiaisOuFalhar(
+                processoApiExistente.getNumeroCnj(), processoApp.getSiglaTribunal().getNome());
 
         processoApiExistente.setTribunalTramitacao(dadosAtualizados.getTribunalTramitacao());
         processoApiExistente.setInstancia(dadosAtualizados.getInstancia());
@@ -222,7 +223,9 @@ public class UpdateProcesso {
 
         processoApp.setUltimaAtualizacao(LocalDateTime.now());
         processoAppRepository.save(processoApp);
-        registroHistorico.registrar(processoApp, processoApp.getUsuarioResponsavel(), RegistroHistoricoProcesso.ATUALIZACAO,
+        Usuario usuarioResponsavel = processoApp.getUsuarioResponsavel();
+        registroHistorico.registrar(processoApp, usuarioResponsavel != null ? usuarioResponsavel : usuarioRepository.findById(Usuario.ID_SISTEMA).get(),
+                RegistroHistoricoProcesso.ATUALIZACAO,
                 "Dados oficiais do processo atualizados.");
 
         List<HistoricoProcessoResponse> historico = historicoProcessoRepository

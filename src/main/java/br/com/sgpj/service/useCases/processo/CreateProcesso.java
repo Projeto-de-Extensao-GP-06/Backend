@@ -8,23 +8,20 @@ import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
 import br.com.sgpj.mapper.ProcessoAppMapper;
 import br.com.sgpj.mapper.SiglaTribunalMapper;
+import br.com.sgpj.producer.SincronizacaoProcessoProducer;
 import br.com.sgpj.repository.*;
 import br.com.sgpj.service.RegistroHistoricoProcesso;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class CreateProcesso {
 
-    private static final Logger log = LoggerFactory.getLogger(CreateProcesso.class);
-
     private final PrioridadeRepository prioridadeRepository;
     private final FaseProcessoRepository faseProcessoRepository;
     private final SiglaTribunalRepository siglaTribunalRepository;
     private final ClienteRepository clienteRepository;
-    private final ProcessoApiGateway processoApiGateway;
+    private final SincronizacaoProcessoProducer sincronizacaoProducer;
     private final ProcessoAppRepository processoAppRepository;
     private final RegistroHistoricoProcesso registroHistorico;
 
@@ -32,14 +29,14 @@ public class CreateProcesso {
                           FaseProcessoRepository faseProcessoRepository,
                           SiglaTribunalRepository siglaTribunalRepository,
                           ClienteRepository clienteRepository,
-                          ProcessoApiGateway processoApiGateway,
+                          SincronizacaoProcessoProducer sincronizacaoProducer,
                           ProcessoAppRepository processoAppRepository,
                           RegistroHistoricoProcesso registroHistorico) {
         this.prioridadeRepository = prioridadeRepository;
         this.faseProcessoRepository = faseProcessoRepository;
         this.siglaTribunalRepository = siglaTribunalRepository;
         this.clienteRepository = clienteRepository;
-        this.processoApiGateway = processoApiGateway;
+        this.sincronizacaoProducer = sincronizacaoProducer;
         this.processoAppRepository = processoAppRepository;
         this.registroHistorico = registroHistorico;
     }
@@ -72,7 +69,6 @@ public class CreateProcesso {
             throw new br.com.sgpj.exception.ProcessoJaExistenteException("Já existe um processo cadastrado com este número de CNJ.");
         }
 
-        boolean sincronizado = false;
         if (cnjNormalizado != null) {
             String sigla = SiglaTribunalMapper.mapearSiglaTribunalPorNumero(cnjNormalizado.substring(14, 16));
             SiglaTribunal siglaTribunal = siglaTribunalRepository.findByNomeIgnoreCase(sigla)
@@ -80,28 +76,19 @@ public class CreateProcesso {
 
             processoApp.setSiglaTribunal(siglaTribunal);
 
-            ProcessoApi dadosOficiais = null;
-            try {
-                dadosOficiais = processoApiGateway.buscarDadosOficiais(cnjNormalizado, siglaTribunal.getNome());
-            } catch (Exception e) {
-                log.warn("Falha ao buscar dados no DataJud para o CNJ {}: {}", cnjNormalizado, e.getMessage());
-            }
-
-            if (dadosOficiais != null) {
-                dadosOficiais.setNumeroCnj(cnjNormalizado);
-                processoApp.setProcessoApi(dadosOficiais);
-                sincronizado = true;
-            } else {
-                ProcessoApi processoApi = new ProcessoApi();
-                processoApi.setNumeroCnj(cnjNormalizado);
-                processoApi.setTribunalTramitacao(siglaTribunal.getNome());
-                processoApp.setProcessoApi(processoApi);
-            }
+            // Dados oficiais são buscados de forma assíncrona pela fila de sincronização.
+            ProcessoApi processoApi = new ProcessoApi();
+            processoApi.setNumeroCnj(cnjNormalizado);
+            processoApi.setTribunalTramitacao(siglaTribunal.getNome());
+            processoApp.setProcessoApi(processoApi);
         }
 
         ProcessoApp salvo = processoAppRepository.save(processoApp);
         registroHistorico.registrar(salvo, usuarioResponsavel, RegistroHistoricoProcesso.ABERTURA, "Processo criado.");
+        if (cnjNormalizado != null) {
+            sincronizacaoProducer.enviarAposCommit(salvo.getId());
+        }
 
-        return ProcessoAppMapper.toCreateResponse(salvo, sincronizado, cnjNormalizado);
+        return ProcessoAppMapper.toCreateResponse(salvo, false, cnjNormalizado);
     }
 }

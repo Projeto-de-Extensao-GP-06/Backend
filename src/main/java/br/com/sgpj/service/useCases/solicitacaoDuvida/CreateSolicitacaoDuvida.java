@@ -6,6 +6,7 @@ import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Contato;
 import br.com.sgpj.entity.Processo.ProcessoApi;
 import br.com.sgpj.entity.Processo.ProcessoApp;
+import br.com.sgpj.entity.Processo.SiglaTribunal;
 import br.com.sgpj.entity.Processo.StatusProcesso;
 import br.com.sgpj.entity.StatusCliente;
 import br.com.sgpj.entity.StatusClienteEnum;
@@ -17,8 +18,9 @@ import br.com.sgpj.mapper.SolicitacaoDuvidaMapper;
 import br.com.sgpj.repository.ClienteRepository;
 import br.com.sgpj.repository.ContatoRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
+import br.com.sgpj.repository.SiglaTribunalRepository;
 import br.com.sgpj.repository.StatusClienteRepository;
-import br.com.sgpj.service.useCases.processo.ProcessoApiGateway;
+import br.com.sgpj.producer.SincronizacaoProcessoProducer;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,18 +39,21 @@ public class CreateSolicitacaoDuvida {
     private final ContatoRepository contatoRepository;
     private final ProcessoAppRepository processoAppRepository;
     private final StatusClienteRepository statusClienteRepository;
-    private final ProcessoApiGateway processoApiGateway;
+    private final SiglaTribunalRepository siglaTribunalRepository;
+    private final SincronizacaoProcessoProducer sincronizacaoProducer;
 
     public CreateSolicitacaoDuvida(ClienteRepository clienteRepository,
                                     ContatoRepository contatoRepository,
                                     ProcessoAppRepository processoAppRepository,
                                     StatusClienteRepository statusClienteRepository,
-                                    ProcessoApiGateway processoApiGateway) {
+                                    SiglaTribunalRepository siglaTribunalRepository,
+                                    SincronizacaoProcessoProducer sincronizacaoProducer) {
         this.clienteRepository = clienteRepository;
         this.contatoRepository = contatoRepository;
         this.processoAppRepository = processoAppRepository;
         this.statusClienteRepository = statusClienteRepository;
-        this.processoApiGateway = processoApiGateway;
+        this.siglaTribunalRepository = siglaTribunalRepository;
+        this.sincronizacaoProducer = sincronizacaoProducer;
     }
 
     @Transactional
@@ -89,12 +94,15 @@ public class CreateSolicitacaoDuvida {
             processoApp.setCnpjInformadoFormulario(cnpj);
         }
 
-        if (numeroProcesso != null) {
-            processoApp.setProcessoApi(buscarProcessoOficial(numeroProcesso));
+        boolean sincronizar = numeroProcesso != null && vincularProcessoOficial(processoApp, numeroProcesso);
+
+        ProcessoApp salvo = processoAppRepository.save(processoApp);
+        if (sincronizar) {
+            sincronizacaoProducer.enviarAposCommit(salvo.getId());
         }
 
         return SolicitacaoDuvidaMapper.toDetalhesResponse(
-                ProcessoAppToSolicitacaoDuvidaMapper.toSolicitacaoDuvida(processoAppRepository.save(processoApp))
+                ProcessoAppToSolicitacaoDuvidaMapper.toSolicitacaoDuvida(salvo)
         );
     }
 
@@ -103,17 +111,33 @@ public class CreateSolicitacaoDuvida {
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Status de cliente não encontrado: " + statusEnum.getNome()));
     }
 
-    private ProcessoApi buscarProcessoOficial(String numeroProcesso) {
+    /**
+     * Vincula ao processo um ProcessoApi mínimo (CNJ + tribunal). Os dados oficiais são
+     * buscados depois, de forma assíncrona, pela fila de sincronização.
+     *
+     * @return true se foi possível resolver o tribunal e a sincronização deve ser enfileirada
+     */
+    private boolean vincularProcessoOficial(ProcessoApp processoApp, String numeroProcesso) {
         try {
-            String siglaTribunal = SiglaTribunalMapper.mapearSiglaTribunalPorNumero(numeroProcesso.substring(14, 16));
-            return processoApiGateway.buscarDadosOficiais(numeroProcesso, siglaTribunal);
+            String sigla = SiglaTribunalMapper.mapearSiglaTribunalPorNumero(numeroProcesso.substring(14, 16));
+            SiglaTribunal siglaTribunal = siglaTribunalRepository.findByNomeIgnoreCase(sigla).orElse(null);
+            if (siglaTribunal == null) {
+                logger.warn("Sigla de tribunal não encontrada para o número {}: {}", numeroProcesso, sigla);
+                return false;
+            }
+
+            ProcessoApi processoApi = new ProcessoApi();
+            processoApi.setNumeroCnj(numeroProcesso);
+            processoApi.setTribunalTramitacao(siglaTribunal.getNome());
+            processoApp.setSiglaTribunal(siglaTribunal);
+            processoApp.setProcessoApi(processoApi);
+            return true;
         } catch (RuntimeException exception) {
-            logger.warn("Não foi possível buscar processo oficial. Número: {}. Motivo: {}",
+            logger.warn("Não foi possível vincular processo oficial. Número: {}. Motivo: {}",
                     numeroProcesso, exception.getMessage());
-            return null;
+            return false;
         }
     }
-
     private String normalizarOpcional(String valor) {
         if (valor == null || valor.isBlank()) {
             return null;

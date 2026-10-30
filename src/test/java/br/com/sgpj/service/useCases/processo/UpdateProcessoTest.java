@@ -13,6 +13,7 @@ import br.com.sgpj.entity.Processo.StatusProcesso;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
 import br.com.sgpj.exception.OperacaoInvalidaException;
+import br.com.sgpj.producer.SincronizacaoProcessoProducer;
 import br.com.sgpj.repository.FaseProcessoRepository;
 import br.com.sgpj.repository.MotivoStatusProcessoRepository;
 import br.com.sgpj.repository.PrioridadeRepository;
@@ -62,6 +63,9 @@ class UpdateProcessoTest {
 
     @Mock
     private ProcessoApiGateway processoApiGateway;
+
+    @Mock
+    private SincronizacaoProcessoProducer sincronizacaoProducer;
 
     @Mock
     private MotivoStatusProcessoRepository motivoStatusProcessoRepository;
@@ -385,12 +389,10 @@ class UpdateProcessoTest {
     class IntegracaoProcessoApi {
 
         @Test
-        @DisplayName("Deve atribuir sigla do tribunal pelo CNJ e buscar processo oficial quando não existir processoApi anterior")
+        @DisplayName("Deve atribuir sigla do tribunal pelo CNJ, criar ProcessoApi mínimo e enfileirar sincronização quando não existir processoApi anterior")
         void deveBuscarProcessoOficialQuandoNaoExisteENumeroCnjInformado() {
             processoExistente.setProcessoApi(null);
             processoExistente.setSiglaTribunal(null);
-            ProcessoApi apiMock = new ProcessoApi();
-            apiMock.setNumeroCnj("00000010020268260001");
 
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
                     "00000010020268260001", "Desc", "Obs", 1L, StatusProcesso.ATIVO, 1L, null, 1000.0,
@@ -400,16 +402,17 @@ class UpdateProcessoTest {
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
             when(faseProcessoRepository.findById(1L)).thenReturn(Optional.of(faseProcesso));
             when(siglaTribunalRepository.findByNomeIgnoreCase("TJSP")).thenReturn(Optional.of(tribunal));
-            when(processoApiGateway.buscarDadosOficiais(eq("00000010020268260001"), eq("TJSP"))).thenReturn(apiMock);
             when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> inv.getArgument(0));
 
             updateProcesso.atualizarProcesso(1L, request);
 
             ArgumentCaptor<ProcessoApp> captor = ArgumentCaptor.forClass(ProcessoApp.class);
             verify(processoAppRepository).save(captor.capture());
-            assertEquals(apiMock, captor.getValue().getProcessoApi());
+            assertEquals("00000010020268260001", captor.getValue().getProcessoApi().getNumeroCnj());
+            assertEquals("TJSP", captor.getValue().getProcessoApi().getTribunalTramitacao());
             assertEquals(tribunal, captor.getValue().getSiglaTribunal());
-            verify(processoApiGateway).buscarDadosOficiais(eq("00000010020268260001"), eq("TJSP"));
+            verify(processoApiGateway, never()).buscarDadosOficiaisOuFalhar(any(), any());
+            verify(sincronizacaoProducer).enviarAposCommit(1L);
         }
 
         @Test
@@ -436,7 +439,8 @@ class UpdateProcessoTest {
             assertEquals(apiExistente, captor.getValue().getProcessoApi());
             assertEquals("99999999920268260001", captor.getValue().getProcessoApi().getNumeroCnj());
             assertEquals(tribunal, captor.getValue().getSiglaTribunal());
-            verify(processoApiGateway, never()).buscarDadosOficiais(any(), any());
+            verify(processoApiGateway, never()).buscarDadosOficiaisOuFalhar(any(), any());
+            verify(sincronizacaoProducer, never()).enviarAposCommit(any());
         }
     }
 

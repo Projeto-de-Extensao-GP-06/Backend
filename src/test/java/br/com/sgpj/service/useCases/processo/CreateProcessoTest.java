@@ -12,6 +12,7 @@ import br.com.sgpj.entity.Processo.StatusProcesso;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
 import br.com.sgpj.exception.TribunalInvalidoException;
+import br.com.sgpj.producer.SincronizacaoProcessoProducer;
 import br.com.sgpj.repository.ClienteRepository;
 import br.com.sgpj.repository.FaseProcessoRepository;
 import br.com.sgpj.repository.PrioridadeRepository;
@@ -57,7 +58,7 @@ class CreateProcessoTest {
     private ClienteRepository clienteRepository;
 
     @Mock
-    private ProcessoApiGateway processoApiGateway;
+    private SincronizacaoProcessoProducer sincronizacaoProducer;
 
     @Mock
     private ProcessoAppRepository processoAppRepository;
@@ -126,27 +127,22 @@ class CreateProcessoTest {
             assertEquals(prioridade, salvo.getPrioridade());
             assertEquals(faseProcesso, salvo.getFaseProcesso());
             assertNull(salvo.getSiglaTribunal());
-            verify(processoApiGateway, never()).buscarDadosOficiais(any(), any());
+            verify(sincronizacaoProducer, never()).enviarAposCommit(any());
         }
 
         @Test
-        @DisplayName("Deve criar processo e consultar ProcessoApi quando número do processo for fornecido")
-        void deveCriarProcessoEConsultarApiQuandoNumeroProcessoInformado() {
+        @DisplayName("Deve criar processo com ProcessoApi mínimo e enfileirar sincronização quando número do processo for fornecido")
+        void deveCriarProcessoEEnfileirarSincronizacaoQuandoNumeroProcessoInformado() {
             ProcessoAppCriacaoRequest request = new ProcessoAppCriacaoRequest(
                     4L, "Descrição", "Obs", 1L, 2L,
                     LocalDateTime.of(2026, 12, 1, 14, 0),
                     "00000010020268260001", 10000.0
             );
 
-            ProcessoApi apiMock = new ProcessoApi();
-            apiMock.setNumeroCnj("00000010020268260001");
-
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
             when(faseProcessoRepository.findById(2L)).thenReturn(Optional.of(faseProcesso));
             when(siglaTribunalRepository.findByNomeIgnoreCase("TJSP")).thenReturn(Optional.of(siglaTribunal));
             when(clienteRepository.findById(4L)).thenReturn(Optional.of(cliente));
-            when(processoApiGateway.buscarDadosOficiais("00000010020268260001", "TJSP"))
-                    .thenReturn(apiMock);
             when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> {
                 ProcessoApp p = inv.getArgument(0);
                 p.setId(100L);
@@ -159,47 +155,13 @@ class CreateProcessoTest {
             verify(processoAppRepository).save(captor.capture());
 
             ProcessoApp salvo = captor.getValue();
-            assertEquals(apiMock, salvo.getProcessoApi());
-            assertEquals(siglaTribunal, salvo.getSiglaTribunal());
-            assertEquals(StatusProcesso.ATIVO, salvo.getStatus());
-            verify(processoApiGateway).buscarDadosOficiais("00000010020268260001", "TJSP");
-        }
-
-        @Test
-        @DisplayName("Deve criar processo com sucesso mesmo quando busca no DataJud lançar exceção")
-        void deveCriarProcessoComSucessoMesmoQuandoApiDataJudFalhar() {
-            ProcessoAppCriacaoRequest request = new ProcessoAppCriacaoRequest(
-                    4L, "Descrição", "Obs", 1L, 2L,
-                    LocalDateTime.of(2026, 12, 1, 14, 0),
-                    "00000010020268260001", 10000.0
-            );
-
-            when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
-            when(faseProcessoRepository.findById(2L)).thenReturn(Optional.of(faseProcesso));
-            when(siglaTribunalRepository.findByNomeIgnoreCase("TJSP")).thenReturn(Optional.of(siglaTribunal));
-            when(clienteRepository.findById(4L)).thenReturn(Optional.of(cliente));
-            when(processoApiGateway.buscarDadosOficiais("00000010020268260001", "TJSP"))
-                    .thenThrow(new RuntimeException("DataJud timeout"));
-            when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> {
-                ProcessoApp p = inv.getArgument(0);
-                p.setId(101L);
-                return p;
-            });
-
-            ProcessoAppCreateResponse response = createProcesso.criarProcesso(request, usuarioAutenticado);
-
-            ArgumentCaptor<ProcessoApp> captor = ArgumentCaptor.forClass(ProcessoApp.class);
-            verify(processoAppRepository).save(captor.capture());
-
-            ProcessoApp salvo = captor.getValue();
-            assertNotNull(response);
-            assertEquals(101L, response.id());
             assertNotNull(salvo.getProcessoApi());
-            assertEquals(siglaTribunal, salvo.getSiglaTribunal());
             assertEquals("00000010020268260001", salvo.getProcessoApi().getNumeroCnj());
             assertEquals("TJSP", salvo.getProcessoApi().getTribunalTramitacao());
+            assertEquals(siglaTribunal, salvo.getSiglaTribunal());
             assertEquals(StatusProcesso.ATIVO, salvo.getStatus());
-            verify(processoApiGateway).buscarDadosOficiais("00000010020268260001", "TJSP");
+            assertEquals(Boolean.FALSE, response.sincronizado());
+            verify(sincronizacaoProducer).enviarAposCommit(100L);
         }
 
         @Test

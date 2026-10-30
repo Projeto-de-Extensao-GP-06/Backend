@@ -5,22 +5,28 @@ import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Contato;
 import br.com.sgpj.entity.Endereco;
 import br.com.sgpj.entity.Processo.FaseProcesso;
+import br.com.sgpj.entity.Processo.HistoricoProcesso;
 import br.com.sgpj.entity.Processo.Prioridade;
 import br.com.sgpj.entity.Processo.ProcessoApp;
 import br.com.sgpj.entity.Processo.StatusProcesso;
+import br.com.sgpj.entity.Processo.TipoAlteracao;
 import br.com.sgpj.entity.StatusCliente;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.repository.ClienteRepository;
 import br.com.sgpj.repository.ContatoRepository;
 import br.com.sgpj.repository.EnderecoRepository;
 import br.com.sgpj.repository.FaseProcessoRepository;
+import br.com.sgpj.repository.HistoricoProcessoRepository;
 import br.com.sgpj.repository.PrioridadeRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.StatusClienteRepository;
+import br.com.sgpj.repository.TipoAlteracaoRepository;
 import br.com.sgpj.repository.UsuarioRepository;
 import br.com.sgpj.repository.CaminhoPadraoDeArmazenamentoRepository;
 import br.com.sgpj.entity.documentos.CaminhoPadraoDeArmazenamento;
 import br.com.sgpj.exception.OneDriveErroException;
+import br.com.sgpj.exception.ObjetoNaoEncontradoException;
+import br.com.sgpj.service.RegistroHistoricoProcesso;
 import br.com.sgpj.service.useCases.onedrive.GarantirPastasClienteOneDrive;
 import br.com.sgpj.service.useCases.onedrive.RegistrarCaminhoArmazenamentoCliente;
 import br.com.sgpj.service.useCases.onedrive.OneDriveGraphGateway;
@@ -53,7 +59,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.sql.init.mode=never"
 })
-@Import({AceitarSolicitacao.class, GarantirPastasClienteOneDrive.class, RegistrarCaminhoArmazenamentoCliente.class})
+@Import({AceitarSolicitacao.class, RegistroHistoricoProcesso.class, GarantirPastasClienteOneDrive.class,
+        RegistrarCaminhoArmazenamentoCliente.class})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class AceitarSolicitacaoIntegrationTest {
 
@@ -62,9 +69,11 @@ class AceitarSolicitacaoIntegrationTest {
     @Autowired private ContatoRepository contatoRepository;
     @Autowired private EnderecoRepository enderecoRepository;
     @Autowired private FaseProcessoRepository faseProcessoRepository;
+    @Autowired private HistoricoProcessoRepository historicoProcessoRepository;
     @Autowired private PrioridadeRepository prioridadeRepository;
     @Autowired private ProcessoAppRepository processoAppRepository;
     @Autowired private StatusClienteRepository statusClienteRepository;
+    @Autowired private TipoAlteracaoRepository tipoAlteracaoRepository;
     @Autowired private UsuarioRepository usuarioRepository;
     @Autowired private CaminhoPadraoDeArmazenamentoRepository caminhoRepository;
     @MockitoBean private OneDriveGraphGateway graphGateway;
@@ -104,6 +113,11 @@ class AceitarSolicitacaoIntegrationTest {
         assertEquals(usuarioResponsavel.getId(), solicitacaoPersistida.getUsuarioResponsavel().getId());
         assertEquals(StatusProcesso.ATIVO, outroProcessoPersistido.getStatus());
         assertEquals(cliente.getId(), outroProcessoPersistido.getCliente().getId());
+        List<HistoricoProcesso> historicos = historicoProcessoRepository.findByProcessoApp(solicitacaoPersistida);
+        assertEquals(1, historicos.size());
+        assertEquals(usuarioResponsavel.getId(), historicos.getFirst().getUsuarioUtilizado().getId());
+        assertEquals("ABERTURA DE PROCESSO", historicos.getFirst().getTipoAlteracao().getNome());
+        assertEquals("Processo criado.", historicos.getFirst().getDescricaoAlteracao());
         verify(graphGateway).garantirPasta("root:/sgpj/usuarios:", "cliente-preservado");
     }
 
@@ -131,6 +145,29 @@ class AceitarSolicitacaoIntegrationTest {
         assertEquals(0, contatoRepository.count());
         assertEquals(StatusProcesso.SOLICITACAO, solicitacaoPersistida.getStatus());
         assertEquals(0, enderecoRepository.count());
+        verifyNoInteractions(graphGateway);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void deveReverterAceiteQuandoNaoEncontrarTipoDeHistorico() {
+        prepararReferencias();
+        Usuario usuarioResponsavel = criarUsuarioResponsavel();
+        Cliente cliente = new Cliente();
+        cliente.setNomeRazaoSocial("Cliente sem tipo de histórico");
+        cliente.setPF(true);
+        cliente.setStatusCliente(status("LEAD"));
+        cliente = clienteRepository.save(cliente);
+        ProcessoApp solicitacao = processoAppRepository.save(criarProcesso(cliente, StatusProcesso.SOLICITACAO));
+        tipoAlteracaoRepository.deleteAll();
+
+        assertThrows(ObjetoNaoEncontradoException.class,
+                () -> aceitarSolicitacao.aceitar(solicitacao.getId(), requestPf("Contato"), usuarioResponsavel));
+
+        assertEquals(StatusProcesso.SOLICITACAO,
+                processoAppRepository.findById(solicitacao.getId()).orElseThrow().getStatus());
+        assertEquals("LEAD", clienteRepository.findById(cliente.getId()).orElseThrow().getStatusCliente().getNome());
+        assertEquals(0, historicoProcessoRepository.count());
         verifyNoInteractions(graphGateway);
     }
 
@@ -188,6 +225,9 @@ class AceitarSolicitacaoIntegrationTest {
     private void prepararReferencias() {
         if (prioridadeProcesso("MEDIA").isEmpty()) prioridadeRepository.save(new Prioridade(2L, "MEDIA"));
         if (fase("INICIAL").isEmpty()) faseProcessoRepository.save(new FaseProcesso(1L, "INICIAL"));
+        if (tipoAlteracaoRepository.findByNomeIgnoreCase(RegistroHistoricoProcesso.ABERTURA).isEmpty()) {
+            tipoAlteracaoRepository.save(new TipoAlteracao(1L, RegistroHistoricoProcesso.ABERTURA));
+        }
     }
 
     private Usuario criarUsuarioResponsavel() {

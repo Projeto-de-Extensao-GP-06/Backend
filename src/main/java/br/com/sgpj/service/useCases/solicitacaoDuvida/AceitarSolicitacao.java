@@ -24,6 +24,7 @@ import br.com.sgpj.repository.FaseProcessoRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.PrioridadeRepository;
 import br.com.sgpj.repository.StatusClienteRepository;
+import br.com.sgpj.service.RegistroHistoricoProcesso;
 import br.com.sgpj.service.useCases.onedrive.GarantirPastasClienteOneDrive;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +47,7 @@ public class AceitarSolicitacao {
     private final FaseProcessoRepository faseProcessoRepository;
     private final StatusClienteRepository statusClienteRepository;
     private final GarantirPastasClienteOneDrive garantirPastasClienteOneDrive;
+    private final RegistroHistoricoProcesso registroHistorico;
 
     public AceitarSolicitacao(ProcessoAppRepository processoAppRepository,
                               ClienteRepository clienteRepository,
@@ -54,7 +56,8 @@ public class AceitarSolicitacao {
                               PrioridadeRepository prioridadeRepository,
                               FaseProcessoRepository faseProcessoRepository,
                               StatusClienteRepository statusClienteRepository,
-                              GarantirPastasClienteOneDrive garantirPastasClienteOneDrive) {
+                              GarantirPastasClienteOneDrive garantirPastasClienteOneDrive,
+                              RegistroHistoricoProcesso registroHistorico) {
         this.processoAppRepository = processoAppRepository;
         this.clienteRepository = clienteRepository;
         this.contatoRepository = contatoRepository;
@@ -63,6 +66,7 @@ public class AceitarSolicitacao {
         this.faseProcessoRepository = faseProcessoRepository;
         this.statusClienteRepository = statusClienteRepository;
         this.garantirPastasClienteOneDrive = garantirPastasClienteOneDrive;
+        this.registroHistorico = registroHistorico;
     }
 
     @Transactional
@@ -95,6 +99,12 @@ public class AceitarSolicitacao {
         processoApp.setStatus(StatusProcesso.ATIVO);
         processoApp.setUltimaAtualizacao(LocalDateTime.now());
         processoAppRepository.save(processoApp);
+        registroHistorico.registrar(
+                processoApp,
+                usuarioResponsavel,
+                RegistroHistoricoProcesso.ABERTURA,
+                "Processo criado."
+        );
         garantirPastasClienteOneDrive.garantir(cliente, id);
 
         return SolicitacaoDuvidaMapper.toClientePreenchimentoResponse(

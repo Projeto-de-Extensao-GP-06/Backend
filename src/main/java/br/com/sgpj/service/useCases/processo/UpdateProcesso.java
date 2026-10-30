@@ -161,13 +161,13 @@ public class UpdateProcesso {
     private void registrarAlteracao(StatusProcesso statusAnterior, String observacaoAnterior, ProcessoApp atual, String descricao) {
         String descricaoNormalizada = normalizarDescricao(descricao);
         if (statusAnterior != atual.getStatus()) {
-            registroHistorico.registrar(atual, atual.getUsuarioResponsavel(), RegistroHistoricoProcesso.STATUS,
+            registroHistorico.registrar(atual, authorizationUtil.getUsuarioLogado(), RegistroHistoricoProcesso.STATUS,
                     descricaoNormalizada != null ? descricaoNormalizada :"Status alterado de " + statusAnterior + " para " + atual.getStatus() + ".");
         } else if (!java.util.Objects.equals(observacaoAnterior, atual.getObservacao())) {
-            registroHistorico.registrar(atual, atual.getUsuarioResponsavel(), RegistroHistoricoProcesso.OBSERVACAO,
+            registroHistorico.registrar(atual, authorizationUtil.getUsuarioLogado(), RegistroHistoricoProcesso.OBSERVACAO,
                     descricaoNormalizada != null ? descricaoNormalizada :"Observações atualizadas.");
         } else {
-            registroHistorico.registrar(atual, atual.getUsuarioResponsavel(), RegistroHistoricoProcesso.ATUALIZACAO,
+            registroHistorico.registrar(atual, authorizationUtil.getUsuarioLogado(), RegistroHistoricoProcesso.ATUALIZACAO,
                     descricaoNormalizada != null ? descricaoNormalizada : "Dados do processo atualizados.");
         }
     }
@@ -223,8 +223,7 @@ public class UpdateProcesso {
 
         processoApp.setUltimaAtualizacao(LocalDateTime.now());
         processoAppRepository.save(processoApp);
-        Usuario usuarioResponsavel = processoApp.getUsuarioResponsavel();
-        registroHistorico.registrar(processoApp, usuarioResponsavel != null ? usuarioResponsavel : usuarioRepository.findById(Usuario.ID_SISTEMA).get(),
+        registroHistorico.registrar(processoApp, usuarioRepository.findById(Usuario.ID_SISTEMA).get(),
                 RegistroHistoricoProcesso.ATUALIZACAO,
                 "Dados oficiais do processo atualizados.");
 

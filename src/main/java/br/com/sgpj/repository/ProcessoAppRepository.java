@@ -20,6 +20,10 @@ public interface ProcessoAppRepository extends JpaRepository<ProcessoApp, Long>,
 
     List<ProcessoApp> findByClienteId(Long clienteId);
 
+    boolean existsByCliente_IdAndStatus(Long clienteId, StatusProcesso status);
+
+    boolean existsByCliente_IdAndStatusAndIdNot(Long clienteId, StatusProcesso status, Long processoId);
+
       boolean existsByCliente_IdAndIdNot(Long clienteId, Long processoId);
 
       boolean existsByProcessoApi_IdAndIdNot(Long processoApiId, Long processoId);

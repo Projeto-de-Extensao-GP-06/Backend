@@ -19,6 +19,7 @@ import br.com.sgpj.repository.PrioridadeRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.SiglaTribunalRepository;
 import br.com.sgpj.service.RegistroHistoricoProcesso;
+import br.com.sgpj.service.useCases.cliente.AtualizarStatusClientePorProcessos;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -39,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -65,6 +67,9 @@ class CreateProcessoTest {
 
     @Mock
     private RegistroHistoricoProcesso registroHistorico;
+
+    @Mock
+    private AtualizarStatusClientePorProcessos atualizarStatusClientePorProcessos;
 
     @InjectMocks
     private CreateProcesso createProcesso;
@@ -95,7 +100,7 @@ class CreateProcessoTest {
     class CriarProcessoTest {
 
         @Test
-        @DisplayName("Deve criar processo com status ATIVO com sucesso sem processo oficial")
+        @DisplayName("Deve criar processo com status ATIVO com sucesso sem processo oficial e ativar cliente")
         void deveCriarProcessoComStatusAtivoSemProcessoOficial() {
             ProcessoAppCriacaoRequest request = new ProcessoAppCriacaoRequest(
                     4L, "Descrição", "Obs", 1L, 2L,
@@ -127,6 +132,7 @@ class CreateProcessoTest {
             assertEquals(prioridade, salvo.getPrioridade());
             assertEquals(faseProcesso, salvo.getFaseProcesso());
             assertNull(salvo.getSiglaTribunal());
+            verify(atualizarStatusClientePorProcessos).ativarCliente(cliente);
             verify(sincronizacaoProducer, never()).enviarAposCommit(any());
         }
 
@@ -161,6 +167,7 @@ class CreateProcessoTest {
             assertEquals(siglaTribunal, salvo.getSiglaTribunal());
             assertEquals(StatusProcesso.ATIVO, salvo.getStatus());
             assertEquals(Boolean.FALSE, response.sincronizado());
+            verify(atualizarStatusClientePorProcessos).ativarCliente(cliente);
             verify(sincronizacaoProducer).enviarAposCommit(100L);
         }
 
@@ -176,6 +183,7 @@ class CreateProcessoTest {
 
             assertThrows(TribunalInvalidoException.class, () -> createProcesso.criarProcesso(request, usuarioAutenticado));
             verify(processoAppRepository, never()).save(any());
+            verifyNoInteractions(atualizarStatusClientePorProcessos);
         }
 
         @Test
@@ -188,6 +196,7 @@ class CreateProcessoTest {
 
             assertThrows(ObjetoNaoEncontradoException.class, () -> createProcesso.criarProcesso(request, usuarioAutenticado));
             verify(processoAppRepository, never()).save(any());
+            verifyNoInteractions(atualizarStatusClientePorProcessos);
         }
 
         @Test
@@ -202,6 +211,7 @@ class CreateProcessoTest {
 
             assertThrows(ObjetoNaoEncontradoException.class, () -> createProcesso.criarProcesso(request, usuarioAutenticado));
             verify(processoAppRepository, never()).save(any());
+            verifyNoInteractions(atualizarStatusClientePorProcessos);
         }
     }
 }

@@ -11,6 +11,7 @@ import br.com.sgpj.mapper.SiglaTribunalMapper;
 import br.com.sgpj.producer.SincronizacaoProcessoProducer;
 import br.com.sgpj.repository.*;
 import br.com.sgpj.service.RegistroHistoricoProcesso;
+import br.com.sgpj.service.useCases.cliente.AtualizarStatusClientePorProcessos;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,7 @@ public class CreateProcesso {
     private final SincronizacaoProcessoProducer sincronizacaoProducer;
     private final ProcessoAppRepository processoAppRepository;
     private final RegistroHistoricoProcesso registroHistorico;
+    private final AtualizarStatusClientePorProcessos atualizarStatusClientePorProcessos;
 
     public CreateProcesso(PrioridadeRepository prioridadeRepository,
                           FaseProcessoRepository faseProcessoRepository,
@@ -31,7 +33,8 @@ public class CreateProcesso {
                           ClienteRepository clienteRepository,
                           SincronizacaoProcessoProducer sincronizacaoProducer,
                           ProcessoAppRepository processoAppRepository,
-                          RegistroHistoricoProcesso registroHistorico) {
+                          RegistroHistoricoProcesso registroHistorico,
+                          AtualizarStatusClientePorProcessos atualizarStatusClientePorProcessos) {
         this.prioridadeRepository = prioridadeRepository;
         this.faseProcessoRepository = faseProcessoRepository;
         this.siglaTribunalRepository = siglaTribunalRepository;
@@ -39,6 +42,7 @@ public class CreateProcesso {
         this.sincronizacaoProducer = sincronizacaoProducer;
         this.processoAppRepository = processoAppRepository;
         this.registroHistorico = registroHistorico;
+        this.atualizarStatusClientePorProcessos = atualizarStatusClientePorProcessos;
     }
 
     @Transactional
@@ -82,6 +86,8 @@ public class CreateProcesso {
             processoApi.setTribunalTramitacao(siglaTribunal.getNome());
             processoApp.setProcessoApi(processoApi);
         }
+
+        atualizarStatusClientePorProcessos.ativarCliente(cliente);
 
         ProcessoApp salvo = processoAppRepository.save(processoApp);
         registroHistorico.registrar(salvo, usuarioResponsavel, RegistroHistoricoProcesso.ABERTURA, "Processo criado.");

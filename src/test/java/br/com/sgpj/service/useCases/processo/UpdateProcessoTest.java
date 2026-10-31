@@ -21,6 +21,7 @@ import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.SiglaTribunalRepository;
 import br.com.sgpj.security.AuthorizationUtil;
 import br.com.sgpj.service.RegistroHistoricoProcesso;
+import br.com.sgpj.service.useCases.cliente.AtualizarStatusClientePorProcessos;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -76,6 +77,9 @@ class UpdateProcessoTest {
     @Mock
     private AuthorizationUtil authorizationUtil;
 
+    @Mock
+    private AtualizarStatusClientePorProcessos atualizarStatusClientePorProcessos;
+
     @InjectMocks
     private UpdateProcesso updateProcesso;
 
@@ -110,6 +114,13 @@ class UpdateProcessoTest {
         processoExistente.setStatus(StatusProcesso.ATIVO);
         processoExistente.setDataHoraInicio(LocalDateTime.now().minusDays(30));
         lenient().when(authorizationUtil.getUsuarioLogado()).thenReturn(usuarioResponsavel);
+    }
+
+    private void prepararMocks() {
+        when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
+        when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
+        when(faseProcessoRepository.findById(1L)).thenReturn(Optional.of(faseProcesso));
+        when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> inv.getArgument(0));
     }
 
     @Nested
@@ -448,13 +459,6 @@ class UpdateProcessoTest {
     @DisplayName("Descrição personalizada da alteração")
     class DescricaoAlteracao {
 
-        private void prepararMocks() {
-            when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
-            when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
-            when(faseProcessoRepository.findById(1L)).thenReturn(Optional.of(faseProcesso));
-            when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> inv.getArgument(0));
-        }
-
         private ProcessoAppUpdateRequest requestComDescricao(String descricaoAlteracao) {
             return new ProcessoAppUpdateRequest(
                     null, "Desc", null, 1L, StatusProcesso.ATIVO, 1L, null, 1000.0, null, null, descricaoAlteracao);
@@ -516,7 +520,7 @@ class UpdateProcessoTest {
         }
 
         @Test
-        @DisplayName("Deve ignorar a descrição personalizada quando o status for alterado")
+        @DisplayName("Deve registrar a descrição personalizada quando o status for alterado e descrição informada")
         void deveIgnorarDescricaoQuandoStatusAlterado() {
             MotivoStatusProcesso motivo = new MotivoStatusProcesso();
             motivo.setId(3);
@@ -531,8 +535,66 @@ class UpdateProcessoTest {
             updateProcesso.atualizarProcesso(1L, request);
 
             verify(registroHistorico).registrar(any(ProcessoApp.class), eq(usuarioResponsavel),
-                    eq(RegistroHistoricoProcesso.STATUS), eq("Status alterado de ATIVO para SUSPENSO."));
+                    eq(RegistroHistoricoProcesso.STATUS), eq("Minha descrição"));
             verify(registroHistorico, never()).registrar(any(), any(), eq(RegistroHistoricoProcesso.ATUALIZACAO), any());
+        }
+    }
+
+    @Nested
+    @DisplayName("Sincronização de Status do Cliente")
+    class SincronizacaoStatusClienteTest {
+
+        @Test
+        @DisplayName("Deve ativar cliente ao atualizar processo para ATIVO")
+        void deveAtivarClienteAoAtualizarProcessoParaAtivo() {
+            prepararMocks();
+            processoExistente.setStatus(StatusProcesso.SUSPENSO);
+
+            ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
+                    null, "Desc", null, 1L, StatusProcesso.ATIVO, 1L, null, 1000.0, null, null, null);
+
+            updateProcesso.atualizarProcesso(1L, request);
+
+            verify(atualizarStatusClientePorProcessos).ativarCliente(cliente);
+            verify(atualizarStatusClientePorProcessos, never()).atualizarStatusAposAlteracaoOuExclusao(any(), any());
+        }
+
+        @Test
+        @DisplayName("Deve sincronizar status de cliente ao suspender processo")
+        void deveSincronizarStatusAoSuspenderProcesso() {
+            MotivoStatusProcesso motivo = new MotivoStatusProcesso();
+            motivo.setId(1);
+            motivo.setNome("AGUARDANDO_DOCUMENTO");
+            motivo.setAplicavelA(MotivoStatusProcesso.AplicavelA.SUSPENSO);
+            prepararMocks();
+            when(motivoStatusProcessoRepository.findById(1)).thenReturn(Optional.of(motivo));
+
+            ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
+                    null, "Desc", null, 1L, StatusProcesso.SUSPENSO, 1L, null, 1000.0, 1, "Justificativa", null);
+
+            updateProcesso.atualizarProcesso(1L, request);
+
+            verify(atualizarStatusClientePorProcessos).atualizarStatusAposAlteracaoOuExclusao(cliente, 1L);
+            verify(atualizarStatusClientePorProcessos, never()).ativarCliente(any());
+        }
+
+        @Test
+        @DisplayName("Deve sincronizar status de cliente ao encerrar processo")
+        void deveSincronizarStatusAoEncerrarProcesso() {
+            MotivoStatusProcesso motivo = new MotivoStatusProcesso();
+            motivo.setId(2);
+            motivo.setNome("SENTENCA");
+            motivo.setAplicavelA(MotivoStatusProcesso.AplicavelA.ENCERRADO);
+            prepararMocks();
+            when(motivoStatusProcessoRepository.findById(2)).thenReturn(Optional.of(motivo));
+
+            ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
+                    null, "Desc", null, 1L, StatusProcesso.ENCERRADO, 1L, null, 1000.0, 2, "Justificativa", null);
+
+            updateProcesso.atualizarProcesso(1L, request);
+
+            verify(atualizarStatusClientePorProcessos).atualizarStatusAposAlteracaoOuExclusao(cliente, 1L);
+            verify(atualizarStatusClientePorProcessos, never()).ativarCliente(any());
         }
     }
 }

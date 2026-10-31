@@ -4,6 +4,7 @@ import br.com.sgpj.dto.request.ProcessoAppUpdateRequest;
 import br.com.sgpj.dto.response.Processos.HistoricoProcessoResponse;
 import br.com.sgpj.dto.response.Processos.ProcessoAppResponse;
 import br.com.sgpj.dto.response.Processos.ProcessoAppUpdateResponse;
+import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Processo.*;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
@@ -15,6 +16,7 @@ import br.com.sgpj.producer.SincronizacaoProcessoProducer;
 import br.com.sgpj.repository.*;
 import br.com.sgpj.security.AuthorizationUtil;
 import br.com.sgpj.service.RegistroHistoricoProcesso;
+import br.com.sgpj.service.useCases.cliente.AtualizarStatusClientePorProcessos;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Component;
 
@@ -37,6 +39,7 @@ public class UpdateProcesso {
     private final AuthorizationUtil authorizationUtil;
     private final SincronizacaoProcessoProducer sincronizacaoProducer;
     private final UsuarioRepository usuarioRepository;
+    private final AtualizarStatusClientePorProcessos atualizarStatusClientePorProcessos;
 
     public UpdateProcesso(ProcessoAppRepository processoAppRepository,
                           PrioridadeRepository prioridadeRepository,
@@ -47,9 +50,11 @@ public class UpdateProcesso {
                           MovimentacoesOficiaisRepository movimentacoesOficiaisRepository,
                           ProcessoApiRepository processoApiRepository,
                           HistoricoProcessoRepository historicoProcessoRepository,
-                          RegistroHistoricoProcesso registroHistorico, AuthorizationUtil authorizationUtil,
+                          RegistroHistoricoProcesso registroHistorico,
+                          AuthorizationUtil authorizationUtil,
                           SincronizacaoProcessoProducer sincronizacaoProducer,
-                          UsuarioRepository usuarioRepository) {
+                          UsuarioRepository usuarioRepository,
+                          AtualizarStatusClientePorProcessos atualizarStatusClientePorProcessos) {
         this.sincronizacaoProducer = sincronizacaoProducer;
         this.processoAppRepository = processoAppRepository;
         this.prioridadeRepository = prioridadeRepository;
@@ -63,6 +68,7 @@ public class UpdateProcesso {
         this.registroHistorico = registroHistorico;
         this.authorizationUtil = authorizationUtil;
         this.usuarioRepository = usuarioRepository;
+        this.atualizarStatusClientePorProcessos = atualizarStatusClientePorProcessos;
     }
 
     @Transactional
@@ -151,6 +157,16 @@ public class UpdateProcesso {
         }
 
         ProcessoApp processoSalvo = processoAppRepository.save(processoEditado);
+
+        Cliente cliente = processoEncontrado.getCliente();
+        if (cliente != null) {
+            if (novoStatus == StatusProcesso.ATIVO) {
+                atualizarStatusClientePorProcessos.ativarCliente(cliente);
+            } else {
+                atualizarStatusClientePorProcessos.atualizarStatusAposAlteracaoOuExclusao(cliente, id);
+            }
+        }
+
         registrarAlteracao(statusAnterior, observacaoAnterior, processoSalvo, processoAtualizar.descricaoAlteracao());
         if (sincronizarDataJud) {
             sincronizacaoProducer.enviarAposCommit(processoSalvo.getId());

@@ -5,7 +5,9 @@ import br.com.sgpj.dto.response.Processos.ProcessoAppCreateResponse;
 import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Processo.*;
 import br.com.sgpj.entity.Usuario;
+import br.com.sgpj.entity.StatusClienteEnum;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
+import br.com.sgpj.exception.OperacaoInvalidaException;
 import br.com.sgpj.mapper.ProcessoAppMapper;
 import br.com.sgpj.mapper.SiglaTribunalMapper;
 import br.com.sgpj.producer.SincronizacaoProcessoProducer;
@@ -53,6 +55,10 @@ public class CreateProcesso {
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Fase do processo nao encontrada para o ID: " + novoProcesso.faseProcessoId()));
         Cliente cliente = clienteRepository.findById(novoProcesso.clienteId())
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Cliente nao encontrada para o ID: " + novoProcesso.clienteId()));
+
+        if (cliente.getStatusCliente() != null && StatusClienteEnum.LEAD.getNome().equalsIgnoreCase(cliente.getStatusCliente().getNome())) {
+            throw new OperacaoInvalidaException("Não é permitido criar processo para cliente com status LEAD.");
+        }
 
         ProcessoApp processoApp = ProcessoAppMapper.toCreateEntity(novoProcesso);
 

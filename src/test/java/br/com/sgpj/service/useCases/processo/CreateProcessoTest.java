@@ -11,6 +11,9 @@ import br.com.sgpj.entity.Processo.SiglaTribunal;
 import br.com.sgpj.entity.Processo.StatusProcesso;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
+import br.com.sgpj.entity.StatusCliente;
+import br.com.sgpj.entity.StatusClienteEnum;
+import br.com.sgpj.exception.OperacaoInvalidaException;
 import br.com.sgpj.exception.TribunalInvalidoException;
 import br.com.sgpj.producer.SincronizacaoProcessoProducer;
 import br.com.sgpj.repository.ClienteRepository;
@@ -93,6 +96,7 @@ class CreateProcessoTest {
         cliente = new Cliente();
         cliente.setId(4L);
         cliente.setNomeRazaoSocial("Cliente Teste");
+        cliente.setStatusCliente(new StatusCliente(1L, "ATIVO"));
     }
 
     @Nested
@@ -210,6 +214,27 @@ class CreateProcessoTest {
             when(clienteRepository.findById(99L)).thenReturn(Optional.empty());
 
             assertThrows(ObjetoNaoEncontradoException.class, () -> createProcesso.criarProcesso(request, usuarioAutenticado));
+            verify(processoAppRepository, never()).save(any());
+            verifyNoInteractions(atualizarStatusClientePorProcessos);
+        }
+
+        @Test
+        @DisplayName("Deve lançar OperacaoInvalidaException quando cliente possuir status LEAD")
+        void deveLancarOperacaoInvalidaExceptionQuandoClientePossuirStatusLead() {
+            cliente.setStatusCliente(new StatusCliente(3L, StatusClienteEnum.LEAD.getNome()));
+            ProcessoAppCriacaoRequest request = new ProcessoAppCriacaoRequest(
+                    4L, "Descrição", "Obs", 1L, 2L, null, null, 10000.0
+            );
+            when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
+            when(faseProcessoRepository.findById(2L)).thenReturn(Optional.of(faseProcesso));
+            when(clienteRepository.findById(4L)).thenReturn(Optional.of(cliente));
+
+            OperacaoInvalidaException exception = assertThrows(
+                    OperacaoInvalidaException.class,
+                    () -> createProcesso.criarProcesso(request, usuarioAutenticado)
+            );
+
+            assertEquals("Não é permitido criar processo para cliente com status LEAD.", exception.getMessage());
             verify(processoAppRepository, never()).save(any());
             verifyNoInteractions(atualizarStatusClientePorProcessos);
         }

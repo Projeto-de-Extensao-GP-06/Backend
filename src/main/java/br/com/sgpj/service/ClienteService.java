@@ -43,6 +43,10 @@ public class ClienteService {
         return readClienteUseCase.listarTodos();
     }
 
+    public List<ClienteListarResponse> listarTodos(boolean excluirLead) {
+        return readClienteUseCase.listarTodos(excluirLead);
+    }
+
     public ClienteDetalhesResponse buscarPorId(Long id) {
         return readClienteUseCase.buscarPorId(id);
     }

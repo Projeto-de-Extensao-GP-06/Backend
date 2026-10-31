@@ -130,22 +130,35 @@ class ClienteControllerTest {
         @Test
         @DisplayName("Deve retornar lista de clientes com status 200 quando há clientes cadastrados")
         void deveRetornarListaComStatus200QuandoHaClientes() {
-            when(clienteService.listarTodos()).thenReturn(List.of(clienteListarResponse));
+            when(clienteService.listarTodos(false)).thenReturn(List.of(clienteListarResponse));
 
-            ResponseEntity<List<ClienteListarResponse>> resposta = clienteController.listarTodos();
+            ResponseEntity<List<ClienteListarResponse>> resposta = clienteController.listarTodos(false);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
             assertThat(resposta.getBody()).hasSize(1);
 
-            verify(clienteService).listarTodos();
+            verify(clienteService).listarTodos(false);
+        }
+
+        @Test
+        @DisplayName("Deve filtrar clientes excluindo LEAD quando excluirLead for true")
+        void deveFiltrarClientesExcluindoLeadQuandoExcluirLeadTrue() {
+            when(clienteService.listarTodos(true)).thenReturn(List.of(clienteListarResponse));
+
+            ResponseEntity<List<ClienteListarResponse>> resposta = clienteController.listarTodos(true);
+
+            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(resposta.getBody()).hasSize(1);
+
+            verify(clienteService).listarTodos(true);
         }
 
         @Test
         @DisplayName("Deve retornar status 204 quando não há clientes cadastrados")
         void deveRetornarStatus204QuandoListaVazia() {
-            when(clienteService.listarTodos()).thenReturn(List.of());
+            when(clienteService.listarTodos(false)).thenReturn(List.of());
 
-            ResponseEntity<List<ClienteListarResponse>> resposta = clienteController.listarTodos();
+            ResponseEntity<List<ClienteListarResponse>> resposta = clienteController.listarTodos(false);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
             assertThat(resposta.getBody()).isNull();

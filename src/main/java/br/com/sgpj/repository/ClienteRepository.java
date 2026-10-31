@@ -14,6 +14,8 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long>, JpaSpec
 
     List<Cliente> findByStatusCliente_NomeIgnoreCase(String statusNome);
 
+    List<Cliente> findByStatusCliente_NomeNotIgnoreCase(String statusNome);
+
     List<Cliente> findByNomeRazaoSocialContainingIgnoreCaseOrCpfCnpjContaining(String nome, String cpfCnpj);
 
     @Query("SELECT c FROM Cliente c LEFT JOIN FETCH c.contatos LEFT JOIN FETCH c.endereco LEFT JOIN FETCH c.statusCliente WHERE c.id = :id")

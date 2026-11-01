@@ -2,6 +2,7 @@ package br.com.sgpj.service.useCases.usuario;
 
 import br.com.sgpj.dto.response.Usuario.UsuarioListarResponse;
 import br.com.sgpj.entity.Usuario;
+import br.com.sgpj.exception.OperacaoInvalidaException;
 import br.com.sgpj.exception.UsuarioJaAtivoException;
 import br.com.sgpj.mapper.UsuarioMapper;
 import br.com.sgpj.repository.UsuarioRepository;
@@ -22,6 +23,10 @@ public class ReativarUsuario {
 
         Usuario usuario =
                 usuarioRepository.getReferenceById(id);
+
+        if (usuario.isUsuarioSistema()) {
+            throw new OperacaoInvalidaException("Não é permitido alterar o usuário do sistema.");
+        }
 
         if (usuario.isAtivo()) {
             throw new UsuarioJaAtivoException(

@@ -215,6 +215,33 @@ class ProcessoAppRepositoryTest {
         assertEquals(audienciaMaisTarde.getId(), resultado.get(1).getId());
     }
 
+    @Test
+    void deveBuscarApenasAudienciasPassadasDeProcessosAtivos() {
+        StatusCliente ativoStatus = statusClienteRepository.save(new StatusCliente(null, "ATIVO"));
+        Cliente cliente = criarCliente("Cliente Audiencia Passada", ativoStatus);
+
+        LocalDateTime referencia = LocalDateTime.of(2026, 10, 28, 2, 0);
+
+        ProcessoApp passada1 = criarProcessoComAudiencia(
+                cliente, null, StatusProcesso.ATIVO, LocalDateTime.of(2026, 10, 15, 14, 0));
+        ProcessoApp passada2 = criarProcessoComAudiencia(
+                cliente, null, StatusProcesso.ATIVO, LocalDateTime.of(2026, 10, 27, 16, 30));
+        // Futura
+        criarProcessoComAudiencia(
+                cliente, null, StatusProcesso.ATIVO, LocalDateTime.of(2026, 10, 28, 10, 0));
+        // Passada porém processo suspenso
+        criarProcessoComAudiencia(
+                cliente, null, StatusProcesso.SUSPENSO, LocalDateTime.of(2026, 10, 20, 11, 0));
+        processoAppRepository.flush();
+
+        List<ProcessoApp> resultado = processoAppRepository.buscarAudienciasPassadas(
+                StatusProcesso.ATIVO, referencia);
+
+        assertEquals(2, resultado.size());
+        assertEquals(passada1.getId(), resultado.get(0).getId());
+        assertEquals(passada2.getId(), resultado.get(1).getId());
+    }
+
     private ProcessoApp criarProcessoComAudiencia(
             Cliente cliente,
             Usuario usuarioResponsavel,

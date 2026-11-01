@@ -20,6 +20,10 @@ public interface ProcessoAppRepository extends JpaRepository<ProcessoApp, Long>,
 
     List<ProcessoApp> findByClienteId(Long clienteId);
 
+    boolean existsByCliente_IdAndStatus(Long clienteId, StatusProcesso status);
+
+    boolean existsByCliente_IdAndStatusAndIdNot(Long clienteId, StatusProcesso status, Long processoId);
+
       boolean existsByCliente_IdAndIdNot(Long clienteId, Long processoId);
 
       boolean existsByProcessoApi_IdAndIdNot(Long processoApiId, Long processoId);
@@ -136,4 +140,16 @@ public interface ProcessoAppRepository extends JpaRepository<ProcessoApp, Long>,
             @Param("status") StatusProcesso status,
             @Param("dataInicio") LocalDateTime dataInicio,
             @Param("dataFim") LocalDateTime dataFim);
+
+    @Query("""
+            select p
+            from ProcessoApp p
+            where p.status = :status
+              and p.dataAudiencia is not null
+              and p.dataAudiencia < :dataReferencia
+            order by p.dataAudiencia asc, p.id asc
+            """)
+    List<ProcessoApp> buscarAudienciasPassadas(
+            @Param("status") StatusProcesso status,
+            @Param("dataReferencia") LocalDateTime dataReferencia);
 }

@@ -129,7 +129,6 @@ class ReadProcessoTest {
             assertNotNull(resultado);
             assertEquals(1L, resultado.id());
             assertEquals(StatusProcesso.ATIVO, resultado.status());
-            verify(authorizationUtil).verificarAcessoProcesso(1L);
             verify(processoAppRepository).findById(1L);
             verify(historicoProcessoRepository).findByProcessoApp(processoAtivo);
         }
@@ -143,7 +142,6 @@ class ReadProcessoTest {
                     () -> readProcesso.buscarPorId(5L));
 
             assertEquals("Processo não encontrado para o ID: 5", exception.getMessage());
-            verify(authorizationUtil).verificarAcessoProcesso(5L);
             verifyNoInteractions(historicoProcessoRepository);
         }
 
@@ -153,7 +151,6 @@ class ReadProcessoTest {
             when(processoAppRepository.findById(99L)).thenReturn(Optional.empty());
 
             assertThrows(ObjetoNaoEncontradoException.class, () -> readProcesso.buscarPorId(99L));
-            verify(authorizationUtil).verificarAcessoProcesso(99L);
         }
     }
 

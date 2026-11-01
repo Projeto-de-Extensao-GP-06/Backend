@@ -13,12 +13,15 @@ import br.com.sgpj.entity.Processo.StatusProcesso;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
 import br.com.sgpj.exception.OperacaoInvalidaException;
+import br.com.sgpj.producer.SincronizacaoProcessoProducer;
 import br.com.sgpj.repository.FaseProcessoRepository;
 import br.com.sgpj.repository.MotivoStatusProcessoRepository;
 import br.com.sgpj.repository.PrioridadeRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.SiglaTribunalRepository;
+import br.com.sgpj.security.AuthorizationUtil;
 import br.com.sgpj.service.RegistroHistoricoProcesso;
+import br.com.sgpj.service.useCases.cliente.AtualizarStatusClientePorProcessos;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -38,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -63,10 +66,19 @@ class UpdateProcessoTest {
     private ProcessoApiGateway processoApiGateway;
 
     @Mock
+    private SincronizacaoProcessoProducer sincronizacaoProducer;
+
+    @Mock
     private MotivoStatusProcessoRepository motivoStatusProcessoRepository;
 
     @Mock
     private RegistroHistoricoProcesso registroHistorico;
+
+    @Mock
+    private AuthorizationUtil authorizationUtil;
+
+    @Mock
+    private AtualizarStatusClientePorProcessos atualizarStatusClientePorProcessos;
 
     @InjectMocks
     private UpdateProcesso updateProcesso;
@@ -101,6 +113,14 @@ class UpdateProcessoTest {
         processoExistente.setSiglaTribunal(tribunal);
         processoExistente.setStatus(StatusProcesso.ATIVO);
         processoExistente.setDataHoraInicio(LocalDateTime.now().minusDays(30));
+        lenient().when(authorizationUtil.getUsuarioLogado()).thenReturn(usuarioResponsavel);
+    }
+
+    private void prepararMocks() {
+        when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
+        when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
+        when(faseProcessoRepository.findById(1L)).thenReturn(Optional.of(faseProcesso));
+        when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> inv.getArgument(0));
     }
 
     @Nested
@@ -111,7 +131,7 @@ class UpdateProcessoTest {
         @DisplayName("Deve lançar exceção quando processo não for encontrado")
         void deveLancarExcecaoQuandoProcessoNaoEncontrado() {
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    null, "Desc", "Obs", 1L, StatusProcesso.ATIVO, 1L, null, 1000.0, null, null);
+                    null, "Desc", "Obs", 1L, StatusProcesso.ATIVO, 1L, null, 1000.0, null, null, null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.empty());
 
@@ -123,7 +143,7 @@ class UpdateProcessoTest {
         @DisplayName("Deve lançar exceção quando prioridade não for encontrada")
         void deveLancarExcecaoQuandoPrioridadeNaoEncontrada() {
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    null, "Desc", "Obs", 99L, StatusProcesso.ATIVO, 1L, null, 1000.0, null, null);
+                    null, "Desc", "Obs", 99L, StatusProcesso.ATIVO, 1L, null, 1000.0, null, null, null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(99L)).thenReturn(Optional.empty());
@@ -136,7 +156,7 @@ class UpdateProcessoTest {
         @DisplayName("Deve lançar exceção quando fase do processo não for encontrada")
         void deveLancarExcecaoQuandoFaseNaoEncontrada() {
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    null, "Desc", "Obs", 1L, StatusProcesso.ATIVO, 99L, null, 1000.0, null, null);
+                    null, "Desc", "Obs", 1L, StatusProcesso.ATIVO, 99L, null, 1000.0, null, null, null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
@@ -155,7 +175,7 @@ class UpdateProcessoTest {
         @DisplayName("Deve lançar exceção quando motivoStatusProcessoId for nulo ao suspender")
         void deveLancarExcecaoQuandoMotivoNuloAoSuspender() {
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    null, "Desc", "Obs", 1L, StatusProcesso.SUSPENSO, 1L, null, 1000.0, null, "Justificativa");
+                    null, "Desc", "Obs", 1L, StatusProcesso.SUSPENSO, 1L, null, 1000.0, null, "Justificativa", null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
@@ -172,7 +192,7 @@ class UpdateProcessoTest {
         @DisplayName("Deve lançar exceção quando motivo de status não for encontrado no banco")
         void deveLancarExcecaoQuandoMotivoNaoEncontrado() {
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    null, "Desc", "Obs", 1L, StatusProcesso.SUSPENSO, 1L, null, 1000.0, 999, "Justificativa");
+                    null, "Desc", "Obs", 1L, StatusProcesso.SUSPENSO, 1L, null, 1000.0, 999, "Justificativa", null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
@@ -192,7 +212,7 @@ class UpdateProcessoTest {
             motivoEncerrado.setAplicavelA(MotivoStatusProcesso.AplicavelA.ENCERRADO);
 
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    null, "Desc", "Obs", 1L, StatusProcesso.SUSPENSO, 1L, null, 1000.0, 1, "Justificativa");
+                    null, "Desc", "Obs", 1L, StatusProcesso.SUSPENSO, 1L, null, 1000.0, 1, "Justificativa", null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
@@ -215,7 +235,7 @@ class UpdateProcessoTest {
             motivoSuspenso.setAplicavelA(MotivoStatusProcesso.AplicavelA.SUSPENSO);
 
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    null, "Desc", "Obs", 1L, StatusProcesso.SUSPENSO, 1L, null, 1000.0, 2, "Justificativa");
+                    null, "Desc", "Obs", 1L, StatusProcesso.SUSPENSO, 1L, null, 1000.0, 2, "Justificativa", null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
@@ -246,7 +266,7 @@ class UpdateProcessoTest {
             motivoAmbos.setAplicavelA(MotivoStatusProcesso.AplicavelA.AMBOS);
 
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    null, "Desc", "Obs", 1L, StatusProcesso.SUSPENSO, 1L, null, 1000.0, 3, "Outros motivos");
+                    null, "Desc", "Obs", 1L, StatusProcesso.SUSPENSO, 1L, null, 1000.0, 3, "Outros motivos", null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
@@ -269,7 +289,7 @@ class UpdateProcessoTest {
         @DisplayName("Deve lançar exceção quando motivoStatusProcessoId for nulo ao encerrar")
         void deveLancarExcecaoQuandoMotivoNuloAoEncerrar() {
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    null, "Desc", "Obs", 1L, StatusProcesso.ENCERRADO, 1L, null, 1000.0, null, "Justificativa");
+                    null, "Desc", "Obs", 1L, StatusProcesso.ENCERRADO, 1L, null, 1000.0, null, "Justificativa", null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
@@ -290,7 +310,7 @@ class UpdateProcessoTest {
             motivoSuspenso.setAplicavelA(MotivoStatusProcesso.AplicavelA.SUSPENSO);
 
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    null, "Desc", "Obs", 1L, StatusProcesso.ENCERRADO, 1L, null, 1000.0, 2, "Justificativa");
+                    null, "Desc", "Obs", 1L, StatusProcesso.ENCERRADO, 1L, null, 1000.0, 2, "Justificativa", null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
@@ -312,7 +332,7 @@ class UpdateProcessoTest {
             motivoEncerrado.setAplicavelA(MotivoStatusProcesso.AplicavelA.ENCERRADO);
 
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    null, "Desc", "Obs", 1L, StatusProcesso.ENCERRADO, 1L, null, 1000.0, 1, "Justificativa encerramento");
+                    null, "Desc", "Obs", 1L, StatusProcesso.ENCERRADO, 1L, null, 1000.0, 1, "Justificativa encerramento", null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
@@ -336,32 +356,6 @@ class UpdateProcessoTest {
     }
 
     @Nested
-    @DisplayName("Atualização de tribunal")
-    class AtualizacaoTribunal {
-
-        @Test
-        @DisplayName("Deve persistir a sigla de tribunal selecionada")
-        void deveAtualizarSiglaTribunal() {
-            SiglaTribunal tribunalSelecionado = new SiglaTribunal(2L, "TJRJ");
-            ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    null, "Descrição atualizada", "Observação atualizada", 1L,
-                    StatusProcesso.ATIVO, 1L, 2L, null, 1000.0, null, null);
-
-            when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
-            when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
-            when(faseProcessoRepository.findById(1L)).thenReturn(Optional.of(faseProcesso));
-            when(siglaTribunalRepository.findById(2L)).thenReturn(Optional.of(tribunalSelecionado));
-            when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-            updateProcesso.atualizarProcesso(1L, request);
-
-            ArgumentCaptor<ProcessoApp> captor = ArgumentCaptor.forClass(ProcessoApp.class);
-            verify(processoAppRepository).save(captor.capture());
-            assertEquals(tribunalSelecionado, captor.getValue().getSiglaTribunal());
-        }
-    }
-
-    @Nested
     @DisplayName("Reativação para ATIVO")
     class ReativacaoParaAtivo {
 
@@ -374,7 +368,7 @@ class UpdateProcessoTest {
             processoExistente.setJustificativa("Motivo anterior");
 
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    null, "Desc atualizada", "Obs", 1L, StatusProcesso.ATIVO, 1L, null, 2000.0, null, null);
+                    null, "Desc atualizada", "Obs", 1L, StatusProcesso.ATIVO, 1L, null, 2000.0, null, null, null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
@@ -402,44 +396,47 @@ class UpdateProcessoTest {
     }
 
     @Nested
-    @DisplayName("Integração com ProcessoApi")
+    @DisplayName("Integração com ProcessoApi e SiglaTribunal")
     class IntegracaoProcessoApi {
 
         @Test
-        @DisplayName("Deve buscar processo oficial quando não existir processoApi anterior e CNJ for informado")
+        @DisplayName("Deve atribuir sigla do tribunal pelo CNJ, criar ProcessoApi mínimo e enfileirar sincronização quando não existir processoApi anterior")
         void deveBuscarProcessoOficialQuandoNaoExisteENumeroCnjInformado() {
             processoExistente.setProcessoApi(null);
-            ProcessoApi apiMock = new ProcessoApi();
-            apiMock.setNumeroCnj("0000001-00.2026.8.26.0001");
+            processoExistente.setSiglaTribunal(null);
 
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    "0000001-00.2026.8.26.0001", "Desc", "Obs", 1L, StatusProcesso.ATIVO, 1L, null, 1000.0,
-                    null, null);
+                    "00000010020268260001", "Desc", "Obs", 1L, StatusProcesso.ATIVO, 1L, null, 1000.0,
+                    null, null, null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
             when(faseProcessoRepository.findById(1L)).thenReturn(Optional.of(faseProcesso));
-            when(processoApiGateway.buscarDadosOficiais(eq("0000001-00.2026.8.26.0001"), nullable(SiglaTribunal.class))).thenReturn(apiMock);
+            when(siglaTribunalRepository.findByNomeIgnoreCase("TJSP")).thenReturn(Optional.of(tribunal));
             when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> inv.getArgument(0));
 
             updateProcesso.atualizarProcesso(1L, request);
 
             ArgumentCaptor<ProcessoApp> captor = ArgumentCaptor.forClass(ProcessoApp.class);
             verify(processoAppRepository).save(captor.capture());
-            assertEquals(apiMock, captor.getValue().getProcessoApi());
-            verify(processoApiGateway).buscarDadosOficiais(eq("0000001-00.2026.8.26.0001"), nullable(SiglaTribunal.class));
+            assertEquals("00000010020268260001", captor.getValue().getProcessoApi().getNumeroCnj());
+            assertEquals("TJSP", captor.getValue().getProcessoApi().getTribunalTramitacao());
+            assertEquals(tribunal, captor.getValue().getSiglaTribunal());
+            verify(processoApiGateway, never()).buscarDadosOficiaisOuFalhar(any(), any());
+            verify(sincronizacaoProducer).enviarAposCommit(1L);
         }
 
         @Test
-        @DisplayName("Deve manter processoApi existente quando já estiver associado")
+        @DisplayName("Deve manter processoApi e siglaTribunal existentes sem permitir alteração de CNJ quando já estiver associado")
         void deveManterProcessoApiExistente() {
             ProcessoApi apiExistente = new ProcessoApi();
-            apiExistente.setNumeroCnj("9999999-99.2026.8.26.0001");
+            apiExistente.setNumeroCnj("99999999920268260001");
             processoExistente.setProcessoApi(apiExistente);
+            processoExistente.setSiglaTribunal(tribunal);
 
             ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
-                    "0000001-00.2026.8.26.0001", "Desc", "Obs", 1L, StatusProcesso.ATIVO, 1L, null, 1000.0,
-                    null, null);
+                    "00000010020268190001", "Desc", "Obs", 1L, StatusProcesso.ATIVO, 1L, null, 1000.0,
+                    null, null, null);
 
             when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
@@ -451,7 +448,153 @@ class UpdateProcessoTest {
             ArgumentCaptor<ProcessoApp> captor = ArgumentCaptor.forClass(ProcessoApp.class);
             verify(processoAppRepository).save(captor.capture());
             assertEquals(apiExistente, captor.getValue().getProcessoApi());
-            verify(processoApiGateway, never()).buscarDadosOficiais(any());
+            assertEquals("99999999920268260001", captor.getValue().getProcessoApi().getNumeroCnj());
+            assertEquals(tribunal, captor.getValue().getSiglaTribunal());
+            verify(processoApiGateway, never()).buscarDadosOficiaisOuFalhar(any(), any());
+            verify(sincronizacaoProducer, never()).enviarAposCommit(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("Descrição personalizada da alteração")
+    class DescricaoAlteracao {
+
+        private ProcessoAppUpdateRequest requestComDescricao(String descricaoAlteracao) {
+            return new ProcessoAppUpdateRequest(
+                    null, "Desc", null, 1L, StatusProcesso.ATIVO, 1L, null, 1000.0, null, null, descricaoAlteracao);
+        }
+
+        private void assertHistoricoAtualizacao(String descricaoEsperada) {
+            verify(registroHistorico).registrar(any(ProcessoApp.class), eq(usuarioResponsavel),
+                    eq(RegistroHistoricoProcesso.ATUALIZACAO), eq(descricaoEsperada));
+        }
+
+        @Test
+        @DisplayName("Deve registrar a descrição personalizada quando informada")
+        void deveRegistrarDescricaoPersonalizada() {
+            prepararMocks();
+
+            updateProcesso.atualizarProcesso(1L, requestComDescricao("Altera fase do processo."));
+
+            assertHistoricoAtualizacao("Altera fase do processo.");
+        }
+
+        @Test
+        @DisplayName("Deve remover espaços nas extremidades da descrição")
+        void deveAplicarTrimNaDescricao() {
+            prepararMocks();
+
+            updateProcesso.atualizarProcesso(1L, requestComDescricao("  Ajuste de prioridade  "));
+
+            assertHistoricoAtualizacao("Ajuste de prioridade");
+        }
+
+        @Test
+        @DisplayName("Deve registrar mensagem padrão quando descrição for nula")
+        void deveRegistrarMensagemPadraoQuandoNula() {
+            prepararMocks();
+
+            updateProcesso.atualizarProcesso(1L, requestComDescricao(null));
+
+            assertHistoricoAtualizacao("Dados do processo atualizados.");
+        }
+
+        @Test
+        @DisplayName("Deve registrar mensagem padrão quando descrição for vazia")
+        void deveRegistrarMensagemPadraoQuandoVazia() {
+            prepararMocks();
+
+            updateProcesso.atualizarProcesso(1L, requestComDescricao(""));
+
+            assertHistoricoAtualizacao("Dados do processo atualizados.");
+        }
+
+        @Test
+        @DisplayName("Deve registrar mensagem padrão quando descrição contiver apenas espaços")
+        void deveRegistrarMensagemPadraoQuandoEmBranco() {
+            prepararMocks();
+
+            updateProcesso.atualizarProcesso(1L, requestComDescricao("   "));
+
+            assertHistoricoAtualizacao("Dados do processo atualizados.");
+        }
+
+        @Test
+        @DisplayName("Deve registrar a descrição personalizada quando o status for alterado e descrição informada")
+        void deveIgnorarDescricaoQuandoStatusAlterado() {
+            MotivoStatusProcesso motivo = new MotivoStatusProcesso();
+            motivo.setId(3);
+            motivo.setNome("OUTROS");
+            motivo.setAplicavelA(MotivoStatusProcesso.AplicavelA.AMBOS);
+            prepararMocks();
+            when(motivoStatusProcessoRepository.findById(3)).thenReturn(Optional.of(motivo));
+
+            ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
+                    null, "Desc", null, 1L, StatusProcesso.SUSPENSO, 1L, null, 1000.0, 3, "Just", "Minha descrição");
+
+            updateProcesso.atualizarProcesso(1L, request);
+
+            verify(registroHistorico).registrar(any(ProcessoApp.class), eq(usuarioResponsavel),
+                    eq(RegistroHistoricoProcesso.STATUS), eq("Minha descrição"));
+            verify(registroHistorico, never()).registrar(any(), any(), eq(RegistroHistoricoProcesso.ATUALIZACAO), any());
+        }
+    }
+
+    @Nested
+    @DisplayName("Sincronização de Status do Cliente")
+    class SincronizacaoStatusClienteTest {
+
+        @Test
+        @DisplayName("Deve ativar cliente ao atualizar processo para ATIVO")
+        void deveAtivarClienteAoAtualizarProcessoParaAtivo() {
+            prepararMocks();
+            processoExistente.setStatus(StatusProcesso.SUSPENSO);
+
+            ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
+                    null, "Desc", null, 1L, StatusProcesso.ATIVO, 1L, null, 1000.0, null, null, null);
+
+            updateProcesso.atualizarProcesso(1L, request);
+
+            verify(atualizarStatusClientePorProcessos).ativarCliente(cliente);
+            verify(atualizarStatusClientePorProcessos, never()).atualizarStatusAposAlteracaoOuExclusao(any(), any());
+        }
+
+        @Test
+        @DisplayName("Deve sincronizar status de cliente ao suspender processo")
+        void deveSincronizarStatusAoSuspenderProcesso() {
+            MotivoStatusProcesso motivo = new MotivoStatusProcesso();
+            motivo.setId(1);
+            motivo.setNome("AGUARDANDO_DOCUMENTO");
+            motivo.setAplicavelA(MotivoStatusProcesso.AplicavelA.SUSPENSO);
+            prepararMocks();
+            when(motivoStatusProcessoRepository.findById(1)).thenReturn(Optional.of(motivo));
+
+            ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
+                    null, "Desc", null, 1L, StatusProcesso.SUSPENSO, 1L, null, 1000.0, 1, "Justificativa", null);
+
+            updateProcesso.atualizarProcesso(1L, request);
+
+            verify(atualizarStatusClientePorProcessos).atualizarStatusAposAlteracaoOuExclusao(cliente, 1L);
+            verify(atualizarStatusClientePorProcessos, never()).ativarCliente(any());
+        }
+
+        @Test
+        @DisplayName("Deve sincronizar status de cliente ao encerrar processo")
+        void deveSincronizarStatusAoEncerrarProcesso() {
+            MotivoStatusProcesso motivo = new MotivoStatusProcesso();
+            motivo.setId(2);
+            motivo.setNome("SENTENCA");
+            motivo.setAplicavelA(MotivoStatusProcesso.AplicavelA.ENCERRADO);
+            prepararMocks();
+            when(motivoStatusProcessoRepository.findById(2)).thenReturn(Optional.of(motivo));
+
+            ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
+                    null, "Desc", null, 1L, StatusProcesso.ENCERRADO, 1L, null, 1000.0, 2, "Justificativa", null);
+
+            updateProcesso.atualizarProcesso(1L, request);
+
+            verify(atualizarStatusClientePorProcessos).atualizarStatusAposAlteracaoOuExclusao(cliente, 1L);
+            verify(atualizarStatusClientePorProcessos, never()).ativarCliente(any());
         }
     }
 }

@@ -11,11 +11,13 @@ import br.com.sgpj.entity.Processo.StatusProcesso;
 import br.com.sgpj.entity.StatusCliente;
 import br.com.sgpj.entity.StatusClienteEnum;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
+import br.com.sgpj.entity.Processo.SiglaTribunal;
+import br.com.sgpj.producer.SincronizacaoProcessoProducer;
 import br.com.sgpj.repository.ClienteRepository;
 import br.com.sgpj.repository.ContatoRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
+import br.com.sgpj.repository.SiglaTribunalRepository;
 import br.com.sgpj.repository.StatusClienteRepository;
-import br.com.sgpj.service.useCases.processo.ProcessoApiGateway;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -54,7 +56,10 @@ class CreateSolicitacaoDuvidaTest {
     private StatusClienteRepository statusClienteRepository;
 
     @Mock
-    private ProcessoApiGateway processoApiGateway;
+    private SiglaTribunalRepository siglaTribunalRepository;
+
+    @Mock
+    private SincronizacaoProcessoProducer sincronizacaoProducer;
 
     @InjectMocks
     private CreateSolicitacaoDuvida createSolicitacaoDuvida;
@@ -86,7 +91,6 @@ class CreateSolicitacaoDuvidaTest {
                     true,
                     null,
                     null,
-                    "SP",
                     "dummy-test-token"
             );
 
@@ -116,9 +120,9 @@ class CreateSolicitacaoDuvidaTest {
             ProcessoApp salvo = processoCaptor.getValue();
             assertEquals(StatusProcesso.SOLICITACAO, salvo.getStatus());
             assertEquals("Descrição da dúvida", salvo.getDescricaoCaso());
-            assertEquals("Solicitação enviada pelo formulário público. Estado: SP", salvo.getObservacao());
+            assertEquals("Solicitação enviada pelo formulário público.", salvo.getObservacao());
             assertNotNull(response);
-            verify(processoApiGateway, never()).buscarDadosOficiais(any());
+            verify(sincronizacaoProducer, never()).enviarAposCommit(any());
         }
 
         @Test
@@ -233,7 +237,7 @@ class CreateSolicitacaoDuvidaTest {
         }
 
         @Test
-        @DisplayName("Deve buscar processo oficial quando numeroProcesso for informado")
+        @DisplayName("Deve vincular processo oficial com CNJ e tribunal e enfileirar sincronização quando numeroProcesso for informado")
         void deveBuscarProcessoOficialQuandoNumeroProcessoInformado() {
             SolicitacaoDuvidaCriacaoRequest request = new SolicitacaoDuvidaCriacaoRequest(
                     "Fulano de Tal",
@@ -248,8 +252,7 @@ class CreateSolicitacaoDuvidaTest {
                     null
             );
 
-            ProcessoApi apiMock = new ProcessoApi();
-            apiMock.setNumeroCnj("0000001-00.2026.8.26.0001");
+            SiglaTribunal siglaTribunal = new SiglaTribunal(1L, "TJSP");
 
             when(statusClienteRepository.findByNomeIgnoreCase(StatusClienteEnum.LEAD.getNome()))
                     .thenReturn(Optional.of(statusLead));
@@ -263,7 +266,7 @@ class CreateSolicitacaoDuvidaTest {
                 c.setId(20L);
                 return c;
             });
-            when(processoApiGateway.buscarDadosOficiais(any())).thenReturn(apiMock);
+            when(siglaTribunalRepository.findByNomeIgnoreCase("TJSP")).thenReturn(Optional.of(siglaTribunal));
             when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> {
                 ProcessoApp p = inv.getArgument(0);
                 p.setId(30L);
@@ -275,13 +278,18 @@ class CreateSolicitacaoDuvidaTest {
             ArgumentCaptor<ProcessoApp> processoCaptor = ArgumentCaptor.forClass(ProcessoApp.class);
             verify(processoAppRepository).save(processoCaptor.capture());
 
-            assertEquals(apiMock, processoCaptor.getValue().getProcessoApi());
-            assertEquals(StatusProcesso.SOLICITACAO, processoCaptor.getValue().getStatus());
+            ProcessoApp salvo = processoCaptor.getValue();
+            assertNotNull(salvo.getProcessoApi());
+            assertEquals("00000010020268260001", salvo.getProcessoApi().getNumeroCnj());
+            assertEquals("TJSP", salvo.getProcessoApi().getTribunalTramitacao());
+            assertEquals(siglaTribunal, salvo.getSiglaTribunal());
+            assertEquals(StatusProcesso.SOLICITACAO, salvo.getStatus());
             assertNotNull(response);
+            verify(sincronizacaoProducer).enviarAposCommit(30L);
         }
 
         @Test
-        @DisplayName("Deve tratar falha na busca de processo oficial sem interromper a criação")
+        @DisplayName("Deve tratar falha na resolução do tribunal sem interromper a criação e sem enfileirar")
         void deveTratarFalhaNaBuscaDeProcessoOficial() {
             SolicitacaoDuvidaCriacaoRequest request = new SolicitacaoDuvidaCriacaoRequest(
                     "Fulano de Tal",
@@ -308,8 +316,7 @@ class CreateSolicitacaoDuvidaTest {
                 c.setId(20L);
                 return c;
             });
-            when(processoApiGateway.buscarDadosOficiais(any()))
-                    .thenThrow(new RuntimeException("API indisponível"));
+            when(siglaTribunalRepository.findByNomeIgnoreCase("TJSP")).thenReturn(Optional.empty());
             when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> {
                 ProcessoApp p = inv.getArgument(0);
                 p.setId(30L);
@@ -320,6 +327,7 @@ class CreateSolicitacaoDuvidaTest {
 
             assertNotNull(response);
             verify(processoAppRepository).save(any(ProcessoApp.class));
+            verify(sincronizacaoProducer, never()).enviarAposCommit(any());
         }
 
         @Test

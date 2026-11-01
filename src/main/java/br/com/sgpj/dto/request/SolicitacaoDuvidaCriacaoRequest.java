@@ -55,9 +55,6 @@ public record SolicitacaoDuvidaCriacaoRequest(
         @Schema(description = "CNPJ do solicitante", example = "25523524000198")
         String cnpj,
 
-        @Schema(description = "Estado (UF) do solicitante", example = "SP")
-        String estado,
-
         @Schema(description = "Token de verificação do Cloudflare Turnstile", example = "0.xxxx...")
         @NotBlank(message = "Token de verificação anti-robô é obrigatório")
         String turnstileToken
@@ -76,24 +73,7 @@ public record SolicitacaoDuvidaCriacaoRequest(
                 String cnpj
         ) {
                 this(nomeCompleto, email, isPF, telefone, numeroProcesso, descricao, comoConheceu, aceitouTermos,
-                    razaoSocial, cnpj, null, "dummy-test-token");
-            }
-
-            public SolicitacaoDuvidaCriacaoRequest(
-                String nomeCompleto,
-                String email,
-                Boolean isPF,
-                String telefone,
-                String numeroProcesso,
-                String descricao,
-                ComoConheceuEnum comoConheceu,
-                Boolean aceitouTermos,
-                String razaoSocial,
-                String cnpj,
-                String turnstileToken
-            ) {
-                this(nomeCompleto, email, isPF, telefone, numeroProcesso, descricao, comoConheceu, aceitouTermos,
-                    razaoSocial, cnpj, null, turnstileToken);
+                    razaoSocial, cnpj, "dummy-test-token");
         }
 
         @JsonIgnore

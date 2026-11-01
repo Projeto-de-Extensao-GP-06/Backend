@@ -15,8 +15,9 @@ import br.com.sgpj.repository.HistoricoProcessoRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.security.AuthorizationUtil;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -47,8 +48,18 @@ public class ReadProcesso {
             String audiencia
     ) {
         var spec = ProcessoSpecification.comFiltros(query, status, faseId, tribunalId, prioridadeId, audiencia);
-        Page<ProcessoApp> paginaEncontrada = processoAppRepository.findAll(spec, pageable);
+        Page<ProcessoApp> paginaEncontrada = processoAppRepository.findAll(spec, audienciasSemDataPorUltimo(pageable));
         return paginaEncontrada.map(ProcessoAppMapper::toMiniResponse);
+    }
+
+    private Pageable audienciasSemDataPorUltimo(Pageable pageable) {
+        if (pageable == null || pageable.isUnpaged()) {
+            return pageable;
+        }
+        List<Sort.Order> orders = pageable.getSort().stream()
+                .map(order -> "dataAudiencia".equals(order.getProperty()) ? order.nullsLast() : order)
+                .toList();
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(orders));
     }
 
     public Page<ProcessoAppMiniResponse> listarProcessos(Pageable pageable) {
@@ -56,7 +67,6 @@ public class ReadProcesso {
     }
 
     public ProcessoAppResponse buscarPorId(Long id) {
-        authorizationUtil.verificarAcessoProcesso(id);
         ProcessoApp processoAppEncontrado = processoAppRepository.findById(id)
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Processo não encontrado para o ID: " + id));
         if (!deveExibirComoProcesso(processoAppEncontrado)) {

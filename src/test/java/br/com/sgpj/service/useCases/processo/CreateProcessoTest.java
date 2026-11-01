@@ -11,12 +11,18 @@ import br.com.sgpj.entity.Processo.SiglaTribunal;
 import br.com.sgpj.entity.Processo.StatusProcesso;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.ObjetoNaoEncontradoException;
+import br.com.sgpj.entity.StatusCliente;
+import br.com.sgpj.entity.StatusClienteEnum;
+import br.com.sgpj.exception.OperacaoInvalidaException;
+import br.com.sgpj.exception.TribunalInvalidoException;
+import br.com.sgpj.producer.SincronizacaoProcessoProducer;
 import br.com.sgpj.repository.ClienteRepository;
 import br.com.sgpj.repository.FaseProcessoRepository;
 import br.com.sgpj.repository.PrioridadeRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.SiglaTribunalRepository;
 import br.com.sgpj.service.RegistroHistoricoProcesso;
+import br.com.sgpj.service.useCases.cliente.AtualizarStatusClientePorProcessos;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -32,10 +38,12 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -55,13 +63,16 @@ class CreateProcessoTest {
     private ClienteRepository clienteRepository;
 
     @Mock
-    private ProcessoApiGateway processoApiGateway;
+    private SincronizacaoProcessoProducer sincronizacaoProducer;
 
     @Mock
     private ProcessoAppRepository processoAppRepository;
 
     @Mock
     private RegistroHistoricoProcesso registroHistorico;
+
+    @Mock
+    private AtualizarStatusClientePorProcessos atualizarStatusClientePorProcessos;
 
     @InjectMocks
     private CreateProcesso createProcesso;
@@ -85,6 +96,7 @@ class CreateProcessoTest {
         cliente = new Cliente();
         cliente.setId(4L);
         cliente.setNomeRazaoSocial("Cliente Teste");
+        cliente.setStatusCliente(new StatusCliente(1L, "ATIVO"));
     }
 
     @Nested
@@ -92,17 +104,16 @@ class CreateProcessoTest {
     class CriarProcessoTest {
 
         @Test
-        @DisplayName("Deve criar processo com status ATIVO com sucesso sem processo oficial")
+        @DisplayName("Deve criar processo com status ATIVO com sucesso sem processo oficial e ativar cliente")
         void deveCriarProcessoComStatusAtivoSemProcessoOficial() {
             ProcessoAppCriacaoRequest request = new ProcessoAppCriacaoRequest(
                     4L, "Descrição", "Obs", 1L, 2L,
                     LocalDateTime.of(2026, 12, 1, 14, 0),
-                    3L, null, 10000.0
+                    null, 10000.0
             );
 
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
             when(faseProcessoRepository.findById(2L)).thenReturn(Optional.of(faseProcesso));
-            when(siglaTribunalRepository.findById(3L)).thenReturn(Optional.of(siglaTribunal));
             when(clienteRepository.findById(4L)).thenReturn(Optional.of(cliente));
             when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> {
                 ProcessoApp p = inv.getArgument(0);
@@ -124,28 +135,24 @@ class CreateProcessoTest {
             assertEquals(cliente, salvo.getCliente());
             assertEquals(prioridade, salvo.getPrioridade());
             assertEquals(faseProcesso, salvo.getFaseProcesso());
-            assertEquals(siglaTribunal, salvo.getSiglaTribunal());
-            verify(processoApiGateway, never()).buscarDadosOficiais(any());
+            assertNull(salvo.getSiglaTribunal());
+            verify(atualizarStatusClientePorProcessos).ativarCliente(cliente);
+            verify(sincronizacaoProducer, never()).enviarAposCommit(any());
         }
 
         @Test
-        @DisplayName("Deve criar processo e consultar ProcessoApi quando número do processo for fornecido")
-        void deveCriarProcessoEConsultarApiQuandoNumeroProcessoInformado() {
+        @DisplayName("Deve criar processo com ProcessoApi mínimo e enfileirar sincronização quando número do processo for fornecido")
+        void deveCriarProcessoEEnfileirarSincronizacaoQuandoNumeroProcessoInformado() {
             ProcessoAppCriacaoRequest request = new ProcessoAppCriacaoRequest(
                     4L, "Descrição", "Obs", 1L, 2L,
                     LocalDateTime.of(2026, 12, 1, 14, 0),
-                    3L, "0000001-00.2026.8.26.0001", 10000.0
+                    "00000010020268260001", 10000.0
             );
-
-            ProcessoApi apiMock = new ProcessoApi();
-            apiMock.setNumeroCnj("0000001-00.2026.8.26.0001");
 
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
             when(faseProcessoRepository.findById(2L)).thenReturn(Optional.of(faseProcesso));
-            when(siglaTribunalRepository.findById(3L)).thenReturn(Optional.of(siglaTribunal));
+            when(siglaTribunalRepository.findByNomeIgnoreCase("TJSP")).thenReturn(Optional.of(siglaTribunal));
             when(clienteRepository.findById(4L)).thenReturn(Optional.of(cliente));
-            when(processoApiGateway.buscarDadosOficiais("00000010020268260001", siglaTribunal))
-                    .thenReturn(apiMock);
             when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> {
                 ProcessoApp p = inv.getArgument(0);
                 p.setId(100L);
@@ -158,72 +165,78 @@ class CreateProcessoTest {
             verify(processoAppRepository).save(captor.capture());
 
             ProcessoApp salvo = captor.getValue();
-            assertEquals(apiMock, salvo.getProcessoApi());
-            assertEquals(StatusProcesso.ATIVO, salvo.getStatus());
-            verify(processoApiGateway).buscarDadosOficiais("00000010020268260001", siglaTribunal);
-        }
-
-        @Test
-        @DisplayName("Deve criar processo com sucesso mesmo quando busca no DataJud lançar exceção")
-        void deveCriarProcessoComSucessoMesmoQuandoApiDataJudFalhar() {
-            ProcessoAppCriacaoRequest request = new ProcessoAppCriacaoRequest(
-                    4L, "Descrição", "Obs", 1L, 2L,
-                    LocalDateTime.of(2026, 12, 1, 14, 0),
-                    3L, "0000001-00.2026.8.26.0001", 10000.0
-            );
-
-            when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
-            when(faseProcessoRepository.findById(2L)).thenReturn(Optional.of(faseProcesso));
-            when(siglaTribunalRepository.findById(3L)).thenReturn(Optional.of(siglaTribunal));
-            when(clienteRepository.findById(4L)).thenReturn(Optional.of(cliente));
-            when(processoApiGateway.buscarDadosOficiais("00000010020268260001", siglaTribunal))
-                    .thenThrow(new RuntimeException("DataJud timeout"));
-            when(processoAppRepository.save(any(ProcessoApp.class))).thenAnswer(inv -> {
-                ProcessoApp p = inv.getArgument(0);
-                p.setId(101L);
-                return p;
-            });
-
-            ProcessoAppCreateResponse response = createProcesso.criarProcesso(request, usuarioAutenticado);
-
-            ArgumentCaptor<ProcessoApp> captor = ArgumentCaptor.forClass(ProcessoApp.class);
-            verify(processoAppRepository).save(captor.capture());
-
-            ProcessoApp salvo = captor.getValue();
-            assertNotNull(response);
-            assertEquals(101L, response.id());
             assertNotNull(salvo.getProcessoApi());
             assertEquals("00000010020268260001", salvo.getProcessoApi().getNumeroCnj());
             assertEquals("TJSP", salvo.getProcessoApi().getTribunalTramitacao());
+            assertEquals(siglaTribunal, salvo.getSiglaTribunal());
             assertEquals(StatusProcesso.ATIVO, salvo.getStatus());
-            verify(processoApiGateway).buscarDadosOficiais("00000010020268260001", siglaTribunal);
+            assertEquals(Boolean.FALSE, response.sincronizado());
+            verify(atualizarStatusClientePorProcessos).ativarCliente(cliente);
+            verify(sincronizacaoProducer).enviarAposCommit(100L);
+        }
+
+        @Test
+        @DisplayName("Deve lançar TribunalInvalidoException quando código do tribunal no CNJ for inválido")
+        void deveLancarExcecaoQuandoCodigoTribunalInvalido() {
+            ProcessoAppCriacaoRequest request = new ProcessoAppCriacaoRequest(
+                    4L, "Descrição", "Obs", 1L, 2L, null, "00000010020268990001", 10000.0
+            );
+            when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
+            when(faseProcessoRepository.findById(2L)).thenReturn(Optional.of(faseProcesso));
+            when(clienteRepository.findById(4L)).thenReturn(Optional.of(cliente));
+
+            assertThrows(TribunalInvalidoException.class, () -> createProcesso.criarProcesso(request, usuarioAutenticado));
+            verify(processoAppRepository, never()).save(any());
+            verifyNoInteractions(atualizarStatusClientePorProcessos);
         }
 
         @Test
         @DisplayName("Deve lançar exceção quando prioridade não for encontrada")
         void deveLancarExcecaoQuandoPrioridadeNaoEncontrada() {
             ProcessoAppCriacaoRequest request = new ProcessoAppCriacaoRequest(
-                    4L, "Descrição", "Obs", 99L, 2L, null, 3L, null, 10000.0
+                    4L, "Descrição", "Obs", 99L, 2L, null, null, 10000.0
             );
             when(prioridadeRepository.findById(99L)).thenReturn(Optional.empty());
 
             assertThrows(ObjetoNaoEncontradoException.class, () -> createProcesso.criarProcesso(request, usuarioAutenticado));
             verify(processoAppRepository, never()).save(any());
+            verifyNoInteractions(atualizarStatusClientePorProcessos);
         }
 
         @Test
         @DisplayName("Deve lançar exceção quando cliente não for encontrado")
         void deveLancarExcecaoQuandoClienteNaoEncontrado() {
             ProcessoAppCriacaoRequest request = new ProcessoAppCriacaoRequest(
-                    99L, "Descrição", "Obs", 1L, 2L, null, 3L, null, 10000.0
+                    99L, "Descrição", "Obs", 1L, 2L, null, null, 10000.0
             );
             when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
             when(faseProcessoRepository.findById(2L)).thenReturn(Optional.of(faseProcesso));
-            when(siglaTribunalRepository.findById(3L)).thenReturn(Optional.of(siglaTribunal));
             when(clienteRepository.findById(99L)).thenReturn(Optional.empty());
 
             assertThrows(ObjetoNaoEncontradoException.class, () -> createProcesso.criarProcesso(request, usuarioAutenticado));
             verify(processoAppRepository, never()).save(any());
+            verifyNoInteractions(atualizarStatusClientePorProcessos);
+        }
+
+        @Test
+        @DisplayName("Deve lançar OperacaoInvalidaException quando cliente possuir status LEAD")
+        void deveLancarOperacaoInvalidaExceptionQuandoClientePossuirStatusLead() {
+            cliente.setStatusCliente(new StatusCliente(3L, StatusClienteEnum.LEAD.getNome()));
+            ProcessoAppCriacaoRequest request = new ProcessoAppCriacaoRequest(
+                    4L, "Descrição", "Obs", 1L, 2L, null, null, 10000.0
+            );
+            when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
+            when(faseProcessoRepository.findById(2L)).thenReturn(Optional.of(faseProcesso));
+            when(clienteRepository.findById(4L)).thenReturn(Optional.of(cliente));
+
+            OperacaoInvalidaException exception = assertThrows(
+                    OperacaoInvalidaException.class,
+                    () -> createProcesso.criarProcesso(request, usuarioAutenticado)
+            );
+
+            assertEquals("Não é permitido criar processo para cliente com status LEAD.", exception.getMessage());
+            verify(processoAppRepository, never()).save(any());
+            verifyNoInteractions(atualizarStatusClientePorProcessos);
         }
     }
 }

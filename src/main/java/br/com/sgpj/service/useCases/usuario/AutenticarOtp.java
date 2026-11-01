@@ -46,8 +46,8 @@ public class AutenticarOtp {
             throw new BadCredentialsException("E-mail e/ou senha inválido(s).");
         }
 
-        if (!usuario.isAtivo()) {
-            log.error("Falha na autenticação de usuário. Motivo: usuário {} inativo.", request.email());
+        if (!usuario.isAtivo() || usuario.isUsuarioSistema()) {
+            log.error("Falha na autenticação de usuário. Motivo: usuário {} inativo ou de uso exclusivo do sistema.", request.email());
             throw new BadCredentialsException("E-mail e/ou senha inválido(s).");
         }
 

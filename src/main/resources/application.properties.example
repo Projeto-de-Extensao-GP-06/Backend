@@ -33,6 +33,9 @@ spring.servlet.multipart.max-request-size=260MB
 # Configurações para API DataJud
 datajud.api-key=${DATAJUD_API_KEY}
 
+# Cloudflare Turnstile
+cloudflare.secret-key=${CLOUDFLARE_SECRET_KEY}
+
 # CONFIGURAÇÃO DE DESENVOLVIMENTO (Usando mailpit)
 spring.mail.host=localhost
 spring.mail.port=1025
@@ -61,3 +64,5 @@ spring.rabbitmq.password=${RABBITMQ_PASSWORD:guest}
 
 sgpj.email.queue.retry-ttl-ms=${EMAIL_RETRY_TTL_MS:30000}
 sgpj.email.queue.max-retries=${EMAIL_MAX_RETRIES:3}
+sgpj.sincronizacao.queue.retry-ttl-ms=${SINCRONIZACAO_RETRY_TTL_MS:30000}
+sgpj.sincronizacao.queue.max-retries=${SINCRONIZACAO_MAX_RETRIES:3}

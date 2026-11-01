@@ -54,13 +54,19 @@ public class ClienteController {
 
     @GetMapping
     @SecurityRequirement(name = "Bearer")
-    public ResponseEntity<List<ClienteListarResponse>> listarTodos() {
-        List<ClienteListarResponse> clientes = clienteService.listarTodos();
+    @Operation(summary = "Lista clientes cadastrados. Permite filtrar para excluir clientes no status LEAD via query param excluirLead=true")
+    public ResponseEntity<List<ClienteListarResponse>> listarTodos(
+            @RequestParam(required = false, defaultValue = "false") boolean excluirLead) {
+        List<ClienteListarResponse> clientes = clienteService.listarTodos(excluirLead);
 
         if (clientes.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok(clientes);
+    }
+
+    public ResponseEntity<List<ClienteListarResponse>> listarTodos() {
+        return listarTodos(false);
     }
 
     @GetMapping("/{id}")

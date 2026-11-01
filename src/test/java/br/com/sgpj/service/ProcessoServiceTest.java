@@ -289,7 +289,6 @@ class ProcessoServiceTest {
 
             assertNotNull(resultado);
             assertEquals(1, resultado.size());
-            verify(authorizationUtil).verificarAcessoProcesso(10L);
             verify(processoDocumentoRepository).findByProcessoAppId(10L);
         }
     }

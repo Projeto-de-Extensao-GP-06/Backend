@@ -11,7 +11,7 @@ public record ProcessoApiCreateResponse(
         String tribunalTramitacao,
         String instancia,
         LocalDateTime dataAjuizamento,
-        Integer nivelSigilo,
+        String nivelSigilo,
         String classeProcessual,
         String formato,
         String sistemaTribunal,

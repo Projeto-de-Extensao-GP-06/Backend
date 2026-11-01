@@ -53,7 +53,6 @@ public class DashboardService {
         this.processoAppRepository = processoAppRepository;
         this.clienteRepository = clienteRepository;
         this.faseProcessoRepository = faseProcessoRepository;
-        popularVariaveisEscopoDash();
     }
 
     /*----------BUSCA DOS DADOS DOS GRÁFICOS PARA O CLIENT----------*/

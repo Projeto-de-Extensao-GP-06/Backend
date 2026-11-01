@@ -61,7 +61,7 @@ public class ProcessoApiMapper {
             processoApi.setAssunto(limitarTamanho(source.assuntos().get(0).nome(), 255));
         }
 
-        processoApi.setNivelSigilo(source.nivelSigilo() != null ? source.nivelSigilo() : 0);
+        processoApi.setNivelSigilo(source.nivelSigilo() != null ? String.valueOf(source.nivelSigilo()) : "0");
         processoApi.setOrgaoJulgador(source.orgaoJulgador() != null ? limitarTamanho(source.orgaoJulgador().nome(), 255) : "Não informado");
 
         // Mapeia data de ajuizamento

@@ -376,6 +376,18 @@ CREATE TABLE usuario_otp (
 ) ENGINE=MEMORY;
 
 -- =========================================================
+-- SHEDLOCK (CONTROLE DE LOCK DISTRIBUÍDO DE AGENDADORES)
+-- =========================================================
+
+CREATE TABLE shedlock (
+                          name VARCHAR(64) NOT NULL,
+                          lock_until TIMESTAMP(3) NOT NULL,
+                          locked_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+                          locked_by VARCHAR(255) NOT NULL,
+                          PRIMARY KEY (name)
+);
+
+-- =========================================================
 -- INDEXES
 -- =========================================================
 
@@ -425,6 +437,12 @@ VALUES (1, 'ADMIN'),
 
 INSERT INTO usuario (nome, email, senha, cargo_id)
 VALUES (
+           'SISTEMA SGPJ',
+           'sistema.sgpj@gmail.com',
+           NULL,
+           1
+       ),
+       (
            'Thauany Bezerra',
            'thauany@gmail.com',
            '$2a$12$AD1HxQJj.U.dQaam6fntBOCko5p6vrk/6bLLsv79EgpqzqFt7I5D6',
@@ -524,7 +542,8 @@ INSERT INTO tipo_alteracao (nome) VALUES
                                       ('ADIÇÃO DE ARQUIVO'),
                                       ('OBSERVAÇÃO'),
                                       ('ATUALIZAÇÃO DE DADOS'),
-                                      ('ALTERAÇÃO DE RESPONSÁVEL');
+                                      ('ALTERAÇÃO DE RESPONSÁVEL'),
+                                      ('AUDIÊNCIA');
 
 INSERT INTO motivo_status_processo (nome, aplicavel_a) VALUES
                                                            ('ACORDO',                  'ENCERRADO'),
@@ -585,8 +604,8 @@ VALUES (
           AND logradouro = 'Avenida Paulista'
           AND numero = '1000'
     ),
-    NOW(),
-    NOW()
+    '2026-02-10 10:30:00',
+    '2026-02-10 10:30:00'
 );
 
 INSERT INTO contato (
@@ -658,8 +677,8 @@ VALUES (
           AND logradouro = 'Rua Funchal'
           AND numero = '250'
     ),
-    NOW(),
-    NOW()
+    '2026-03-15 14:20:00',
+    '2026-03-15 14:20:00'
 );
 
 INSERT INTO contato (
@@ -731,8 +750,8 @@ VALUES (
           AND logradouro = 'Rua Haddock Lobo'
           AND numero = '850'
     ),
-    NOW(),
-    NOW()
+    '2026-01-20 09:15:00',
+    '2026-01-20 09:15:00'
 );
 
 INSERT INTO contato (
@@ -773,7 +792,7 @@ INSERT INTO processo_dados_api (
     assunto
 )
 VALUES (
-    '1000001-12.2026.8.26.0100',
+    '10000011220268260100',
     'Tribunal de Justiça de São Paulo',
     '1º Grau',
     '2026-02-10 10:30:00',
@@ -836,7 +855,7 @@ VALUES (
     (
         SELECT id
         FROM processo_dados_api
-        WHERE numero_cnj = '1000001-12.2026.8.26.0100'
+        WHERE numero_cnj = '10000011220268260100'
     )
 );
 
@@ -857,7 +876,7 @@ INSERT INTO processo_dados_api (
     assunto
 )
 VALUES (
-    '1000002-23.2026.8.26.0100',
+    '10000022320268260100',
     'Tribunal de Justiça de São Paulo',
     '1º Grau',
     '2026-03-15 14:20:00',
@@ -920,7 +939,7 @@ VALUES (
     (
         SELECT id
         FROM processo_dados_api
-        WHERE numero_cnj = '1000002-23.2026.8.26.0100'
+        WHERE numero_cnj = '10000022320268260100'
     )
 );
 
@@ -941,7 +960,7 @@ INSERT INTO processo_dados_api (
     assunto
 )
 VALUES (
-    '1000003-34.2026.8.26.0100',
+    '10000033420268260100',
     'Tribunal de Justiça de São Paulo',
     '1º Grau',
     '2026-01-20 09:15:00',
@@ -1004,7 +1023,7 @@ VALUES (
     (
         SELECT id
         FROM processo_dados_api
-        WHERE numero_cnj = '1000003-34.2026.8.26.0100'
+        WHERE numero_cnj = '10000033420268260100'
     )
 );
 
@@ -1025,7 +1044,7 @@ INSERT INTO processo_dados_api (
     assunto
 )
 VALUES (
-    '1000004-45.2026.8.26.0100',
+    '10000044520268260100',
     'Tribunal de Justiça de São Paulo',
     '1º Grau',
     '2026-04-05 11:40:00',
@@ -1086,7 +1105,7 @@ VALUES (
     (
         SELECT id
         FROM processo_dados_api
-        WHERE numero_cnj = '1000004-45.2026.8.26.0100'
+        WHERE numero_cnj = '10000044520268260100'
     )
 );
 
@@ -1107,7 +1126,7 @@ INSERT INTO processo_dados_api (
     assunto
 )
 VALUES (
-    '1000005-56.2026.8.26.0100',
+    '10000055620268260100',
     'Tribunal de Justiça de São Paulo',
     '1º Grau',
     '2026-05-18 16:10:00',
@@ -1168,6 +1187,6 @@ VALUES (
     (
         SELECT id
         FROM processo_dados_api
-        WHERE numero_cnj = '1000005-56.2026.8.26.0100'
+        WHERE numero_cnj = '10000055620268260100'
     )
 );

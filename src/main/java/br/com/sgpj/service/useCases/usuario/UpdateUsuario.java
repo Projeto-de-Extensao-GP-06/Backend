@@ -5,6 +5,7 @@ import br.com.sgpj.dto.response.Usuario.UsuarioListarResponse;
 import br.com.sgpj.entity.Cargo;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.CargoNaoEncontradoException;
+import br.com.sgpj.exception.OperacaoInvalidaException;
 import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.mapper.UsuarioMapper;
 import br.com.sgpj.repository.CargoRepository;
@@ -39,6 +40,10 @@ public class UpdateUsuario {
 
         Usuario usuarioAtual =
                 usuarioRepository.getReferenceById(id);
+
+        if (usuarioAtual.isUsuarioSistema()) {
+            throw new OperacaoInvalidaException("Não é permitido alterar o usuário do sistema.");
+        }
 
         Cargo cargo = cargoRepository
                 .findById(request.cargoId())

@@ -69,6 +69,18 @@ class ClienteServiceTest {
     }
 
     @Test
+    @DisplayName("listarTodos com filtro deve delegar ao use case ReadCliente com parâmetro")
+    void deveDelegarListagemComFiltroAoUseCase() {
+        List<ClienteListarResponse> lista = List.of(mock(ClienteListarResponse.class));
+        when(readCliente.listarTodos(true)).thenReturn(lista);
+
+        List<ClienteListarResponse> resultado = clienteService.listarTodos(true);
+
+        assertEquals(lista, resultado);
+        verify(readCliente).listarTodos(true);
+    }
+
+    @Test
     @DisplayName("buscarPorId deve delegar ao use case ReadCliente")
     void deveDelegarBuscaPorIdAoUseCase() {
         ClienteDetalhesResponse resposta = mock(ClienteDetalhesResponse.class);

@@ -17,7 +17,7 @@ public class ProcessoApi {
     private String tribunalTramitacao;
     private String instancia;
     private LocalDateTime dataAjuizamento;
-    private Integer nivelSigilo;
+    private String nivelSigilo;
     private String classeProcessual;
     private String formato;
     private String sistemaTribunal;
@@ -31,7 +31,7 @@ public class ProcessoApi {
     public ProcessoApi() {
     }
 
-    public ProcessoApi(Long id, String numeroCnj, String tribunalTramitacao, String instancia, LocalDateTime dataAjuizamento, Integer nivelSigilo, String classeProcessual, String formato, String sistemaTribunal, String orgaoJulgador, String assunto, List<MovimentacoesOficiais> movimentacoes) {
+    public ProcessoApi(Long id, String numeroCnj, String tribunalTramitacao, String instancia, LocalDateTime dataAjuizamento, String nivelSigilo, String classeProcessual, String formato, String sistemaTribunal, String orgaoJulgador, String assunto, List<MovimentacoesOficiais> movimentacoes) {
         this.id = id;
         this.numeroCnj = numeroCnj;
         this.tribunalTramitacao = tribunalTramitacao;
@@ -86,11 +86,11 @@ public class ProcessoApi {
         this.dataAjuizamento = dataAjuizamento;
     }
 
-    public Integer getNivelSigilo() {
+    public String getNivelSigilo() {
         return nivelSigilo;
     }
 
-    public void setNivelSigilo(Integer nivelSigilo) {
+    public void setNivelSigilo(String nivelSigilo) {
         this.nivelSigilo = nivelSigilo;
     }
 

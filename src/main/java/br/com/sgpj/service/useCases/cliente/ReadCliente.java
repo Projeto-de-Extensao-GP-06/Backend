@@ -3,6 +3,7 @@ package br.com.sgpj.service.useCases.cliente;
 import br.com.sgpj.dto.response.Cliente.ClienteDetalhesResponse;
 import br.com.sgpj.dto.response.Cliente.ClienteListarResponse;
 import br.com.sgpj.entity.Cliente;
+import br.com.sgpj.entity.StatusClienteEnum;
 import br.com.sgpj.exception.ClienteNaoEncontradoException;
 import br.com.sgpj.mapper.ClienteMapper;
 import br.com.sgpj.repository.ClienteRepository;
@@ -19,7 +20,6 @@ public class ReadCliente {
     private final ClienteRepository clienteRepository;
     private final AuthorizationUtil authorizationUtil;
 
-
     public ReadCliente(ClienteRepository clienteRepository, AuthorizationUtil authorizationUtil) {
         this.clienteRepository = clienteRepository;
         this.authorizationUtil = authorizationUtil;
@@ -27,6 +27,16 @@ public class ReadCliente {
 
     public List<ClienteListarResponse> listarTodos() {
         return clienteRepository.findAll()
+                .stream()
+                .map(ClienteMapper::toListarDto)
+                .toList();
+    }
+
+    public List<ClienteListarResponse> listarTodos(boolean excluirLead) {
+        if (!excluirLead) {
+            return listarTodos();
+        }
+        return clienteRepository.findByStatusCliente_NomeNotIgnoreCase(StatusClienteEnum.LEAD.getNome())
                 .stream()
                 .map(ClienteMapper::toListarDto)
                 .toList();

@@ -1,4 +1,16 @@
 # SGPJ Backend
+
+## Fluxo de solicitações do formulário público
+
+O DTO de criação não recebe estado/UF. Novas solicitações usam a observação
+`Solicitação enviada pelo formulário público.`, sem sufixo de estado.
+Os filtros de estado de registros antigos e a UF dos endereços continuam disponíveis.
+
+A criação registra o caminho de armazenamento do cliente. Quando há número de
+processo e tribunal reconhecido, a sincronização dos dados oficiais é enfileirada
+após o commit. O aceite registra o histórico de abertura e garante as pastas
+OneDrive do cliente.
+
 # Padrão de Commits e Fluxo de Desenvolvimento
 
 Este documento define o padrão de commits e o fluxo de trabalho do projeto.

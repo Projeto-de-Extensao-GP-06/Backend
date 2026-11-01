@@ -128,5 +128,24 @@ class EnviarDefinirSenhaOtpTest {
             verify(otpService).generateOtp(email, true);
             verify(emailService).sendSetPasswordOtp(email, "Fulano", "654321");
         }
+
+        @Test
+        @DisplayName("Deve bloquear envio de OTP de definição de senha para o usuário SISTEMA")
+        void deveBloquearOtpParaUsuarioSistema() {
+            Usuario usuarioSistema = new Usuario();
+            usuarioSistema.setId(Usuario.ID_SISTEMA);
+            usuarioSistema.setNome(Usuario.NOME_SISTEMA);
+            usuarioSistema.setEmail(Usuario.EMAIL_SISTEMA);
+            usuarioSistema.setAtivo(true);
+            usuarioSistema.setSenha(null);
+
+            when(usuarioRepository.findByEmail(Usuario.EMAIL_SISTEMA)).thenReturn(usuarioSistema);
+            when(otpService.generateOtp(Usuario.EMAIL_SISTEMA, false)).thenReturn("654321");
+
+            useCase.executar(Usuario.EMAIL_SISTEMA);
+
+            verify(otpService).generateOtp(Usuario.EMAIL_SISTEMA, false);
+            verify(emailService, never()).sendSetPasswordOtp(anyString(), anyString(), anyString());
+        }
     }
 }

@@ -1,6 +1,7 @@
 package br.com.sgpj.service;
 
 import br.com.sgpj.dto.request.DefinirNovaSenhaRequest;
+import br.com.sgpj.dto.request.UsuarioAlterarSenhaRequest;
 import br.com.sgpj.dto.request.UsuarioAtualizacaoRequest;
 import br.com.sgpj.dto.request.UsuarioCriacaoRequest;
 import br.com.sgpj.dto.request.UsuarioLoginRequest;
@@ -10,6 +11,7 @@ import br.com.sgpj.dto.response.Usuario.UsuarioListarResponse;
 import br.com.sgpj.dto.response.Usuario.UsuarioTokenResponse;
 import br.com.sgpj.dto.response.Usuario.UsuarioSessaoResponse;
 import br.com.sgpj.entity.Usuario;
+import br.com.sgpj.service.useCases.usuario.AlterarMinhaSenha;
 import br.com.sgpj.service.useCases.usuario.AutenticarOtp;
 import br.com.sgpj.service.useCases.usuario.AutenticarUsuario;
 import br.com.sgpj.service.useCases.usuario.CreateUsuario;
@@ -41,6 +43,7 @@ public class UsuarioService {
   private final EnviarDefinirSenhaOtp enviarDefinirSenhaOtp;
   private final ValidarOtp validarOtp;
   private final DefinirNovaSenha definirNovaSenha;
+  private final AlterarMinhaSenha alterarMinhaSenha;
 
   public UsuarioService(
           CreateUsuario createUsuario,
@@ -53,7 +56,8 @@ public class UsuarioService {
           EnviarRedefinirSenhaOtp enviarRedefinirSenhaOtp,
           EnviarDefinirSenhaOtp enviarDefinirSenhaOtp,
           ValidarOtp validarOtp,
-          DefinirNovaSenha definirNovaSenha
+          DefinirNovaSenha definirNovaSenha,
+          AlterarMinhaSenha alterarMinhaSenha
   ) {
     this.createUsuario = createUsuario;
     this.readUsuario = readUsuario;
@@ -66,6 +70,7 @@ public class UsuarioService {
     this.enviarDefinirSenhaOtp = enviarDefinirSenhaOtp;
     this.validarOtp = validarOtp;
     this.definirNovaSenha = definirNovaSenha;
+    this.alterarMinhaSenha = alterarMinhaSenha;
   }
 
   // =========================
@@ -163,5 +168,9 @@ public class UsuarioService {
 
   public void definirNovaSenha(DefinirNovaSenhaRequest request) {
     definirNovaSenha.executar(request);
+  }
+
+  public void alterarMinhaSenha(UsuarioAlterarSenhaRequest request) {
+    alterarMinhaSenha.executar(request);
   }
 }

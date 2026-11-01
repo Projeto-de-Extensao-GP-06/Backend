@@ -9,6 +9,10 @@ import java.time.LocalDateTime;
 @Table(name = "usuario")
 public class Usuario {
 
+    public static final Long ID_SISTEMA = 1L;
+    public static final String NOME_SISTEMA = "SISTEMA";
+    public static final String EMAIL_SISTEMA = "sistema.sgpj@gmail.com";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -100,4 +104,9 @@ public class Usuario {
   public boolean isAtivo() {return ativo;}
 
   public void setAtivo(boolean ativo) {this.ativo = ativo;}
+
+  public boolean isUsuarioSistema() {
+    return EMAIL_SISTEMA.equalsIgnoreCase(this.email)
+            || NOME_SISTEMA.equalsIgnoreCase(this.nome);
+  }
 }

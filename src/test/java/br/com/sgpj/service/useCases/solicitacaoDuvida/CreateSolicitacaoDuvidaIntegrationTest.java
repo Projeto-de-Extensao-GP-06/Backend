@@ -8,7 +8,7 @@ import br.com.sgpj.repository.CaminhoPadraoDeArmazenamentoRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.StatusClienteRepository;
 import br.com.sgpj.service.useCases.onedrive.RegistrarCaminhoArmazenamentoCliente;
-import br.com.sgpj.service.useCases.processo.ProcessoApiGateway;
+import br.com.sgpj.producer.SincronizacaoProcessoProducer;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -32,7 +32,7 @@ class CreateSolicitacaoDuvidaIntegrationTest {
     @Autowired private ProcessoAppRepository processoAppRepository;
     @Autowired private StatusClienteRepository statusClienteRepository;
     @Autowired private EntityManager entityManager;
-    @MockitoBean private ProcessoApiGateway processoApiGateway;
+    @MockitoBean private SincronizacaoProcessoProducer sincronizacaoProducer;
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
@@ -57,6 +57,6 @@ class CreateSolicitacaoDuvidaIntegrationTest {
         assertEquals(1, caminhos.size());
         assertEquals(pessoaFisica ? "cliente-de-teste" : "empresa-de-teste", caminhos.getFirst().getCaminho());
         assertEquals(cliente.getId(), caminhos.getFirst().getCliente().getId());
-        verifyNoInteractions(processoApiGateway);
+        verifyNoInteractions(sincronizacaoProducer);
     }
 }

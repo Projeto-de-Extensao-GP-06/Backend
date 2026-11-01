@@ -4,6 +4,7 @@ import br.com.sgpj.adapter.security.UsuarioAutenticacaoAdapter;
 import br.com.sgpj.entity.Cargo;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.CargoNaoEncontradoException;
+import br.com.sgpj.exception.OperacaoInvalidaException;
 import br.com.sgpj.exception.UsuarioAutoExclusaoException;
 import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.repository.CargoRepository;
@@ -55,6 +56,10 @@ public class DeleteUsuario {
 
         Usuario usuario =
                 usuarioRepository.getReferenceById(id);
+
+        if (usuario.isUsuarioSistema()) {
+            throw new OperacaoInvalidaException("Não é permitido excluir o usuário do sistema.");
+        }
 
         usuario.setAtivo(false);
 

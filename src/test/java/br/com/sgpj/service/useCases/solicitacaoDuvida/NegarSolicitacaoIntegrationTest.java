@@ -26,6 +26,7 @@ import br.com.sgpj.repository.StatusClienteRepository;
 import br.com.sgpj.repository.TipoAlteracaoRepository;
 import br.com.sgpj.repository.TipoDocumentoRepository;
 import br.com.sgpj.repository.UsuarioRepository;
+import br.com.sgpj.service.useCases.cliente.AtualizarStatusClientePorProcessos;
 import br.com.sgpj.service.useCases.processo.DeleteHistoricoProcesso;
 import br.com.sgpj.service.useCases.processo.DeleteProcessoApp;
 import br.com.sgpj.service.useCases.processo.DeleteProcessoDocumento;
@@ -56,7 +57,7 @@ import static org.mockito.Mockito.doThrow;
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.sql.init.mode=never"
 })
-@Import({NegarSolicitacao.class, DeleteProcessoApp.class, DeleteProcessoDocumento.class, DeleteHistoricoProcesso.class})
+@Import({NegarSolicitacao.class, DeleteProcessoApp.class, DeleteProcessoDocumento.class, DeleteHistoricoProcesso.class, AtualizarStatusClientePorProcessos.class})
 class NegarSolicitacaoIntegrationTest {
 
     @Autowired private ClienteRepository clienteRepository;

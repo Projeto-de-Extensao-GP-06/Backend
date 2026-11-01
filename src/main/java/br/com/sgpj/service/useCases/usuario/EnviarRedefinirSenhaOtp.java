@@ -31,11 +31,16 @@ public class EnviarRedefinirSenhaOtp {
 
         Usuario usuario = usuarioRepository.findByEmail(email);
 
-        boolean usuarioValido = usuario != null && usuario.isAtivo() && hasPassword(usuario);
+        boolean usuarioValido = usuario != null && !usuario.isUsuarioSistema() && usuario.isAtivo() && hasPassword(usuario);
         String otp = otpService.generateOtp(email, usuarioValido);
 
         if (usuario == null) {
             log.warn("Solicitação de OTP para e-mail não cadastrado: {}. Código gerado para controle de tentativas, mas e-mail não enviado.", email);
+            return;
+        }
+
+        if (usuario.isUsuarioSistema()) {
+            log.warn("Solicitação de OTP bloqueada para o usuário de sistema: {}.", email);
             return;
         }
 

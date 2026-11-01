@@ -99,6 +99,7 @@ public class SecurityConfiguracao {
             "/auth/refresh-token/**",
             "/api-onedrive/auth/callback",
             "/login/oauth2/code/azure",
+            "/processos/*/sincronizacao-status",
             "/error/**"
     };
 

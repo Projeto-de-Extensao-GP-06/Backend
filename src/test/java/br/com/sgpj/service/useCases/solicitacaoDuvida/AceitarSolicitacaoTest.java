@@ -21,6 +21,7 @@ import br.com.sgpj.repository.FaseProcessoRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.PrioridadeRepository;
 import br.com.sgpj.repository.StatusClienteRepository;
+import br.com.sgpj.service.RegistroHistoricoProcesso;
 import br.com.sgpj.service.useCases.onedrive.GarantirPastasClienteOneDrive;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -73,6 +74,9 @@ class AceitarSolicitacaoTest {
 
     @Mock
     private GarantirPastasClienteOneDrive garantirPastasClienteOneDrive;
+
+    @Mock
+    private RegistroHistoricoProcesso registroHistorico;
 
     @InjectMocks
     private AceitarSolicitacao aceitarSolicitacao;
@@ -149,6 +153,8 @@ class AceitarSolicitacaoTest {
 
             SolicitacaoClientePreenchimentoResponse response = aceitarSolicitacao.aceitar(1L, requestPf(), usuarioResponsavel);
             verify(garantirPastasClienteOneDrive).garantir(cliente, 1L);
+            verify(registroHistorico).registrar(processoApp, usuarioResponsavel,
+                    RegistroHistoricoProcesso.ABERTURA, "Processo criado.");
 
             ArgumentCaptor<ProcessoApp> processoCaptor = ArgumentCaptor.forClass(ProcessoApp.class);
             verify(processoAppRepository).save(processoCaptor.capture());

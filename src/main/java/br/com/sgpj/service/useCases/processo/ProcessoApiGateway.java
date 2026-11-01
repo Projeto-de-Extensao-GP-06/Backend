@@ -3,11 +3,8 @@ package br.com.sgpj.service.useCases.processo;
 import br.com.sgpj.adapter.api.DataJudAdapter;
 import br.com.sgpj.dto.response.DataJudApiResponse;
 import br.com.sgpj.entity.Processo.ProcessoApi;
-import br.com.sgpj.entity.Processo.SiglaTribunal;
-import br.com.sgpj.exception.TribunalInvalidoException;
+import br.com.sgpj.exception.DataJudIntegrationException;
 import br.com.sgpj.mapper.ProcessoApiMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
@@ -17,11 +14,12 @@ import org.springframework.stereotype.Component;
  * 1. Recebe número do processo e tribunal
  * 2. Consulta DataJud via adapter
  * 3. Traduz resposta DTO para entidade de domínio
+ *
+ * Não há retry nem fallback aqui: falhas são propagadas e a política de retentativa
+ * é responsabilidade exclusiva da fila RabbitMQ de sincronização.
  */
 @Component
 public class ProcessoApiGateway {
-
-    private static final Logger log = LoggerFactory.getLogger(ProcessoApiGateway.class);
 
     private final DataJudAdapter dataJudAdapter;
 
@@ -33,109 +31,22 @@ public class ProcessoApiGateway {
      * Busca dados oficiais do processo na API DataJud.
      *
      * @param numeroProcesso Número do processo em formato CNJ
-     * siglaTribunal Tribunal responsável
-     * @return ProcessoApi com dados oficiais, ou null se não encontrado
+     * @param siglaTribunal Tribunal responsável
+     * @return ProcessoApi com dados oficiais
+     * @throws DataJudIntegrationException se a consulta falhar ou não retornar resultados
      */
-    public ProcessoApi buscarDadosOficiais(String numeroProcesso) {
+    public ProcessoApi buscarDadosOficiaisOuFalhar(String numeroProcesso, String siglaTribunal) {
         if (numeroProcesso == null || numeroProcesso.isBlank()) {
-            return null;
+            throw new DataJudIntegrationException("Número do processo não informado.");
         }
 
-        String siglaTribunal;
-        try {
-            siglaTribunal = mapearSiglaTribunalPorNumero(numeroProcesso.substring(14, 16));
-        } catch (Exception e) {
-            siglaTribunal = null;
+        String cnjLimpo = numeroProcesso.replaceAll("\\D", "");
+        DataJudApiResponse dataJudResponse = dataJudAdapter.buscarPorNumeroDeProcesso(cnjLimpo, siglaTribunal);
+
+        if (dataJudResponse == null || !dataJudResponse.temResultados()) {
+            throw new DataJudIntegrationException("DataJud não retornou resultados para o processo " + cnjLimpo + ".");
         }
 
-        try {
-            DataJudApiResponse dataJudResponse = dataJudAdapter.buscarPorNumeroDeProcesso(
-                    numeroProcesso,
-                    siglaTribunal
-            );
-
-            if (dataJudResponse == null || !dataJudResponse.temResultados()) {
-                return null;
-            }
-
-            return ProcessoApiMapper.toEntity(dataJudResponse);
-        } catch (Exception ex) {
-            log.warn("Não foi possível obter dados oficiais do processo {} no tribunal {}: {}",
-                    numeroProcesso, siglaTribunal != null ? siglaTribunal : "null", ex.getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * Overload que aceita SiglaTribunal como entidade JPA.
-     * Usa o nome da entidade como fallback quando o código do tribunal
-     * não pode ser extraído do CNJ.
-     */
-    public ProcessoApi buscarDadosOficiais(String numeroProcesso, SiglaTribunal siglaTribunalEntidade) {
-        if (numeroProcesso == null || numeroProcesso.isBlank()) {
-            return null;
-        }
-
-        String siglaTribunal;
-        try {
-            siglaTribunal = mapearSiglaTribunalPorNumero(numeroProcesso.substring(14, 16));
-        } catch (Exception e) {
-            // fallback para a entidade passada
-            siglaTribunal = siglaTribunalEntidade != null ? siglaTribunalEntidade.getNome() : null;
-        }
-
-        try {
-            DataJudApiResponse dataJudResponse = dataJudAdapter.buscarPorNumeroDeProcesso(
-                    numeroProcesso,
-                    siglaTribunal
-            );
-
-            if (dataJudResponse == null || !dataJudResponse.temResultados()) {
-                return null;
-            }
-
-            return ProcessoApiMapper.toEntity(dataJudResponse);
-        } catch (Exception ex) {
-            log.warn("Não foi possível obter dados oficiais do processo {} no tribunal {}: {}",
-                    numeroProcesso, siglaTribunal != null ? siglaTribunal : "null", ex.getMessage());
-            return null;
-        }
-    }
-
-    private String mapearSiglaTribunalPorNumero(String numero) {
-        if (numero == null) {
-            return null;
-        }
-        return switch (numero.trim()) {
-            case "01" -> "TJAC";
-            case "02" -> "TJAL";
-            case "03" -> "TJAP";
-            case "04" -> "TJAM";
-            case "05" -> "TJBA";
-            case "06" -> "TJCE";
-            case "07" -> "TJDF";
-            case "08" -> "TJES";
-            case "09" -> "TJGO";
-            case "10" -> "TJMA";
-            case "11" -> "TJMT";
-            case "12" -> "TJMS";
-            case "13" -> "TJMG";
-            case "14" -> "TJPA";
-            case "15" -> "TJPB";
-            case "16" -> "TJPR";
-            case "17" -> "TJPE";
-            case "18" -> "TJPI";
-            case "19" -> "TJRJ";
-            case "20" -> "TJRN";
-            case "21" -> "TJRS";
-            case "22" -> "TJRO";
-            case "23" -> "TJRR";
-            case "24" -> "TJSC";
-            case "25" -> "TJSE";
-            case "26" -> "TJSP";
-            case "27" -> "TJTO";
-            default -> throw new TribunalInvalidoException("Código de tribunal inválido.");
-        };
+        return ProcessoApiMapper.toEntity(dataJudResponse);
     }
 }
-

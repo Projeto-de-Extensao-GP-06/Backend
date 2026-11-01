@@ -50,67 +50,32 @@ public class DataJudAdapter {
                 )
         );
 
-        int maxTentativas = 2;
-        long esperaEntreTentativasMs = 2000;
-        Exception ultimaExcecao = null;
-        DataJudApiResponse ultimaResposta = null;
+        try {
+            String jsonResponse = restClient.post()
+                    .uri(endpoint)
+                    .header("Authorization", dataJudApiKey)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(body)
+                    .retrieve()
+                    .body(String.class);
 
-        for (int tentativa = 1; tentativa <= maxTentativas; tentativa++) {
-            try {
-                String jsonResponse = restClient.post()
-                        .uri(endpoint)
-                        .header("Authorization", dataJudApiKey)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body(body)
-                        .retrieve()
-                        .body(String.class);
-
-                DataJudApiResponse response = parseResponse(jsonResponse);
-                if (response != null && response.temResultados()) {
-                    return response;
-                }
-
-                ultimaResposta = response;
-                // Se retornou 0 resultados, pode ter sido fila cheia ou falha temporária nos nós do tribunal
-                if (tentativa < maxTentativas) {
-                    log.info("Tentativa {}/{} no DataJud para o processo {} retornou 0 resultados. Aguardando 2s antes da próxima tentativa...",
-                            tentativa, maxTentativas, cnjLimpo);
-                    Thread.sleep(esperaEntreTentativasMs);
-                }
-
-            } catch (Exception ex) {
-                ultimaExcecao = ex;
-                log.warn("Tentativa {}/{} no DataJud para o processo {} falhou: {}",
-                        tentativa, maxTentativas, cnjLimpo, ex.getMessage());
-
-                if (tentativa < maxTentativas) {
-                    try {
-                        Thread.sleep(esperaEntreTentativasMs);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        throw new DataJudIntegrationException("Execução interrompida durante o retry", e);
-                    }
-                }
-            }
-        }
-
-        if (ultimaResposta != null) {
-            return ultimaResposta;
-        }
-
-        if (ultimaExcecao instanceof ResourceAccessException ex) {
+            return parseResponse(jsonResponse);
+        } catch (ResourceAccessException ex) {
+            log.warn("Consulta ao DataJud para o processo {} falhou por timeout/conexão: {}", cnjLimpo, ex.getMessage());
             throw new DataJudIntegrationException(
                     "Não foi possível conectar ao DataJud (tempo limite esgotado).",
                     ex
             );
+        } catch (DataJudIntegrationException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            log.warn("Consulta ao DataJud para o processo {} falhou: {}", cnjLimpo, ex.getMessage());
+            throw new DataJudIntegrationException(
+                    "Não foi possível estabelecer conexão com o DataJud.",
+                    ex
+            );
         }
-
-        throw new DataJudIntegrationException(
-                "Não foi possível estabelecer conexão com o DataJud.",
-                ultimaExcecao
-        );
     }
-
     private DataJudApiResponse parseResponse(String jsonResponse) {
         DataJudApiResponse response = jsonTranslator.translateToDto(jsonResponse);
         jsonTranslator.validarEstrutura(response);

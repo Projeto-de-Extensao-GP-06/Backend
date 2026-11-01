@@ -146,7 +146,7 @@ class ProcessosControllerTest {
             Page<ProcessoAppMiniResponse> processos = new PageImpl<>(List.of(processoAppMiniResponse));
             when(processoService.listarProcessos(any(), any(), any(), any(), any(), any(), any())).thenReturn(processos);
 
-            ResponseEntity<Page<ProcessoAppMiniResponse>> resposta = controller.listarProcessos(PageRequest.of(0, 20));
+            ResponseEntity<Page<ProcessoAppMiniResponse>> resposta = controller.listarProcessos(PageRequest.of(0, 20), null, null, null, null, null, null);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
             assertThat(resposta.getBody()).hasSize(1);
@@ -159,7 +159,7 @@ class ProcessosControllerTest {
         void deveRetornarListaVaziaComStatus200QuandoNaoHaProcessos() {
             when(processoService.listarProcessos(any(), any(), any(), any(), any(), any(), any())).thenReturn(Page.empty());
 
-            ResponseEntity<Page<ProcessoAppMiniResponse>> resposta = controller.listarProcessos(PageRequest.of(0, 20));
+            ResponseEntity<Page<ProcessoAppMiniResponse>> resposta = controller.listarProcessos(PageRequest.of(0, 20), null, null, null, null, null, null);
 
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
             assertThat(resposta.getBody().getContent()).isEmpty();

@@ -2,6 +2,7 @@ package br.com.sgpj.service;
 
 import br.com.sgpj.dto.response.CargoResponse;
 import br.com.sgpj.dto.request.CriarCargoRequest;
+import br.com.sgpj.dto.request.RenomearCargoRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -80,6 +81,21 @@ class CargoServiceTest {
 
         assertSame(resp, resultado);
         verify(updateCargo, times(1)).atualizarPermissoesCargo(id, req, email);
+    }
+
+    @Test
+    @DisplayName("renomear delega para UpdateCargo")
+    void renomear_delegaParaUpdateCargo() {
+        Long id = 3L;
+        RenomearCargoRequest req = new RenomearCargoRequest("Novo nome");
+        CargoResponse resp = mock(CargoResponse.class);
+
+        when(updateCargo.renomearCargo(id, req)).thenReturn(resp);
+
+        CargoResponse resultado = cargoService.renomear(id, req);
+
+        assertSame(resp, resultado);
+        verify(updateCargo).renomearCargo(id, req);
     }
 
     @Test

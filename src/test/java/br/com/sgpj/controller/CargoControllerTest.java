@@ -2,6 +2,7 @@ package br.com.sgpj.controller;
 
 import br.com.sgpj.dto.request.AtribuirPermissoesRequest;
 import br.com.sgpj.dto.request.CriarCargoRequest;
+import br.com.sgpj.dto.request.RenomearCargoRequest;
 import br.com.sgpj.dto.response.CargoResponse;
 import br.com.sgpj.service.CargoService;
 import org.junit.jupiter.api.DisplayName;
@@ -48,6 +49,9 @@ class CargoControllerTest {
 
     @Mock
     private AtribuirPermissoesRequest atribuirPermissoesRequest;
+
+    @Mock
+    private RenomearCargoRequest renomearCargoRequest;
 
     @InjectMocks
     private CargoController cargoController;
@@ -173,6 +177,27 @@ class CargoControllerTest {
 
             verify(authentication).getName();
             verify(cargoService).atualizarPermissoes(CARGO_ID, atribuirPermissoesRequest, EMAIL_USUARIO);
+        }
+    }
+
+    // =========================================================================
+    // renomear
+    // =========================================================================
+
+    @Nested
+    @DisplayName("PUT /cargos/{cargoId} - renomear")
+    class Renomear {
+
+        @Test
+        @DisplayName("Deve renomear cargo e retornar status 200")
+        void deveRenomearCargoComStatus200() {
+            when(cargoService.renomear(CARGO_ID, renomearCargoRequest)).thenReturn(cargoResponse);
+
+            ResponseEntity<CargoResponse> resposta = cargoController.renomear(CARGO_ID, renomearCargoRequest);
+
+            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(resposta.getBody()).isEqualTo(cargoResponse);
+            verify(cargoService).renomear(CARGO_ID, renomearCargoRequest);
         }
     }
 

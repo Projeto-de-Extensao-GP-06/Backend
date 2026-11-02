@@ -28,4 +28,8 @@ public interface CargoRepository extends JpaRepository<Cargo, Long> {
     Cargo findByNome(String nomeCargo);
 
     boolean existsByNome(String nomeCargo);
+
+    boolean existsByNomeIgnoreCase(String nomeCargo);
+
+    boolean existsByNomeIgnoreCaseAndIdNot(String nomeCargo, Long id);
 }

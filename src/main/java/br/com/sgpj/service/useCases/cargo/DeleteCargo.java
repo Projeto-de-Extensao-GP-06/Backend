@@ -23,11 +23,11 @@ public class DeleteCargo {
 
 
     public void deletarCargo(Long cargoId){
-        if (cargoId.equals(ConstantesValidation.CARGO_ADMIN_ID)) {
+        if (ConstantesValidation.CARGO_ADMIN_ID.equals(cargoId)) {
             throw new OperacaoInvalidaException("O cargo 'ADMIN' não pode ser excluído");
         }
 
-        if (cargoId.equals(ConstantesValidation.SEM_CARGO_ID)) {
+        if (ConstantesValidation.SEM_CARGO_ID.equals(cargoId)) {
             throw new OperacaoInvalidaException("O cargo 'Sem Cargo' não pode ser excluído");
         }
 

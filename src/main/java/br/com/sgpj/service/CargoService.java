@@ -2,6 +2,7 @@ package br.com.sgpj.service;
 
 import br.com.sgpj.dto.request.AtribuirPermissoesRequest;
 import br.com.sgpj.dto.request.CriarCargoRequest;
+import br.com.sgpj.dto.request.RenomearCargoRequest;
 import br.com.sgpj.dto.response.CargoResponse;
 import br.com.sgpj.dto.response.PermissaoResponse;
 import br.com.sgpj.entity.*;
@@ -59,6 +60,11 @@ public class CargoService {
     @Transactional
     public CargoResponse atualizarPermissoes(Long cargoId, AtribuirPermissoesRequest request, String emailUsuario) {
         return updateCargo.atualizarPermissoesCargo(cargoId, request, emailUsuario);
+    }
+
+    @Transactional
+    public CargoResponse renomear(Long cargoId, RenomearCargoRequest request) {
+        return updateCargo.renomearCargo(cargoId, request);
     }
 
     //DELETE OPERATIONS

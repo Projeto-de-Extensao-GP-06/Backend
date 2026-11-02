@@ -38,6 +38,7 @@ public interface ProcessoAppRepository extends JpaRepository<ProcessoApp, Long>,
             left join p.processoApi api
             where lower(p.observacao) like lower(concat(:estadoPrefixo, '%'))
               and (:estado is null or lower(p.observacao) = lower(concat(:estadoPrefixo, ' Estado: ', :estado)))
+              and (:isPF is null or c.isPF = :isPF)
               and (:pesquisa is null
                    or lower(c.nomeRazaoSocial) like lower(concat('%', :pesquisa, '%'))
                    or exists (
@@ -58,6 +59,7 @@ public interface ProcessoAppRepository extends JpaRepository<ProcessoApp, Long>,
             left join p.processoApi api
             where lower(p.observacao) like lower(concat(:estadoPrefixo, '%'))
               and (:estado is null or lower(p.observacao) = lower(concat(:estadoPrefixo, ' Estado: ', :estado)))
+              and (:isPF is null or c.isPF = :isPF)
               and (:pesquisa is null
                    or lower(c.nomeRazaoSocial) like lower(concat('%', :pesquisa, '%'))
                    or exists (
@@ -72,6 +74,7 @@ public interface ProcessoAppRepository extends JpaRepository<ProcessoApp, Long>,
             """)
     Page<ProcessoApp> buscarSolicitacoesFiltradas(
             @Param("estado") String estado,
+            @Param("isPF") Boolean isPF,
             @Param("estadoPrefixo") String estadoPrefixo,
             @Param("pesquisa") String pesquisa,
             @Param("dataInicio") LocalDateTime dataInicio,

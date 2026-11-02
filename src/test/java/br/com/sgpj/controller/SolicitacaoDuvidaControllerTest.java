@@ -124,17 +124,17 @@ class SolicitacaoDuvidaControllerTest {
         Pageable pageable = PageRequest.of(1, 5,
                 Sort.by(Sort.Order.desc("dataHoraInicio"), Sort.Order.desc("id")));
         Page<SolicitacaoDuvidaListarResponse> pagina = new PageImpl<>(List.of(), pageable, 7);
-        when(service.filtrar("SP", "maria",
+        when(service.filtrar("SP", true, "maria",
                 LocalDateTime.of(2026, 1, 1, 0, 0), LocalDateTime.of(2027, 1, 1, 0, 0), pageable))
                 .thenReturn(pagina);
 
         ResponseEntity<Page<SolicitacaoDuvidaListarResponse>> response = controller.filtrar(
-                "SP", "maria", java.time.LocalDate.of(2026, 1, 1),
+                "SP", "PF", "maria", java.time.LocalDate.of(2026, 1, 1),
                 java.time.LocalDate.of(2026, 12, 31), 1, 5, "dataSolicitacao,desc");
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(7, response.getBody().getTotalElements());
-        verify(service).filtrar("SP", "maria",
+        verify(service).filtrar("SP", true, "maria",
                 LocalDateTime.of(2026, 1, 1, 0, 0), LocalDateTime.of(2027, 1, 1, 0, 0), pageable);
     }
 
@@ -144,26 +144,28 @@ class SolicitacaoDuvidaControllerTest {
         Pageable pageable = PageRequest.of(0, 20,
                 Sort.by(Sort.Order.desc("dataHoraInicio"), Sort.Order.desc("id")));
         Page<SolicitacaoDuvidaListarResponse> paginaVazia = new PageImpl<>(List.of(), pageable, 0);
-        when(service.filtrar(" ", " ", null, null, pageable)).thenReturn(paginaVazia);
+        when(service.filtrar(" ", null, " ", null, null, pageable)).thenReturn(paginaVazia);
 
         ResponseEntity<Page<SolicitacaoDuvidaListarResponse>> response = controller.filtrar(
-                " ", " ", null, null, 0, 20, "dataHoraInicio,desc");
+                " ", null, " ", null, null, 0, 20, "dataHoraInicio,desc");
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(0, response.getBody().getTotalElements());
         assertEquals(0, response.getBody().getTotalPages());
-        verify(service).filtrar(" ", " ", null, null, pageable);
+        verify(service).filtrar(" ", null, " ", null, null, pageable);
     }
 
     @Test
     @DisplayName("GET filtrar deve rejeitar paginação fora dos limites")
     void filtrarDeveRejeitarParametrosInvalidos() {
         assertThrows(IllegalArgumentException.class, () -> controller.filtrar(
-                null, null, null, null, 0, 101, "id,asc"));
+                null, null, null, null, null, 0, 101, "id,asc"));
         assertThrows(IllegalArgumentException.class, () -> controller.filtrar(
-                null, null, null, null, -1, 20, "id,asc"));
+                null, null, null, null, null, -1, 20, "id,asc"));
         assertThrows(IllegalArgumentException.class, () -> controller.filtrar(
-                null, null, null, null, 0, 20, "nomeCompleto,asc"));
+                null, null, null, null, null, 0, 20, "nomeCompleto,asc"));
+        assertThrows(IllegalArgumentException.class, () -> controller.filtrar(
+                null, "Outro", null, null, null, 0, 20, "id,asc"));
     }
 
     @Test

@@ -24,12 +24,14 @@ public class FiltrarSolicitacoes {
 
     public Page<SolicitacaoDuvidaListarResponse> filtrar(
             String estado,
+            Boolean isPF,
             String pesquisa,
             LocalDateTime dataInicio,
             LocalDateTime dataFim,
             Pageable pageable) {
         return processoAppRepository.buscarSolicitacoesFiltradas(
                         normalizar(estado),
+                        isPF,
                         OBSERVACAO_SOLICITACAO_PREFIXO,
                         normalizar(pesquisa),
                         dataInicio,

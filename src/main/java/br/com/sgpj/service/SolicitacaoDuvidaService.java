@@ -64,11 +64,12 @@ public class SolicitacaoDuvidaService {
     @Transactional(readOnly = true)
     public Page<SolicitacaoDuvidaListarResponse> filtrar(
             String estado,
+            Boolean isPF,
             String pesquisa,
             LocalDateTime dataInicio,
             LocalDateTime dataFim,
             Pageable pageable) {
-        return filtrarSolicitacoes.filtrar(estado, pesquisa, dataInicio, dataFim, pageable);
+        return filtrarSolicitacoes.filtrar(estado, isPF, pesquisa, dataInicio, dataFim, pageable);
     }
 
     @Transactional(readOnly = true)

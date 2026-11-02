@@ -49,6 +49,24 @@ public record ProcessoAppUpdateRequest(
 
         @Size(max = 80, message = "A descrição da alteração não pode ter mais de 80 caracteres")
         @Schema(description = "Descrição personalizada da alteração de dados do processo (opcional, máx. 80 caracteres). Quando não informada, é registrada a mensagem padrão.", example = "Altera fase do processo.", maxLength = 80, nullable = true)
-        String descricaoAlteracao
+        String descricaoAlteracao,
+
+        @Schema(description = "Id do usuário responsável pelo processo", example = "1")
+        Long usuarioResponsavelId
 ) {
+    public ProcessoAppUpdateRequest(
+            String numeroCnj,
+            String descricaoCaso,
+            String observacao,
+            Long prioridadeId,
+            StatusProcesso status,
+            Long faseProcessoId,
+            LocalDateTime dataAudiencia,
+            Double valorCausa,
+            Integer motivoStatusProcessoId,
+            String justificativa,
+            String descricaoAlteracao
+    ) {
+        this(numeroCnj, descricaoCaso, observacao, prioridadeId, status, faseProcessoId, dataAudiencia, valorCausa, motivoStatusProcessoId, justificativa, descricaoAlteracao, null);
+    }
 }

@@ -19,6 +19,7 @@ import br.com.sgpj.repository.MotivoStatusProcessoRepository;
 import br.com.sgpj.repository.PrioridadeRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.SiglaTribunalRepository;
+import br.com.sgpj.repository.UsuarioRepository;
 import br.com.sgpj.security.AuthorizationUtil;
 import br.com.sgpj.service.RegistroHistoricoProcesso;
 import br.com.sgpj.service.useCases.cliente.AtualizarStatusClientePorProcessos;
@@ -79,6 +80,9 @@ class UpdateProcessoTest {
 
     @Mock
     private AtualizarStatusClientePorProcessos atualizarStatusClientePorProcessos;
+
+    @Mock
+    private UsuarioRepository usuarioRepository;
 
     @InjectMocks
     private UpdateProcesso updateProcesso;
@@ -597,4 +601,82 @@ class UpdateProcessoTest {
             verify(atualizarStatusClientePorProcessos, never()).ativarCliente(any());
         }
     }
+
+    @Nested
+    @DisplayName("Atualização de Usuário Responsável")
+    class AtualizacaoUsuarioResponsavel {
+
+        @Test
+        @DisplayName("Deve atualizar o usuário responsável com sucesso quando um novo responsável válido for informado")
+        void deveAtualizarUsuarioResponsavelComSucesso() {
+            prepararMocks();
+            Usuario novoResponsavel = new Usuario();
+            novoResponsavel.setId(101L);
+            novoResponsavel.setNome("Novo Advogado");
+
+            when(usuarioRepository.findById(101L)).thenReturn(Optional.of(novoResponsavel));
+
+            ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
+                    null, "Desc", "Obs", 1L, StatusProcesso.ATIVO, 1L, null, 1000.0, null, null, null, 101L);
+
+            ProcessoAppUpdateResponse response = updateProcesso.atualizarProcesso(1L, request);
+
+            assertNotNull(response);
+            assertEquals(101L, response.usuarioResponsavelId());
+            assertEquals("Novo Advogado", response.usuarioResponsavelNome());
+            verify(usuarioRepository).findById(101L);
+        }
+
+        @Test
+        @DisplayName("Deve lançar exceção quando o novo usuário responsável não for encontrado")
+        void deveLancarExcecaoQuandoNovoResponsavelNaoEncontrado() {
+            when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
+            when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
+            when(faseProcessoRepository.findById(1L)).thenReturn(Optional.of(faseProcesso));
+            when(usuarioRepository.findById(999L)).thenReturn(Optional.empty());
+
+            ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
+                    null, "Desc", "Obs", 1L, StatusProcesso.ATIVO, 1L, null, 1000.0, null, null, null, 999L);
+
+            assertThrows(ObjetoNaoEncontradoException.class, () -> updateProcesso.atualizarProcesso(1L, request));
+            verify(processoAppRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Deve lançar exceção quando o novo usuário responsável for o usuário do sistema")
+        void deveLancarExcecaoQuandoNovoResponsavelForSistema() {
+            when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoExistente));
+            when(prioridadeRepository.findById(1L)).thenReturn(Optional.of(prioridade));
+            when(faseProcessoRepository.findById(1L)).thenReturn(Optional.of(faseProcesso));
+            Usuario usuarioSistema = new Usuario();
+            usuarioSistema.setId(Usuario.ID_SISTEMA);
+            usuarioSistema.setNome(Usuario.NOME_SISTEMA);
+            usuarioSistema.setEmail(Usuario.EMAIL_SISTEMA);
+
+            when(usuarioRepository.findById(Usuario.ID_SISTEMA)).thenReturn(Optional.of(usuarioSistema));
+
+            ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
+                    null, "Desc", "Obs", 1L, StatusProcesso.ATIVO, 1L, null, 1000.0, null, null, null, Usuario.ID_SISTEMA);
+
+            assertThrows(OperacaoInvalidaException.class, () -> updateProcesso.atualizarProcesso(1L, request));
+            verify(processoAppRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Deve manter o responsável existente quando usuarioResponsavelId não for informado")
+        void deveManterResponsavelExistenteQuandoNaoInformado() {
+            prepararMocks();
+
+            ProcessoAppUpdateRequest request = new ProcessoAppUpdateRequest(
+                    null, "Desc", "Obs", 1L, StatusProcesso.ATIVO, 1L, null, 1000.0, null, null, null);
+
+            ProcessoAppUpdateResponse response = updateProcesso.atualizarProcesso(1L, request);
+
+            assertNotNull(response);
+            assertEquals(100L, response.usuarioResponsavelId());
+            assertEquals("Advogado", response.usuarioResponsavelNome());
+            verify(usuarioRepository, never()).findById(any());
+        }
+    }
+
 }

@@ -215,5 +215,18 @@ class AtualizarStatusClientePorProcessosTest {
             assertEquals("INATIVO", cliente.getStatusCliente().getNome());
             verify(clienteRepository).save(cliente);
         }
+
+        @Test
+        @DisplayName("Deve preservar status LEAD quando não possuir processo ativo")
+        void devePreservarLeadSemProcessoAtivo() {
+            cliente.setStatusCliente(statusLead);
+            when(processoAppRepository.existsByCliente_IdAndStatus(10L, StatusProcesso.ATIVO)).thenReturn(false);
+
+            atualizarStatusClientePorProcessos.sincronizarStatusCliente(cliente);
+
+            assertEquals("LEAD", cliente.getStatusCliente().getNome());
+            verify(statusClienteRepository, never()).findByNomeIgnoreCase(any());
+            verify(clienteRepository, never()).save(any());
+        }
     }
 }

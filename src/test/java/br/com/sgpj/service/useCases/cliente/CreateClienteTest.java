@@ -31,6 +31,7 @@ class CreateClienteTest {
     @Mock private StatusClienteRepository statusClienteRepository;
     @Mock private ContatoRepository contatoRepository;
     @Mock private ClienteCaminhoArmazenamento clienteCaminhoArmazenamento;
+    @Mock private AtualizarStatusClientePorProcessos atualizarStatusClientePorProcessos;
     @InjectMocks private CreateCliente createCliente;
 
     @Test
@@ -50,8 +51,9 @@ class CreateClienteTest {
 
         var response = createCliente.criarCliente(request);
 
-        var ordem = inOrder(clienteRepository, clienteCaminhoArmazenamento);
+        var ordem = inOrder(clienteRepository, atualizarStatusClientePorProcessos, clienteCaminhoArmazenamento);
         ordem.verify(clienteRepository).save(any(Cliente.class));
+        ordem.verify(atualizarStatusClientePorProcessos).sincronizarStatusCliente(clienteSalvo);
         ordem.verify(clienteCaminhoArmazenamento).registrar(clienteSalvo);
         ordem.verify(clienteRepository).findByIdComDetalhes(10L);
         assertEquals(10L, response.id());

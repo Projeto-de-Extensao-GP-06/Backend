@@ -229,14 +229,9 @@ class BuscarCandidatosDuplicidadeSolicitacaoTest {
 
             List<SolicitacaoCandidatoDuplicidadeResponse> resultado = useCase.buscarCandidatos(processoApp);
 
-            assertEquals(2, resultado.size());
-            // Cliente B deve vir primeiro pois possui 2 motivos
-            assertEquals(200L, resultado.get(0).clienteId());
-            assertEquals(2, resultado.get(0).motivos().size());
-
-            // Cliente A vem depois com 1 motivo
-            assertEquals(100L, resultado.get(1).clienteId());
-            assertEquals(1, resultado.get(1).motivos().size());
+            assertEquals(1, resultado.size(), "Correspondência apenas pelo nome não deve ser tratada como duplicidade");
+            assertEquals(200L, resultado.getFirst().clienteId());
+            assertEquals(2, resultado.getFirst().motivos().size());
         }
 
         @Test
@@ -247,25 +242,57 @@ class BuscarCandidatosDuplicidadeSolicitacaoTest {
             clienteSolicitacao.setPF(true);
             clienteSolicitacao.setNomeRazaoSocial("Nome Comum");
 
+            Contato contatoSolicitacao = new Contato();
+            contatoSolicitacao.setEmail("comum@email.com");
+            contatoSolicitacao.setPrincipal(true);
+            clienteSolicitacao.setContatos(List.of(contatoSolicitacao));
+
             ProcessoApp processoApp = new ProcessoApp();
             processoApp.setCliente(clienteSolicitacao);
 
-            // Criar 15 candidatos com mesmo nome
-            java.util.List<Cliente> quinzeClientes = new java.util.ArrayList<>();
+            // Criar 15 candidatos com o mesmo e-mail
+            java.util.List<Contato> quinzeContatos = new java.util.ArrayList<>();
             for (long i = 101L; i <= 115L; i++) {
                 Cliente c = new Cliente();
                 c.setId(i);
-                c.setNomeRazaoSocial("Nome Comum");
+                c.setNomeRazaoSocial("Cliente " + i);
                 c.setStatusCliente(statusAtivo);
-                quinzeClientes.add(c);
+
+                Contato contato = new Contato();
+                contato.setCliente(c);
+                contato.setEmail("comum@email.com");
+                quinzeContatos.add(contato);
             }
 
-            when(clienteRepository.findCandidatosPorNome("Nome Comum", 1L)).thenReturn(quinzeClientes);
+            when(contatoRepository.findContatosPorEmail("comum@email.com", 1L)).thenReturn(quinzeContatos);
 
             List<SolicitacaoCandidatoDuplicidadeResponse> resultado = useCase.buscarCandidatos(processoApp);
 
             assertNotNull(resultado);
             assertEquals(10, resultado.size(), "Deve conter no máximo 10 candidatos retornados");
+        }
+
+        @Test
+        @DisplayName("Não deve tratar correspondência apenas pelo nome como duplicidade")
+        void naoDeveRetornarCandidatoQueCoincideApenasPeloNome() {
+            Cliente clienteSolicitacao = new Cliente();
+            clienteSolicitacao.setId(1L);
+            clienteSolicitacao.setPF(true);
+            clienteSolicitacao.setNomeRazaoSocial("Maria Souza");
+
+            ProcessoApp processoApp = new ProcessoApp();
+            processoApp.setCliente(clienteSolicitacao);
+
+            Cliente clienteMesmoNome = new Cliente();
+            clienteMesmoNome.setId(2L);
+            clienteMesmoNome.setNomeRazaoSocial("Maria Souza");
+
+            when(clienteRepository.findCandidatosPorNome("Maria Souza", 1L))
+                    .thenReturn(List.of(clienteMesmoNome));
+
+            List<SolicitacaoCandidatoDuplicidadeResponse> resultado = useCase.buscarCandidatos(processoApp);
+
+            assertTrue(resultado.isEmpty());
         }
 
         @Test
@@ -275,6 +302,11 @@ class BuscarCandidatosDuplicidadeSolicitacaoTest {
             clienteSolicitacao.setId(1L);
             clienteSolicitacao.setPF(true);
             clienteSolicitacao.setNomeRazaoSocial("Teste Status");
+
+            Contato contatoSolicitacao = new Contato();
+            contatoSolicitacao.setEmail("teste@email.com");
+            contatoSolicitacao.setPrincipal(true);
+            clienteSolicitacao.setContatos(List.of(contatoSolicitacao));
 
             ProcessoApp processoApp = new ProcessoApp();
             processoApp.setCliente(clienteSolicitacao);
@@ -292,8 +324,16 @@ class BuscarCandidatosDuplicidadeSolicitacaoTest {
             clienteSemStatus.setNomeRazaoSocial("Teste Status");
             clienteSemStatus.setStatusCliente(null);
 
-            when(clienteRepository.findCandidatosPorNome("Teste Status", 1L))
-                    .thenReturn(List.of(clienteInativo, clienteSemStatus));
+            Contato contatoInativo = new Contato();
+            contatoInativo.setCliente(clienteInativo);
+            contatoInativo.setEmail("teste@email.com");
+
+            Contato contatoSemStatus = new Contato();
+            contatoSemStatus.setCliente(clienteSemStatus);
+            contatoSemStatus.setEmail("teste@email.com");
+
+            when(contatoRepository.findContatosPorEmail("teste@email.com", 1L))
+                    .thenReturn(List.of(contatoInativo, contatoSemStatus));
 
             List<SolicitacaoCandidatoDuplicidadeResponse> resultado = useCase.buscarCandidatos(processoApp);
 

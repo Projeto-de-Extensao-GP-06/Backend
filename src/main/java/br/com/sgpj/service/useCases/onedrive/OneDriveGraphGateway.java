@@ -19,6 +19,8 @@ import com.microsoft.graph.serviceclient.GraphServiceClient;
 import com.microsoft.kiota.authentication.AccessTokenProvider;
 import com.microsoft.kiota.authentication.AllowedHostsValidator;
 import com.microsoft.kiota.authentication.BaseBearerTokenAuthenticationProvider;
+import com.microsoft.kiota.ApiException;
+import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -26,6 +28,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
+@Component
 public class OneDriveGraphGateway {
 
     private final OneDriveTokenAdapter tokenAdapter;
@@ -55,12 +58,36 @@ public class OneDriveGraphGateway {
 
     public DriveItem garantirPasta(String caminhoPai, String nomePasta) {
         try {
-            return criarCliente()
-                    .drives().byDriveId(obterDriveId())
-                    .items().byDriveItemId(caminhoPai + "/" + nomePasta + ":")
-                    .get();
-        } catch (Exception ignored) {
-            return criarPasta(caminhoPai, nomePasta);
+            GraphServiceClient cliente = criarCliente();
+            String driveId = obterDriveId();
+            String caminhoBase = caminhoPai.endsWith(":")
+                    ? caminhoPai.substring(0, caminhoPai.length() - 1) : caminhoPai;
+            String caminho = caminhoBase + "/" + nomePasta + ":";
+            try {
+                return cliente.drives().byDriveId(driveId).items().byDriveItemId(caminho).get();
+            } catch (ApiException e) {
+                if (e.getResponseStatusCode() != 404) {
+                    throw e;
+                }
+            }
+
+            DriveItem novaPasta = new DriveItem();
+            novaPasta.setName(nomePasta);
+            novaPasta.setFolder(new Folder());
+            novaPasta.setAdditionalData(Map.of("@microsoft.graph.conflictBehavior", "fail"));
+            try {
+                return cliente.drives().byDriveId(driveId).items().byDriveItemId(caminhoPai)
+                        .children().post(novaPasta);
+            } catch (ApiException e) {
+                if (e.getResponseStatusCode() != 409) {
+                    throw e;
+                }
+                return cliente.drives().byDriveId(driveId).items().byDriveItemId(caminho).get();
+            }
+        } catch (OneDriveErroException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new OneDriveErroException("Erro ao garantir pasta no OneDrive", e);
         }
     }
 
@@ -211,7 +238,7 @@ public class OneDriveGraphGateway {
         }
     }
 
-    private GraphServiceClient criarCliente() {
+    GraphServiceClient criarCliente() {
         String token = tokenAdapter.getAccessToken();
 
         AccessTokenProvider tokenProvider = new AccessTokenProvider() {

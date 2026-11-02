@@ -18,13 +18,13 @@ import br.com.sgpj.repository.ContatoRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.SiglaTribunalRepository;
 import br.com.sgpj.repository.StatusClienteRepository;
+import br.com.sgpj.service.useCases.onedrive.ClienteCaminhoArmazenamento;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -61,13 +61,19 @@ class CreateSolicitacaoDuvidaTest {
     @Mock
     private SincronizacaoProcessoProducer sincronizacaoProducer;
 
-    @InjectMocks
+    @Mock
+    private ClienteCaminhoArmazenamento clienteCaminhoArmazenamento;
+
     private CreateSolicitacaoDuvida createSolicitacaoDuvida;
 
     private StatusCliente statusLead;
 
     @BeforeEach
     void setUp() {
+        createSolicitacaoDuvida = new CreateSolicitacaoDuvida(clienteRepository, contatoRepository,
+                processoAppRepository, statusClienteRepository,
+                new PrepararVinculoProcessoOficial(siglaTribunalRepository), sincronizacaoProducer,
+                clienteCaminhoArmazenamento);
         statusLead = new StatusCliente();
         statusLead.setId(1L);
         statusLead.setNome("LEAD");
@@ -118,10 +124,12 @@ class CreateSolicitacaoDuvidaTest {
             verify(processoAppRepository).save(processoCaptor.capture());
 
             ProcessoApp salvo = processoCaptor.getValue();
+            verify(clienteCaminhoArmazenamento).registrar(salvo.getCliente());
             assertEquals(StatusProcesso.SOLICITACAO, salvo.getStatus());
             assertEquals("Descrição da dúvida", salvo.getDescricaoCaso());
             assertEquals("Solicitação enviada pelo formulário público.", salvo.getObservacao());
             assertNotNull(response);
+            assertNull(response.estado());
             verify(sincronizacaoProducer, never()).enviarAposCommit(any());
         }
 
@@ -164,6 +172,7 @@ class CreateSolicitacaoDuvidaTest {
             ArgumentCaptor<Cliente> clienteCaptor = ArgumentCaptor.forClass(Cliente.class);
             verify(clienteRepository).save(clienteCaptor.capture());
             Cliente clienteSalvo = clienteCaptor.getValue();
+            verify(clienteCaminhoArmazenamento).registrar(clienteSalvo);
 
             ArgumentCaptor<Contato> contatoCaptor = ArgumentCaptor.forClass(Contato.class);
             verify(contatoRepository).save(contatoCaptor.capture());
@@ -279,6 +288,7 @@ class CreateSolicitacaoDuvidaTest {
             verify(processoAppRepository).save(processoCaptor.capture());
 
             ProcessoApp salvo = processoCaptor.getValue();
+            verify(clienteCaminhoArmazenamento).registrar(salvo.getCliente());
             assertNotNull(salvo.getProcessoApi());
             assertEquals("00000010020268260001", salvo.getProcessoApi().getNumeroCnj());
             assertEquals("TJSP", salvo.getProcessoApi().getTribunalTramitacao());

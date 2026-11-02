@@ -54,10 +54,17 @@ public class BuscarCandidatosDuplicidadeSolicitacao {
         }
 
         return candidatosMap.values().stream()
+                .filter(this::temIdentificadorCorrespondente)
                 .sorted((c1, c2) -> Integer.compare(c2.motivos.size(), c1.motivos.size()))
                 .limit(LIMITE_MAXIMO_CANDIDATOS)
                 .map(this::toResponse)
                 .toList();
+    }
+
+    private boolean temIdentificadorCorrespondente(CandidatoAccumulator candidato) {
+        return candidato.motivos.contains(MotivoDuplicidadeEnum.CNPJ)
+                || candidato.motivos.contains(MotivoDuplicidadeEnum.EMAIL)
+                || candidato.motivos.contains(MotivoDuplicidadeEnum.TELEFONE);
     }
 
     private void buscarDuplicidadePj(ProcessoApp processoApp,

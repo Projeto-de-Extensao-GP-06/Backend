@@ -87,30 +87,38 @@ class ProcessoAppRepositoryTest {
         LocalDateTime dataEnvio = LocalDateTime.of(2026, 6, 15, 9, 30);
         ProcessoApp mariaProcesso = processoAppRepository.save(criarSolicitacao(maria, dataEnvio, "SP",
                 "00012345620268260001"));
-        processoAppRepository.save(criarSolicitacao(criarCliente("Outra pessoa", leadStatus),
+        Cliente empresa = criarCliente("Outra pessoa", leadStatus);
+        empresa.setPF(false);
+        ProcessoApp empresaProcesso = processoAppRepository.save(criarSolicitacao(empresa,
                 dataEnvio.minusDays(1), "RJ", null));
         processoAppRepository.flush();
 
         Page<ProcessoApp> porEmail = processoAppRepository.buscarSolicitacoesFiltradas(
-                null, "Solicitação enviada pelo formulário público.", "ALTERNATIVO",
+                null, null, "Solicitação enviada pelo formulário público.", "ALTERNATIVO",
                 LocalDateTime.of(2026, 6, 1, 0, 0),
                 LocalDateTime.of(2026, 7, 1, 0, 0), PageRequest.of(0, 10,
                         Sort.by(Sort.Order.desc("dataHoraInicio"), Sort.Order.desc("id"))));
         Page<ProcessoApp> porNome = processoAppRepository.buscarSolicitacoesFiltradas(
-                "SP", "Solicitação enviada pelo formulário público.", "mArIa",
+                "SP", null, "Solicitação enviada pelo formulário público.", "mArIa",
                 null, null, PageRequest.of(0, 10));
         Page<ProcessoApp> porCnj = processoAppRepository.buscarSolicitacoesFiltradas(
-                null, "Solicitação enviada pelo formulário público.", "4562026",
+                null, null, "Solicitação enviada pelo formulário público.", "4562026",
                 null, null, PageRequest.of(0, 10));
         Page<ProcessoApp> porEstado = processoAppRepository.buscarSolicitacoesFiltradas(
-                "SP", "Solicitação enviada pelo formulário público.", null,
+                "SP", null, "Solicitação enviada pelo formulário público.", null,
                 null, null, PageRequest.of(0, 10));
         Page<ProcessoApp> porData = processoAppRepository.buscarSolicitacoesFiltradas(
-                null, "Solicitação enviada pelo formulário público.", null,
+                null, null, "Solicitação enviada pelo formulário público.", null,
                 LocalDateTime.of(2026, 6, 15, 0, 0), LocalDateTime.of(2026, 6, 16, 0, 0),
                 PageRequest.of(0, 10));
+        Page<ProcessoApp> porPF = processoAppRepository.buscarSolicitacoesFiltradas(
+                null, true, "Solicitação enviada pelo formulário público.", null,
+                null, null, PageRequest.of(0, 10));
+        Page<ProcessoApp> porPJ = processoAppRepository.buscarSolicitacoesFiltradas(
+                null, false, "Solicitação enviada pelo formulário público.", null,
+                null, null, PageRequest.of(0, 10));
         Page<ProcessoApp> semFiltros = processoAppRepository.buscarSolicitacoesFiltradas(
-                null, "Solicitação enviada pelo formulário público.", null,
+                null, null, "Solicitação enviada pelo formulário público.", null,
                 null, null, PageRequest.of(0, 1, Sort.by(Sort.Order.desc("dataHoraInicio"),
                         Sort.Order.desc("id"))));
 
@@ -120,6 +128,10 @@ class ProcessoAppRepositoryTest {
         assertEquals(1, porCnj.getTotalElements());
         assertEquals(1, porEstado.getTotalElements());
         assertEquals(1, porData.getTotalElements());
+        assertEquals(1, porPF.getTotalElements());
+        assertEquals(mariaProcesso.getId(), porPF.getContent().getFirst().getId());
+        assertEquals(1, porPJ.getTotalElements());
+        assertEquals(empresaProcesso.getId(), porPJ.getContent().getFirst().getId());
         assertEquals(2, semFiltros.getTotalElements());
         assertEquals(1, semFiltros.getContent().size());
         assertEquals(mariaProcesso.getId(), semFiltros.getContent().getFirst().getId());
@@ -136,10 +148,10 @@ class ProcessoAppRepositoryTest {
         processoAppRepository.flush();
 
         Page<ProcessoApp> pendentes = processoAppRepository.buscarSolicitacoesFiltradas(
-                null, "Solicitação enviada pelo formulário público.", null,
+                null, null, "Solicitação enviada pelo formulário público.", null,
                 null, null, PageRequest.of(0, 10));
         Page<ProcessoApp> vazia = processoAppRepository.buscarSolicitacoesFiltradas(
-                "ZZ", "Solicitação enviada pelo formulário público.", null,
+                "ZZ", null, "Solicitação enviada pelo formulário público.", null,
                 null, null, PageRequest.of(3, 5));
 
         assertEquals(1, pendentes.getTotalElements());

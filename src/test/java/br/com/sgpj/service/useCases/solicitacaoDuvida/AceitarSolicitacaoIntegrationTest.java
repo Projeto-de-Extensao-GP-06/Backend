@@ -5,19 +5,43 @@ import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Contato;
 import br.com.sgpj.entity.Endereco;
 import br.com.sgpj.entity.Processo.FaseProcesso;
+import br.com.sgpj.entity.Processo.HistoricoProcesso;
 import br.com.sgpj.entity.Processo.Prioridade;
 import br.com.sgpj.entity.Processo.ProcessoApp;
+import br.com.sgpj.entity.Processo.SiglaTribunal;
+import br.com.sgpj.repository.SiglaTribunalRepository;
+import br.com.sgpj.config.RabbitMQConfig;
+import br.com.sgpj.dto.request.SincronizacaoProcessoMessage;
+import br.com.sgpj.producer.SincronizacaoProcessoProducer;
+import br.com.sgpj.service.SincronizacaoStatusService;
+import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import br.com.sgpj.entity.Processo.StatusProcesso;
+import br.com.sgpj.entity.Processo.TipoAlteracao;
 import br.com.sgpj.entity.StatusCliente;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.repository.ClienteRepository;
 import br.com.sgpj.repository.ContatoRepository;
 import br.com.sgpj.repository.EnderecoRepository;
 import br.com.sgpj.repository.FaseProcessoRepository;
+import br.com.sgpj.repository.HistoricoProcessoRepository;
 import br.com.sgpj.repository.PrioridadeRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.StatusClienteRepository;
+import br.com.sgpj.repository.TipoAlteracaoRepository;
 import br.com.sgpj.repository.UsuarioRepository;
+import br.com.sgpj.repository.CaminhoPadraoDeArmazenamentoRepository;
+import br.com.sgpj.entity.documentos.CaminhoPadraoDeArmazenamento;
+import br.com.sgpj.exception.OneDriveErroException;
+import br.com.sgpj.exception.ObjetoNaoEncontradoException;
+import br.com.sgpj.service.RegistroHistoricoProcesso;
+import br.com.sgpj.service.useCases.onedrive.GarantirPastasClienteOneDrive;
+import br.com.sgpj.service.useCases.onedrive.RegistrarCaminhoArmazenamentoCliente;
+import br.com.sgpj.service.useCases.onedrive.OneDriveGraphGateway;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.annotation.DirtiesContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -33,6 +57,13 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 
 @DataJpaTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:aceitar-solicitacao;DB_CLOSE_DELAY=-1",
@@ -42,7 +73,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.sql.init.mode=never"
 })
-@Import(AceitarSolicitacao.class)
+@Import({AceitarSolicitacao.class, RegistroHistoricoProcesso.class, GarantirPastasClienteOneDrive.class,
+        RegistrarCaminhoArmazenamentoCliente.class, PrepararVinculoProcessoOficial.class,
+        SincronizacaoProcessoProducer.class})
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class AceitarSolicitacaoIntegrationTest {
 
     @Autowired private AceitarSolicitacao aceitarSolicitacao;
@@ -50,10 +84,140 @@ class AceitarSolicitacaoIntegrationTest {
     @Autowired private ContatoRepository contatoRepository;
     @Autowired private EnderecoRepository enderecoRepository;
     @Autowired private FaseProcessoRepository faseProcessoRepository;
+    @Autowired private HistoricoProcessoRepository historicoProcessoRepository;
     @Autowired private PrioridadeRepository prioridadeRepository;
     @Autowired private ProcessoAppRepository processoAppRepository;
     @Autowired private StatusClienteRepository statusClienteRepository;
+    @Autowired private TipoAlteracaoRepository tipoAlteracaoRepository;
     @Autowired private UsuarioRepository usuarioRepository;
+    @Autowired private CaminhoPadraoDeArmazenamentoRepository caminhoRepository;
+    @MockitoBean private OneDriveGraphGateway graphGateway;
+    @MockitoBean private RabbitTemplate rabbitTemplate;
+    @MockitoBean private SincronizacaoStatusService sincronizacaoStatusService;
+    @Autowired private SiglaTribunalRepository siglaTribunalRepository;
+    @Autowired private PlatformTransactionManager transactionManager;
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void devePersistirCnjETribunalEPublicarSomenteAposCommitDoAceite() {
+        prepararReferencias();
+        status("ATIVO");
+        siglaTribunalRepository.save(new SiglaTribunal(null, "TJSP"));
+        Usuario usuario = criarUsuarioResponsavel();
+        ProcessoApp solicitacao = criarSolicitacaoParaSincronizacao("cliente-commit");
+        doAnswer(invocation -> {
+            verifyNoInteractions(rabbitTemplate, sincronizacaoStatusService);
+            return null;
+        }).when(graphGateway).garantirPasta("root:/sgpj/usuarios:", "cliente-commit");
+
+        aceitarSolicitacao.aceitar(solicitacao.getId(), requestComCnj(), usuario);
+
+        ProcessoApp salvo = processoAppRepository.findById(solicitacao.getId()).orElseThrow();
+        assertEquals(StatusProcesso.ATIVO, salvo.getStatus());
+        assertEquals("00000014520268260001", salvo.getProcessoApi().getNumeroCnj());
+        assertEquals("TJSP", salvo.getSiglaTribunal().getNome());
+        assertEquals("TJSP", salvo.getProcessoApi().getTribunalTramitacao());
+        verificarPublicacao(solicitacao.getId());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void naoDevePublicarQuandoTransacaoExternaFazRollback() {
+        prepararReferencias();
+        status("ATIVO");
+        siglaTribunalRepository.save(new SiglaTribunal(null, "TJSP"));
+        Usuario usuario = criarUsuarioResponsavel();
+        ProcessoApp solicitacao = criarSolicitacaoParaSincronizacao("cliente-rollback-fila");
+
+        new TransactionTemplate(transactionManager).executeWithoutResult(transaction -> {
+            aceitarSolicitacao.aceitar(solicitacao.getId(), requestComCnj(), usuario);
+            verifyNoInteractions(rabbitTemplate, sincronizacaoStatusService);
+            transaction.setRollbackOnly();
+        });
+
+        ProcessoApp salvo = processoAppRepository.findById(solicitacao.getId()).orElseThrow();
+        assertEquals(StatusProcesso.SOLICITACAO, salvo.getStatus());
+        assertNull(salvo.getProcessoApi());
+        assertEquals(0, historicoProcessoRepository.count());
+        verifyNoInteractions(rabbitTemplate, sincronizacaoStatusService);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void naoDevePublicarQuandoErroNaoTratadoNoOneDriveReverteAceite() {
+        prepararReferencias();
+        status("ATIVO");
+        siglaTribunalRepository.save(new SiglaTribunal(null, "TJSP"));
+        Usuario usuario = criarUsuarioResponsavel();
+        ProcessoApp solicitacao = criarSolicitacaoParaSincronizacao("cliente-erro-fila");
+        doThrow(new IllegalStateException("Erro não tratado"))
+                .when(graphGateway).garantirPasta("root:/sgpj/usuarios:", "cliente-erro-fila");
+
+        assertThrows(IllegalStateException.class,
+                () -> aceitarSolicitacao.aceitar(solicitacao.getId(), requestComCnj(), usuario));
+
+        ProcessoApp salvo = processoAppRepository.findById(solicitacao.getId()).orElseThrow();
+        assertEquals(StatusProcesso.SOLICITACAO, salvo.getStatus());
+        assertNull(salvo.getProcessoApi());
+        verifyNoInteractions(rabbitTemplate, sincronizacaoStatusService);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void deveManterAceiteQuandoPublicacaoNaFilaFalha() {
+        prepararReferencias();
+        status("ATIVO");
+        siglaTribunalRepository.save(new SiglaTribunal(null, "TJSP"));
+        Usuario usuario = criarUsuarioResponsavel();
+        ProcessoApp solicitacao = criarSolicitacaoParaSincronizacao("cliente-sem-rabbit");
+        doThrow(new AmqpException("Fila indisponível")).when(rabbitTemplate)
+                .convertAndSend(eq(RabbitMQConfig.EXCHANGE), eq(RabbitMQConfig.ROUTING_KEY),
+                        any(SincronizacaoProcessoMessage.class));
+
+        aceitarSolicitacao.aceitar(solicitacao.getId(), requestComCnj(), usuario);
+
+        assertEquals(StatusProcesso.ATIVO,
+                processoAppRepository.findById(solicitacao.getId()).orElseThrow().getStatus());
+        verificarPublicacao(solicitacao.getId());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void devePublicarMesmoQuandoFalhaOneDriveTratadaNaoReverteAceite() {
+        prepararReferencias();
+        status("ATIVO");
+        siglaTribunalRepository.save(new SiglaTribunal(null, "TJSP"));
+        Usuario usuario = criarUsuarioResponsavel();
+        ProcessoApp solicitacao = criarSolicitacaoParaSincronizacao("cliente-onedrive-offline");
+        doThrow(new OneDriveErroException("Sem conexão"))
+                .when(graphGateway).garantirPasta("root:/sgpj/usuarios:", "cliente-onedrive-offline");
+
+        aceitarSolicitacao.aceitar(solicitacao.getId(), requestComCnj(), usuario);
+
+        assertEquals(StatusProcesso.ATIVO,
+                processoAppRepository.findById(solicitacao.getId()).orElseThrow().getStatus());
+        verificarPublicacao(solicitacao.getId());
+    }
+
+    private ProcessoApp criarSolicitacaoParaSincronizacao(String nome) {
+        Cliente cliente = new Cliente();
+        cliente.setNomeRazaoSocial(nome);
+        cliente.setPF(true);
+        cliente.setStatusCliente(status("LEAD"));
+        cliente = clienteRepository.save(cliente);
+        return processoAppRepository.save(criarProcesso(cliente, StatusProcesso.SOLICITACAO));
+    }
+
+    private SolicitacaoAceiteRequest requestComCnj() {
+        return new SolicitacaoAceiteRequest(requestPf("Contato").client(),
+                new SolicitacaoAceiteRequest.Process("0000001-45.2026.8.26.0001",
+                        "média", "Inicial", null, null, null));
+    }
+
+    private void verificarPublicacao(Long processoId) {
+        verify(rabbitTemplate).convertAndSend(RabbitMQConfig.EXCHANGE, RabbitMQConfig.ROUTING_KEY,
+                new SincronizacaoProcessoMessage(processoId));
+    }
 
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -90,6 +254,12 @@ class AceitarSolicitacaoIntegrationTest {
         assertEquals(usuarioResponsavel.getId(), solicitacaoPersistida.getUsuarioResponsavel().getId());
         assertEquals(StatusProcesso.ATIVO, outroProcessoPersistido.getStatus());
         assertEquals(cliente.getId(), outroProcessoPersistido.getCliente().getId());
+        List<HistoricoProcesso> historicos = historicoProcessoRepository.findByProcessoApp(solicitacaoPersistida);
+        assertEquals(1, historicos.size());
+        assertEquals(usuarioResponsavel.getId(), historicos.getFirst().getUsuarioUtilizado().getId());
+        assertEquals("ABERTURA DE PROCESSO", historicos.getFirst().getTipoAlteracao().getNome());
+        assertEquals("Processo criado.", historicos.getFirst().getDescricaoAlteracao());
+        verify(graphGateway).garantirPasta("root:/sgpj/usuarios:", "cliente-preservado");
     }
 
     @Test
@@ -116,11 +286,89 @@ class AceitarSolicitacaoIntegrationTest {
         assertEquals(0, contatoRepository.count());
         assertEquals(StatusProcesso.SOLICITACAO, solicitacaoPersistida.getStatus());
         assertEquals(0, enderecoRepository.count());
+        verifyNoInteractions(graphGateway);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void deveReverterAceiteQuandoNaoEncontrarTipoDeHistorico() {
+        prepararReferencias();
+        Usuario usuarioResponsavel = criarUsuarioResponsavel();
+        Cliente cliente = new Cliente();
+        cliente.setNomeRazaoSocial("Cliente sem tipo de histórico");
+        cliente.setPF(true);
+        cliente.setStatusCliente(status("LEAD"));
+        cliente = clienteRepository.save(cliente);
+        ProcessoApp solicitacao = processoAppRepository.save(criarProcesso(cliente, StatusProcesso.SOLICITACAO));
+        tipoAlteracaoRepository.deleteAll();
+
+        assertThrows(ObjetoNaoEncontradoException.class,
+                () -> aceitarSolicitacao.aceitar(solicitacao.getId(), requestPf("Contato"), usuarioResponsavel));
+
+        assertEquals(StatusProcesso.SOLICITACAO,
+                processoAppRepository.findById(solicitacao.getId()).orElseThrow().getStatus());
+        assertEquals("LEAD", clienteRepository.findById(cliente.getId()).orElseThrow().getStatusCliente().getNome());
+        assertEquals(0, historicoProcessoRepository.count());
+        verifyNoInteractions(graphGateway);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void deveAceitarEPreservarCaminhoSalvoQuandoOneDriveFalhar() {
+        prepararReferencias();
+        status("ATIVO");
+        Usuario usuario = criarUsuarioResponsavel();
+        Cliente cliente = new Cliente();
+        cliente.setNomeRazaoSocial("Nome atual " + UUID.randomUUID());
+        cliente.setPF(true);
+        cliente.setStatusCliente(status("LEAD"));
+        cliente = clienteRepository.save(cliente);
+        String caminho = "nome-anterior-" + UUID.randomUUID();
+        caminhoRepository.save(new CaminhoPadraoDeArmazenamento(null, cliente, caminho, List.of()));
+        ProcessoApp solicitacao = processoAppRepository.save(criarProcesso(cliente, StatusProcesso.SOLICITACAO));
+        when(graphGateway.garantirPasta("root:/sgpj/usuarios:", caminho))
+                .thenThrow(new OneDriveErroException("Sem conexao"));
+
+        aceitarSolicitacao.aceitar(solicitacao.getId(), requestPf("Contato"), usuario);
+
+        assertEquals(StatusProcesso.ATIVO, processoAppRepository.findById(solicitacao.getId()).orElseThrow().getStatus());
+        assertEquals("ATIVO", clienteRepository.findById(cliente.getId()).orElseThrow().getStatusCliente().getNome());
+        assertEquals(caminho, caminhoRepository.findByClienteId(cliente.getId()).getFirst().getCaminho());
+        assertEquals(1, caminhoRepository.findByClienteId(cliente.getId()).size());
+        verify(graphGateway).garantirPasta("root:/sgpj/usuarios:", caminho);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void deveCadastrarCaminhoAusenteEAceitarMesmoSemOneDrive() {
+        prepararReferencias();
+        status("ATIVO");
+        Usuario usuario = criarUsuarioResponsavel();
+        Cliente cliente = new Cliente();
+        cliente.setNomeRazaoSocial("cliente-antigo-" + UUID.randomUUID());
+        cliente.setPF(true);
+        cliente.setStatusCliente(status("LEAD"));
+        cliente = clienteRepository.save(cliente);
+        ProcessoApp solicitacao = processoAppRepository.save(criarProcesso(cliente, StatusProcesso.SOLICITACAO));
+        String caminho = cliente.getNomeRazaoSocial();
+        when(graphGateway.garantirPasta("root:/sgpj/usuarios:", caminho))
+                .thenThrow(new OneDriveErroException("Sem conexao"));
+
+        aceitarSolicitacao.aceitar(solicitacao.getId(), requestPf("Contato"), usuario);
+
+        assertEquals(StatusProcesso.ATIVO, processoAppRepository.findById(solicitacao.getId()).orElseThrow().getStatus());
+        var caminhos = caminhoRepository.findByClienteId(cliente.getId());
+        assertEquals(1, caminhos.size());
+        assertEquals(caminho, caminhos.getFirst().getCaminho());
+        verify(graphGateway).garantirPasta("root:/sgpj/usuarios:", caminho);
     }
 
     private void prepararReferencias() {
         if (prioridadeProcesso("MEDIA").isEmpty()) prioridadeRepository.save(new Prioridade(2L, "MEDIA"));
         if (fase("INICIAL").isEmpty()) faseProcessoRepository.save(new FaseProcesso(1L, "INICIAL"));
+        if (tipoAlteracaoRepository.findByNomeIgnoreCase(RegistroHistoricoProcesso.ABERTURA).isEmpty()) {
+            tipoAlteracaoRepository.save(new TipoAlteracao(1L, RegistroHistoricoProcesso.ABERTURA));
+        }
     }
 
     private Usuario criarUsuarioResponsavel() {

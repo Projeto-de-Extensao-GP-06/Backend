@@ -140,12 +140,12 @@ class SolicitacaoDuvidaServiceTest {
     void deveDelegarFiltragemAoUseCase() {
         Pageable pageable = PageRequest.of(0, 20);
         Page<SolicitacaoDuvidaListarResponse> pagina = new PageImpl<>(List.of(), pageable, 0);
-        when(filtrarSolicitacoes.filtrar("SP", "maria", null, null, pageable)).thenReturn(pagina);
+        when(filtrarSolicitacoes.filtrar("SP", null, "maria", null, null, pageable)).thenReturn(pagina);
 
         Page<SolicitacaoDuvidaListarResponse> resultado =
-                solicitacaoDuvidaService.filtrar("SP", "maria", null, null, pageable);
+                solicitacaoDuvidaService.filtrar("SP", null, "maria", null, null, pageable);
 
         assertEquals(pagina, resultado);
-        verify(filtrarSolicitacoes).filtrar("SP", "maria", null, null, pageable);
+        verify(filtrarSolicitacoes).filtrar("SP", null, "maria", null, null, pageable);
     }
 }

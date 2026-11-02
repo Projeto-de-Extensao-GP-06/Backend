@@ -43,6 +43,7 @@ import java.time.LocalDate;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 @RestController
@@ -104,7 +105,7 @@ public class SolicitacaoDuvidaController {
     @SecurityRequirement(name = "Bearer")
     @Operation(
             summary = "Filtra solicitações com paginação",
-            description = "Lista somente solicitações pendentes, filtrando por estado, nome, e-mail, número CNJ " +
+            description = "Lista somente solicitações pendentes, filtrando por estado, tipo (PF/PJ), nome, e-mail, número CNJ " +
                     "e período de envio. A data final é inclusiva. O tamanho padrão é 20, com máximo de 100 registros por página. " +
                     "A ordenação aceita id, dataHoraInicio, ultimaAtualizacao e descricaoCaso; o ID é usado " +
                     "como desempate estável.")
@@ -113,6 +114,8 @@ public class SolicitacaoDuvidaController {
     public ResponseEntity<Page<SolicitacaoDuvidaListarResponse>> filtrar(
             @Parameter(description = "UF exata informada no formulário", example = "SP")
             @RequestParam(required = false) String estado,
+            @Parameter(description = "Tipo de solicitante: PF ou PJ", example = "PF")
+            @RequestParam(required = false) String tipo,
             @Parameter(description = "Busca parcial sem diferenciar maiúsculas/minúsculas em nome, e-mail e CNJ")
             @RequestParam(required = false) String pesquisa,
             @RequestParam(required = false) LocalDate dataInicio,
@@ -144,7 +147,18 @@ public class SolicitacaoDuvidaController {
             throw new IllegalArgumentException("dataFim está fora do intervalo permitido");
         }
         return ResponseEntity.ok(solicitacaoDuvidaService.filtrar(
-                estado, pesquisa, inicio, fimExclusivo, pageable));
+                estado, parseTipo(tipo), pesquisa, inicio, fimExclusivo, pageable));
+    }
+
+    private Boolean parseTipo(String tipo) {
+        if (tipo == null || tipo.isBlank()) {
+            return null;
+        }
+        return switch (tipo.trim().toUpperCase(Locale.ROOT)) {
+            case "PF" -> true;
+            case "PJ" -> false;
+            default -> throw new IllegalArgumentException("tipo deve ser PF ou PJ");
+        };
     }
 
     private Sort parseSort(String sort) {

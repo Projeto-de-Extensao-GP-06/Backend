@@ -11,7 +11,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;
+import java.util.Arrays;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -25,6 +27,18 @@ class SolicitacaoDuvidaCriacaoRequestTest {
         try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
             validator = factory.getValidator();
         }
+    }
+
+    @Test
+    void deveManterTokenExplicitoSemCampoEstadoNoFormularioPublico() {
+        SolicitacaoDuvidaCriacaoRequest request = new SolicitacaoDuvidaCriacaoRequest(
+                "Cliente de Teste", "cliente@example.com", true, "11999999999",
+                null, "Descricao do caso", ComoConheceuEnum.SITE, true, null, null, "token-explicito");
+
+        assertEquals("token-explicito", request.turnstileToken());
+        assertTrue(validator.validate(request).isEmpty());
+        assertFalse(Arrays.stream(SolicitacaoDuvidaCriacaoRequest.class.getRecordComponents())
+                .anyMatch(component -> component.getName().equals("estado")));
     }
 
     @Nested

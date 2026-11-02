@@ -1,4 +1,5 @@
 # SGPJ Backend
+
 # Padrão de Commits e Fluxo de Desenvolvimento
 
 Este documento define o padrão de commits e o fluxo de trabalho do projeto.

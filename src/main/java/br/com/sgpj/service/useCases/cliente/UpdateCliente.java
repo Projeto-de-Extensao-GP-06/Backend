@@ -29,12 +29,16 @@ public class UpdateCliente {
     private final ContatoRepository contatoRepository;
     private final StatusClienteRepository statusClienteRepository;
     private final EnderecoRepository enderecoRepository;
+    private final AtualizarStatusClientePorProcessos atualizarStatusClientePorProcessos;
 
-    public UpdateCliente(ClienteRepository clienteRepository, ContatoRepository contatoRepository, StatusClienteRepository statusClienteRepository, EnderecoRepository enderecoRepository) {
+    public UpdateCliente(ClienteRepository clienteRepository, ContatoRepository contatoRepository,
+                         StatusClienteRepository statusClienteRepository, EnderecoRepository enderecoRepository,
+                         AtualizarStatusClientePorProcessos atualizarStatusClientePorProcessos) {
         this.clienteRepository = clienteRepository;
         this.contatoRepository = contatoRepository;
         this.statusClienteRepository = statusClienteRepository;
         this.enderecoRepository = enderecoRepository;
+        this.atualizarStatusClientePorProcessos = atualizarStatusClientePorProcessos;
     }
 
     @Transactional
@@ -57,6 +61,7 @@ public class UpdateCliente {
         }
 
         clienteRepository.save(cliente);
+        atualizarStatusClientePorProcessos.sincronizarStatusCliente(cliente);
         return ClienteMapper.toDetalhesDto(buscarCliente(id));
     }
 

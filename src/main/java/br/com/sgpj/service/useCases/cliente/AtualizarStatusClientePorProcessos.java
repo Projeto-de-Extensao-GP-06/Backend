@@ -65,6 +65,11 @@ public class AtualizarStatusClientePorProcessos {
         }
         boolean possuiProcessoAtivo = processoAppRepository.existsByCliente_IdAndStatus(
                 cliente.getId(), StatusProcesso.ATIVO);
+        if (!possuiProcessoAtivo
+                && cliente.getStatusCliente() != null
+                && StatusClienteEnum.LEAD.getNome().equalsIgnoreCase(cliente.getStatusCliente().getNome())) {
+            return;
+        }
         aplicarStatus(cliente, possuiProcessoAtivo);
     }
 

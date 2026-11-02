@@ -31,17 +31,20 @@ public class CreateCliente {
     private final StatusClienteRepository statusClienteRepository;
     private final ContatoRepository contatoRepository;
     private final ClienteCaminhoArmazenamento clienteCaminhoArmazenamento;
+    private final AtualizarStatusClientePorProcessos atualizarStatusClientePorProcessos;
 
     public CreateCliente(ClienteRepository clienteRepository,
                          EnderecoRepository enderecoRepository,
                          StatusClienteRepository statusClienteRepository,
                          ContatoRepository contatoRepository,
-                         ClienteCaminhoArmazenamento clienteCaminhoArmazenamento) {
+                         ClienteCaminhoArmazenamento clienteCaminhoArmazenamento,
+                         AtualizarStatusClientePorProcessos atualizarStatusClientePorProcessos) {
         this.clienteRepository = clienteRepository;
         this.enderecoRepository = enderecoRepository;
         this.statusClienteRepository = statusClienteRepository;
         this.contatoRepository = contatoRepository;
         this.clienteCaminhoArmazenamento = clienteCaminhoArmazenamento;
+        this.atualizarStatusClientePorProcessos = atualizarStatusClientePorProcessos;
     }
 
     @Transactional
@@ -62,6 +65,7 @@ public class CreateCliente {
 
         Long clienteId = clienteSalvo.getId();
 
+        atualizarStatusClientePorProcessos.sincronizarStatusCliente(clienteSalvo);
         clienteCaminhoArmazenamento.registrar(clienteSalvo);
 
         return ClienteMapper.toDetalhesDto(clienteRepository.findByIdComDetalhes(clienteId)

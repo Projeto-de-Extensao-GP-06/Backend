@@ -8,6 +8,9 @@ import br.com.sgpj.entity.Endereco;
 import br.com.sgpj.entity.Processo.FaseProcesso;
 import br.com.sgpj.entity.Processo.Prioridade;
 import br.com.sgpj.entity.Processo.ProcessoApp;
+import br.com.sgpj.entity.Processo.ProcessoApi;
+import br.com.sgpj.entity.Processo.MovimentacoesOficiais;
+import br.com.sgpj.entity.Processo.SiglaTribunal;
 import br.com.sgpj.entity.Processo.StatusProcesso;
 import br.com.sgpj.entity.StatusCliente;
 import br.com.sgpj.entity.Usuario;
@@ -21,6 +24,8 @@ import br.com.sgpj.repository.FaseProcessoRepository;
 import br.com.sgpj.repository.ProcessoAppRepository;
 import br.com.sgpj.repository.PrioridadeRepository;
 import br.com.sgpj.repository.StatusClienteRepository;
+import br.com.sgpj.repository.SiglaTribunalRepository;
+import br.com.sgpj.producer.SincronizacaoProcessoProducer;
 import br.com.sgpj.service.RegistroHistoricoProcesso;
 import br.com.sgpj.service.useCases.onedrive.GarantirPastasClienteOneDrive;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +34,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -37,6 +41,10 @@ import java.util.List;
 import java.util.Optional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -46,6 +54,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AceitarSolicitacao Use Case")
@@ -78,7 +88,12 @@ class AceitarSolicitacaoTest {
     @Mock
     private RegistroHistoricoProcesso registroHistorico;
 
-    @InjectMocks
+    @Mock
+    private SiglaTribunalRepository siglaTribunalRepository;
+
+    @Mock
+    private SincronizacaoProcessoProducer sincronizacaoProducer;
+
     private AceitarSolicitacao aceitarSolicitacao;
 
     private ProcessoApp processoApp;
@@ -88,6 +103,10 @@ class AceitarSolicitacaoTest {
 
     @BeforeEach
     void setUp() {
+        aceitarSolicitacao = new AceitarSolicitacao(processoAppRepository, clienteRepository,
+                contatoRepository, enderecoRepository, prioridadeRepository, faseProcessoRepository,
+                statusClienteRepository, garantirPastasClienteOneDrive, registroHistorico,
+                new PrepararVinculoProcessoOficial(siglaTribunalRepository), sincronizacaoProducer);
         cliente = new Cliente();
         cliente.setId(10L);
         cliente.setNomeRazaoSocial("Cliente Teste");
@@ -105,6 +124,164 @@ class AceitarSolicitacaoTest {
         usuarioResponsavel = new Usuario();
         usuarioResponsavel.setId(7L);
         usuarioResponsavel.setNome("Usuário responsável");
+    }
+
+    private SolicitacaoAceiteRequest requestComCnj(String cnj) {
+        SolicitacaoAceiteRequest request = requestPf();
+        return new SolicitacaoAceiteRequest(request.client(),
+                new SolicitacaoAceiteRequest.Process(cnj, "média", "Inicial", null, null, null));
+    }
+
+    private void prepararAceite() {
+        prepararReferencias();
+        when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoApp));
+        when(statusClienteRepository.findByNomeIgnoreCase("ATIVO")).thenReturn(Optional.of(statusAtivo));
+    }
+
+    @Test
+    void deveEnfileirarCnjNovoFormatadoComTribunal() {
+        prepararAceite();
+        SiglaTribunal tribunal = new SiglaTribunal(1L, "TJSP");
+        when(siglaTribunalRepository.findByNomeIgnoreCase("TJSP")).thenReturn(Optional.of(tribunal));
+
+        aceitarSolicitacao.aceitar(1L, requestComCnj("0000001-45.2026.8.26.0001"), usuarioResponsavel);
+
+        assertEquals("00000014520268260001", processoApp.getProcessoApi().getNumeroCnj());
+        assertSame(tribunal, processoApp.getSiglaTribunal());
+        assertEquals("TJSP", processoApp.getProcessoApi().getTribunalTramitacao());
+        verify(sincronizacaoProducer).enviarAposCommit(1L);
+    }
+
+    @Test
+    void deveConsultarCnjSalvoSemDadosMesmoSemCnjNoRequest() {
+        prepararAceite();
+        ProcessoApi processoApi = new ProcessoApi();
+        processoApi.setNumeroCnj("00000014520268260001");
+        processoApi.setTribunalTramitacao("TJSP");
+        processoApi.setMovimentacoes(List.of());
+        processoApp.setProcessoApi(processoApi);
+        processoApp.setSiglaTribunal(new SiglaTribunal(1L, "TJSP"));
+
+        aceitarSolicitacao.aceitar(1L, requestPf(), usuarioResponsavel);
+
+        assertSame(processoApi, processoApp.getProcessoApi());
+        verify(sincronizacaoProducer).enviarAposCommit(1L);
+        verifyNoInteractions(siglaTribunalRepository);
+    }
+
+    @Test
+    void devePreservarCnjSalvoDianteDeOutroCnjNoAceite() {
+        prepararAceite();
+        ProcessoApi processoApi = new ProcessoApi();
+        processoApi.setNumeroCnj("00000014520268260001");
+        processoApp.setProcessoApi(processoApi);
+        when(siglaTribunalRepository.findByNomeIgnoreCase("TJSP"))
+                .thenReturn(Optional.of(new SiglaTribunal(1L, "TJSP")));
+
+        aceitarSolicitacao.aceitar(1L, requestComCnj("0000001-00.2026.8.19.0001"), usuarioResponsavel);
+
+        assertSame(processoApi, processoApp.getProcessoApi());
+        assertEquals("00000014520268260001", processoApi.getNumeroCnj());
+        verify(sincronizacaoProducer).enviarAposCommit(1L);
+    }
+
+    @Test
+    void deveAceitarSemCnjSemEnfileirar() {
+        prepararAceite();
+        aceitarSolicitacao.aceitar(1L, requestPf(), usuarioResponsavel);
+        verifyNoInteractions(sincronizacaoProducer, siglaTribunalRepository);
+    }
+
+    @ParameterizedTest
+    @MethodSource("camposOficiais")
+    void naoDeveConsultarQuandoPossuiAlgumCampoOficial(Consumer<ProcessoApi> preencherCampo) {
+        prepararAceite();
+        ProcessoApi processoApi = new ProcessoApi();
+        processoApi.setNumeroCnj("00000014520268260001");
+        preencherCampo.accept(processoApi);
+        processoApp.setProcessoApi(processoApi);
+
+        aceitarSolicitacao.aceitar(1L, requestPf(), usuarioResponsavel);
+
+        assertSame(processoApi, processoApp.getProcessoApi());
+        verifyNoInteractions(sincronizacaoProducer, siglaTribunalRepository);
+    }
+
+    static Stream<Consumer<ProcessoApi>> camposOficiais() {
+        return Stream.of(
+                processo -> processo.setInstancia("G1"),
+                processo -> processo.setDataAjuizamento(LocalDateTime.of(2026, 1, 1, 10, 0)),
+                processo -> processo.setNivelSigilo("0"),
+                processo -> processo.setClasseProcessual("Classe"),
+                processo -> processo.setFormato("Eletrônico"),
+                processo -> processo.setSistemaTribunal("Sistema"),
+                processo -> processo.setOrgaoJulgador("Vara"),
+                processo -> processo.setAssunto("Assunto"),
+                processo -> processo.setMovimentacoes(List.of(new MovimentacoesOficiais())));
+    }
+
+    @Test
+    void deveEnfileirarQuandoCamposOficiaisEstaoEmBranco() {
+        prepararAceite();
+        ProcessoApi processoApi = new ProcessoApi();
+        processoApi.setNumeroCnj("00000014520268260001");
+        processoApi.setInstancia(" ");
+        processoApi.setNivelSigilo("");
+        processoApi.setMovimentacoes(List.of());
+        processoApp.setProcessoApi(processoApi);
+        processoApp.setSiglaTribunal(new SiglaTribunal(1L, "TJSP"));
+        aceitarSolicitacao.aceitar(1L, requestPf(), usuarioResponsavel);
+        verify(sincronizacaoProducer).enviarAposCommit(1L);
+    }
+
+    @Test
+    void deveAceitarSemEnfileirarQuandoTribunalNaoEstaCadastrado() {
+        prepararAceite();
+        when(siglaTribunalRepository.findByNomeIgnoreCase("TJSP")).thenReturn(Optional.empty());
+        aceitarSolicitacao.aceitar(1L, requestComCnj("00000014520268260001"), usuarioResponsavel);
+        assertEquals(StatusProcesso.ATIVO, processoApp.getStatus());
+        assertEquals("00000014520268260001", processoApp.getProcessoApi().getNumeroCnj());
+        verifyNoInteractions(sincronizacaoProducer);
+    }
+
+    @Test
+    void deveAceitarSemEnfileirarQuandoCodigoTribunalNaoEReconhecido() {
+        prepararAceite();
+        aceitarSolicitacao.aceitar(1L, requestComCnj("00000014520268990001"), usuarioResponsavel);
+        assertEquals(StatusProcesso.ATIVO, processoApp.getStatus());
+        verifyNoInteractions(sincronizacaoProducer, siglaTribunalRepository);
+    }
+
+    @Test
+    void naoDeveAgendarSolicitacaoJaProcessada() {
+        processoApp.setStatus(StatusProcesso.ATIVO);
+        when(processoAppRepository.findById(1L)).thenReturn(Optional.of(processoApp));
+        assertThrows(OperacaoInvalidaException.class,
+                () -> aceitarSolicitacao.aceitar(1L, requestComCnj("00000014520268260001"), usuarioResponsavel));
+        verifyNoInteractions(sincronizacaoProducer);
+    }
+
+    @Test
+    void naoDeveAgendarSolicitacaoInexistente() {
+        when(processoAppRepository.findById(1L)).thenReturn(Optional.empty());
+        assertThrows(ObjetoNaoEncontradoException.class,
+                () -> aceitarSolicitacao.aceitar(1L, requestComCnj("00000014520268260001"), usuarioResponsavel));
+        verifyNoInteractions(sincronizacaoProducer);
+    }
+
+    @Test
+    void deveCriarVinculoSeparadoAoPreencherCnjDeVinculoCompartilhadoVazio() {
+        prepararAceite();
+        ProcessoApi compartilhado = new ProcessoApi();
+        compartilhado.setId(42L);
+        processoApp.setProcessoApi(compartilhado);
+        when(processoAppRepository.existsByProcessoApi_IdAndIdNot(42L, 1L)).thenReturn(true);
+        when(siglaTribunalRepository.findByNomeIgnoreCase("TJSP"))
+                .thenReturn(Optional.of(new SiglaTribunal(1L, "TJSP")));
+        aceitarSolicitacao.aceitar(1L, requestComCnj("00000014520268260001"), usuarioResponsavel);
+        assertNull(compartilhado.getNumeroCnj());
+        assertEquals("00000014520268260001", processoApp.getProcessoApi().getNumeroCnj());
+        verify(sincronizacaoProducer).enviarAposCommit(1L);
     }
 
         private void prepararReferencias() {

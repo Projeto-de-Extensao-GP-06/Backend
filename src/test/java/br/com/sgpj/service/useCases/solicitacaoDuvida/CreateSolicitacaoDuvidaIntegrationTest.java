@@ -24,7 +24,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.sql.init.mode=never"
 })
-@Import({CreateSolicitacaoDuvida.class, RegistrarCaminhoArmazenamentoCliente.class})
+@Import({CreateSolicitacaoDuvida.class, RegistrarCaminhoArmazenamentoCliente.class,
+        PrepararVinculoProcessoOficial.class})
 class CreateSolicitacaoDuvidaIntegrationTest {
 
     @Autowired private CreateSolicitacaoDuvida createSolicitacaoDuvida;

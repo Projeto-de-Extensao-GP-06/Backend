@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -65,13 +64,16 @@ class CreateSolicitacaoDuvidaTest {
     @Mock
     private ClienteCaminhoArmazenamento clienteCaminhoArmazenamento;
 
-    @InjectMocks
     private CreateSolicitacaoDuvida createSolicitacaoDuvida;
 
     private StatusCliente statusLead;
 
     @BeforeEach
     void setUp() {
+        createSolicitacaoDuvida = new CreateSolicitacaoDuvida(clienteRepository, contatoRepository,
+                processoAppRepository, statusClienteRepository,
+                new PrepararVinculoProcessoOficial(siglaTribunalRepository), sincronizacaoProducer,
+                clienteCaminhoArmazenamento);
         statusLead = new StatusCliente();
         statusLead.setId(1L);
         statusLead.setNome("LEAD");

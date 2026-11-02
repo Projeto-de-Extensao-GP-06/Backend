@@ -17,6 +17,7 @@ import br.com.sgpj.exception.ObjetoNaoEncontradoException;
 import br.com.sgpj.exception.OperacaoInvalidaException;
 import br.com.sgpj.mapper.ProcessoAppToSolicitacaoDuvidaMapper;
 import br.com.sgpj.mapper.SolicitacaoDuvidaMapper;
+import br.com.sgpj.producer.SincronizacaoProcessoProducer;
 import br.com.sgpj.repository.ClienteRepository;
 import br.com.sgpj.repository.ContatoRepository;
 import br.com.sgpj.repository.EnderecoRepository;
@@ -48,6 +49,8 @@ public class AceitarSolicitacao {
     private final StatusClienteRepository statusClienteRepository;
     private final GarantirPastasClienteOneDrive garantirPastasClienteOneDrive;
     private final RegistroHistoricoProcesso registroHistorico;
+    private final PrepararVinculoProcessoOficial prepararVinculoProcessoOficial;
+    private final SincronizacaoProcessoProducer sincronizacaoProducer;
 
     public AceitarSolicitacao(ProcessoAppRepository processoAppRepository,
                               ClienteRepository clienteRepository,
@@ -57,7 +60,9 @@ public class AceitarSolicitacao {
                               FaseProcessoRepository faseProcessoRepository,
                               StatusClienteRepository statusClienteRepository,
                               GarantirPastasClienteOneDrive garantirPastasClienteOneDrive,
-                              RegistroHistoricoProcesso registroHistorico) {
+                              RegistroHistoricoProcesso registroHistorico,
+                              PrepararVinculoProcessoOficial prepararVinculoProcessoOficial,
+                              SincronizacaoProcessoProducer sincronizacaoProducer) {
         this.processoAppRepository = processoAppRepository;
         this.clienteRepository = clienteRepository;
         this.contatoRepository = contatoRepository;
@@ -67,6 +72,8 @@ public class AceitarSolicitacao {
         this.statusClienteRepository = statusClienteRepository;
         this.garantirPastasClienteOneDrive = garantirPastasClienteOneDrive;
         this.registroHistorico = registroHistorico;
+        this.prepararVinculoProcessoOficial = prepararVinculoProcessoOficial;
+        this.sincronizacaoProducer = sincronizacaoProducer;
     }
 
     @Transactional
@@ -87,6 +94,10 @@ public class AceitarSolicitacao {
 
         aplicarDadosCliente(cliente, request.client());
         aplicarDadosProcesso(processoApp, request.process(), prioridade, fase);
+        ProcessoApi processoApi = processoApp.getProcessoApi();
+        boolean sincronizar = processoApi != null && hasValue(processoApi.getNumeroCnj())
+                && !possuiDadosOficiais(processoApi)
+                && prepararVinculoProcessoOficial.preparar(processoApp, processoApi.getNumeroCnj());
         if (processoApp.getUsuarioResponsavel() == null) {
             processoApp.setUsuarioResponsavel(usuarioResponsavel);
         }
@@ -99,6 +110,9 @@ public class AceitarSolicitacao {
         processoApp.setStatus(StatusProcesso.ATIVO);
         processoApp.setUltimaAtualizacao(LocalDateTime.now());
         processoAppRepository.save(processoApp);
+        if (sincronizar) {
+            sincronizacaoProducer.enviarAposCommit(processoApp.getId());
+        }
         registroHistorico.registrar(
                 processoApp,
                 usuarioResponsavel,
@@ -191,6 +205,19 @@ public class AceitarSolicitacao {
         if (processoApi == null) processoApi = new ProcessoApi();
         processoApi.setNumeroCnj(cnj.replaceAll("\\D", ""));
         processo.setProcessoApi(processoApi);
+    }
+
+    private boolean possuiDadosOficiais(ProcessoApi processoApi) {
+        // CNJ e tribunal também existem no vínculo mínimo, antes da consulta ao DataJud.
+        return hasValue(processoApi.getInstancia())
+                || processoApi.getDataAjuizamento() != null
+                || hasValue(processoApi.getNivelSigilo())
+                || hasValue(processoApi.getClasseProcessual())
+                || hasValue(processoApi.getFormato())
+                || hasValue(processoApi.getSistemaTribunal())
+                || hasValue(processoApi.getOrgaoJulgador())
+                || hasValue(processoApi.getAssunto())
+                || (processoApi.getMovimentacoes() != null && !processoApi.getMovimentacoes().isEmpty());
     }
 
     private Prioridade buscarPrioridade(String valor) {

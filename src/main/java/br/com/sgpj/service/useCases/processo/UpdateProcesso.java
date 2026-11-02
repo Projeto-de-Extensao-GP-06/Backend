@@ -86,7 +86,21 @@ public class UpdateProcesso {
         ProcessoApp processoEditado = ProcessoAppMapper.toUpdateEntity(processoAtualizar);
 
         processoEditado.setId(processoEncontrado.getId());
-        processoEditado.setUsuarioResponsavel(processoEncontrado.getUsuarioResponsavel());
+
+        Usuario usuarioResponsavel = processoEncontrado.getUsuarioResponsavel();
+        if (processoAtualizar.usuarioResponsavelId() != null) {
+            if (usuarioResponsavel == null || !processoAtualizar.usuarioResponsavelId().equals(usuarioResponsavel.getId())) {
+                Usuario novoResponsavel = usuarioRepository.findById(processoAtualizar.usuarioResponsavelId())
+                        .orElseThrow(() -> new ObjetoNaoEncontradoException(
+                                "Usuário responsável não encontrado para o ID: " + processoAtualizar.usuarioResponsavelId()));
+                if (novoResponsavel.isUsuarioSistema()) {
+                    throw new OperacaoInvalidaException("Não é permitido atribuir o usuário do sistema como responsável pelo processo.");
+                }
+                usuarioResponsavel = novoResponsavel;
+            }
+        }
+        processoEditado.setUsuarioResponsavel(usuarioResponsavel);
+
         processoEditado.setCliente(processoEncontrado.getCliente());
         processoEditado.setSiglaTribunal(processoEncontrado.getSiglaTribunal());
         processoEditado.setDataHoraInicio(processoEncontrado.getDataHoraInicio());

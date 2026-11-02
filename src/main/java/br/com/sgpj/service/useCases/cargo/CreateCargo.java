@@ -33,8 +33,12 @@ public class CreateCargo {
     }
 
     public CargoResponse criarCargo(CriarCargoRequest request, String emailUsuario){
-        if (cargoRepository.existsByNome(request.nome())) {
-            throw new CargoJaExisteException("O cargo " + request.nome() + " já existe");
+        String nome = request.nome().trim();
+        if (ConstantesValidation.isNomeCargoReservado(nome)) {
+            throw new CargoJaExisteException("O nome " + nome + " é reservado para um cargo do sistema");
+        }
+        if (cargoRepository.existsByNomeIgnoreCase(nome)) {
+            throw new CargoJaExisteException("O cargo " + nome + " já existe");
         }
 
         Usuario criadoPor = usuarioRepository.findByEmail(emailUsuario);
@@ -45,7 +49,7 @@ public class CreateCargo {
         Permissao semPermissoes = permissaoRepository.getReferenceById(ConstantesValidation.SEM_PERMISSOES_ID);
 
         Cargo cargo = new Cargo();
-        cargo.setNome(request.nome());
+        cargo.setNome(nome);
         cargo.setCriadoPor(criadoPor);
         cargo.setCriadoEm(LocalDateTime.now());
 

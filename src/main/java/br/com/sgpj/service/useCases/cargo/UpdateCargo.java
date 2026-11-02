@@ -1,9 +1,12 @@
 package br.com.sgpj.service.useCases.cargo;
 
 import br.com.sgpj.dto.request.AtribuirPermissoesRequest;
+import br.com.sgpj.dto.request.RenomearCargoRequest;
 import br.com.sgpj.dto.response.CargoResponse;
 import br.com.sgpj.entity.*;
+import br.com.sgpj.exception.CargoJaExisteException;
 import br.com.sgpj.exception.CargoNaoEncontradoException;
+import br.com.sgpj.exception.OperacaoInvalidaException;
 import br.com.sgpj.exception.PermissaoNaoEncontradaException;
 import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.mapper.CargoMapper;
@@ -33,6 +36,28 @@ public class UpdateCargo {
         this.cargoPermissaoRepository = cargoPermissaoRepository;
         this.permissaoRepository = permissaoRepository;
         this.atribuirPermissaoEspecial = atribuirPermissaoEspecial;
+    }
+
+    public CargoResponse renomearCargo(Long cargoId, RenomearCargoRequest request) {
+        if (ConstantesValidation.CARGO_ADMIN_ID.equals(cargoId)) {
+            throw new OperacaoInvalidaException("O cargo 'ADMIN' não pode ser renomeado");
+        }
+        if (ConstantesValidation.SEM_CARGO_ID.equals(cargoId)) {
+            throw new OperacaoInvalidaException("O cargo 'Sem Cargo' não pode ser renomeado");
+        }
+
+        Cargo cargo = cargoRepository.findById(cargoId)
+                .orElseThrow(() -> new CargoNaoEncontradoException("Cargo não encontrado: " + cargoId));
+        String nome = request.nome().trim();
+        if (ConstantesValidation.isNomeCargoReservado(nome)) {
+            throw new CargoJaExisteException("O nome " + nome + " é reservado para um cargo do sistema");
+        }
+        if (cargoRepository.existsByNomeIgnoreCaseAndIdNot(nome, cargoId)) {
+            throw new CargoJaExisteException("O cargo " + nome + " já existe");
+        }
+
+        cargo.setNome(nome);
+        return CargoMapper.toResponse(cargo);
     }
 
     public CargoResponse atualizarPermissoesCargo(Long cargoId, AtribuirPermissoesRequest request, String emailUsuario){

@@ -2,6 +2,7 @@ package br.com.sgpj.controller;
 
 import br.com.sgpj.dto.request.AtribuirPermissoesRequest;
 import br.com.sgpj.dto.request.CriarCargoRequest;
+import br.com.sgpj.dto.request.RenomearCargoRequest;
 import br.com.sgpj.dto.response.CargoResponse;
 import br.com.sgpj.service.CargoService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -65,6 +66,16 @@ public class CargoController {
                         .getName();
 
         return ResponseEntity.ok(cargoService.atualizarPermissoes(cargoId, request, email));
+    }
+
+    @PutMapping("/{cargoId}")
+    @PreAuthorize("hasAuthority('EDITAR CARGO') || hasAuthority('TODAS AS PERMISSÕES')")
+    @SecurityRequirement(name = "Bearer")
+    @Operation(summary = "Renomeia um cargo")
+    public ResponseEntity<CargoResponse> renomear(
+            @PathVariable Long cargoId,
+            @RequestBody @Valid RenomearCargoRequest request) {
+        return ResponseEntity.ok(cargoService.renomear(cargoId, request));
     }
 
     @DeleteMapping("/{cargoId}")

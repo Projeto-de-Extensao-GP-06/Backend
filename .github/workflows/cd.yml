@@ -73,11 +73,13 @@ jobs:
           INSTANCE_IDS=$(aws ec2 describe-instances \
             --filters "Name=tag:Name,Values=ec2-backend-a,ec2-backend-b" "Name=instance-state-name,Values=running" \
             --query "Reservations[*].Instances[*].InstanceId" \
-            --output text)
+            --output text 2>/dev/null || echo "")
 
-          if [ -z "$INSTANCE_IDS" ]; then
-            echo "❌ Nenhuma instância EC2 de backend encontrada no estado 'running'!"
-            exit 1
+          # Trata casos de saída vazia, nula ou "None"
+          if [ -z "$INSTANCE_IDS" ] || [ "$INSTANCE_IDS" = "None" ]; then
+            echo "⚠️ Nenhuma EC2 de backend ativa encontrada no momento (ambiente desligado/destroy)."
+            echo "✅ A nova imagem já foi publicada no Amazon ECR com sucesso! Quando a infraestrutura for recriada, ela subirá com essa versão."
+            exit 0
           fi
 
           echo "Instâncias encontradas: $INSTANCE_IDS"

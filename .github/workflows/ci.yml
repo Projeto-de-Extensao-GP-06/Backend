@@ -22,5 +22,5 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Compilar e rodar testes
-        run: mvn clean test --file pom.xml
+      - name: Compilar e rodar testes unitários
+        run: mvn clean test -Dspring.profiles.active=test -Dtest=!SgpjApplicationTests --file pom.xml

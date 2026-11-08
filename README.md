@@ -260,3 +260,34 @@ GET /usuarios
 - OpenAPI: http://localhost:8080/v3/api-docs
 
 ---
+
+
+---
+
+## 🚀 Fluxo de Integração e Entrega Contínua (CI/CD)
+
+O repositório possui pipelines automatizados configurados via **GitHub Actions**:
+
+```mermaid
+flowchart LR
+    Dev[Desenvolvedor] -->|git push branch| PR[Abre Pull Request]
+    PR -->|Gatilho CI| Testes[CI: Compilação + 739 Testes JUnit]
+    Testes -->|Aprovado| Merge[Merge na branch main]
+    Merge -->|Gatilho CD| Deploy[CD: Maven JAR + Docker Build + ECR + SSM Deploy]
+```
+
+### 1. Integração Contínua (CI) — `.github/workflows/ci.yml`
+* **Gatilho:** Disparado automaticamente na abertura ou atualização de qualquer **Pull Request** para `main` ou `develop`.
+* **Ações:**
+  * Configura o ambiente com **Java 21 (Temurin)**.
+  * Executa a suíte de testes automatizados (`mvn clean test`).
+  * **Regra de Qualidade:** Se qualquer teste falhar, o GitHub bloqueia a fusão do PR.
+
+### 2. Entrega e Deploy Contínuo (CD) — `.github/workflows/cd.yml`
+* **Gatilho:** Disparado automaticamente em qualquer **Push / Merge** na branch `main`.
+* **Ações:**
+  * Compila o `.jar` final com Maven.
+  * Constrói a imagem Docker baseada no `eclipse-temurin:21-jre-alpine`.
+  * Realiza a autenticação no **Amazon ECR** e publica a imagem `sgpj-backend:latest`.
+  * Executa o deploy zero-downtime nas instâncias EC2 privadas (`ec2-backend-a` e `ec2-backend-b`) via **AWS Systems Manager (SSM)**.
+  * Caso as instâncias estejam desligadas (`terraform destroy`), o pipeline publica a imagem no ECR com segurança e finaliza com aviso informativo sem quebrar.

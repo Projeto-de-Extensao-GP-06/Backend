@@ -60,7 +60,9 @@ class ProcessoAppToSolicitacaoDuvidaMapperTest {
         processoApp.setCliente(cliente);
         processoApp.setDescricaoCaso("Dúvida sobre contrato");
         processoApp.setObservacao("Solicitação enviada pelo formulário público. Estado: SP");
-        processoApp.setDataHoraInicio(LocalDateTime.of(2026, 9, 20, 15, 30));
+        LocalDateTime inicio = LocalDateTime.of(2026, 9, 20, 15, 30);
+        processoApp.setDataHoraInicio(inicio);
+        processoApp.setUltimaAtualizacao(inicio);
         processoApp.setCnpjInformadoFormulario("12345678000195");
         processoApp.setProcessoApi(processoApi);
 
@@ -77,10 +79,13 @@ class ProcessoAppToSolicitacaoDuvidaMapperTest {
         assertEquals("Tecnologia LTDA", detalhes.nomeRazaoSocial());
         assertEquals("Carlos Gerente", detalhes.nomeContato());
         assertEquals("12345678000195", detalhes.cnpj());
+        assertEquals(inicio, detalhes.ultimaAtualizacao());
         assertEquals(false, listagem.isPF());
         assertEquals("Tecnologia LTDA", listagem.nomeRazaoSocial());
         assertEquals("Carlos Gerente", listagem.nomeContato());
         assertEquals("12345678000195", listagem.cnpj());
+        assertEquals(inicio, listagem.ultimaAtualizacao());
+        assertEquals(inicio, solicitacao.getUltimaAtualizacao());
         assertEquals("12345678000195", solicitacao.getCnpj());
         assertEquals("carlos@empresa.com", solicitacao.getEmail());
         assertEquals("11999998888", solicitacao.getTelefone());

@@ -14,6 +14,9 @@ import br.com.sgpj.security.AuthorizationUtil;
 import br.com.sgpj.security.RateLimiter;
 import br.com.sgpj.service.CloudflareTurnstileService;
 import br.com.sgpj.service.SolicitacaoDuvidaService;
+import br.com.sgpj.dto.response.Processos.SincronizacaoProcessoResponse;
+import br.com.sgpj.service.SincronizacaoStatusService;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import br.com.sgpj.exception.CaptchaInvalidoException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.DisplayName;
@@ -50,7 +53,8 @@ class SolicitacaoDuvidaControllerTest {
     @Mock private SolicitacaoDuvidaService service;
     @Mock private RateLimiter rateLimiter;
     @Mock private CloudflareTurnstileService cloudflareTurnstileService;
-        @Mock private AuthorizationUtil authorizationUtil;
+    @Mock private AuthorizationUtil authorizationUtil;
+    @Mock private SincronizacaoStatusService sincronizacaoStatusService;
     @Mock private HttpServletRequest httpRequest;
     @InjectMocks private SolicitacaoDuvidaController controller;
 
@@ -279,8 +283,36 @@ class SolicitacaoDuvidaControllerTest {
                 true,
                 null,
                 null,
-                null
+                null,
+                LocalDateTime.of(2026, 5, 30, 10, 0)
         );
+    }
+
+    @Test
+    @DisplayName("POST /solicitacoes/{id}/atualizar-dados deve retornar 202 com resposta de sincronização")
+    void atualizarDadosOficiaisDeveRetornar202() {
+        SincronizacaoProcessoResponse resposta = new SincronizacaoProcessoResponse(
+                30L, "Solicitação de sincronização enviada para a fila de processamento.", "EM_PROCESSAMENTO");
+        when(service.solicitarSincronizacaoDataJud(30L)).thenReturn(resposta);
+
+        ResponseEntity<SincronizacaoProcessoResponse> response = controller.atualizarDadosOficiais(30L);
+
+        assertEquals(HttpStatus.ACCEPTED, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(30L, response.getBody().processoId());
+        verify(service).solicitarSincronizacaoDataJud(30L);
+    }
+
+    @Test
+    @DisplayName("GET /solicitacoes/{id}/sincronizacao-status deve retornar SseEmitter")
+    void statusSincronizacaoEmTempoRealDeveRetornarEmitter() {
+        SseEmitter emitter = new SseEmitter();
+        when(sincronizacaoStatusService.criarConexao(30L)).thenReturn(emitter);
+
+        SseEmitter result = controller.statusSincronizacaoEmTempoReal(30L);
+
+        assertNotNull(result);
+        verify(sincronizacaoStatusService).criarConexao(30L);
     }
 
     private SolicitacaoDuvidaListarResponse criarListagem() {
@@ -299,7 +331,8 @@ class SolicitacaoDuvidaControllerTest {
                 true,
                 null,
                 null,
-                null
+                null,
+                LocalDateTime.of(2026, 5, 30, 10, 0)
         );
     }
 }

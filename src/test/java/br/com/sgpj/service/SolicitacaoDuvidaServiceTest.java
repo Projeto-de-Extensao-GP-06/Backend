@@ -2,6 +2,7 @@ package br.com.sgpj.service;
 
 import br.com.sgpj.dto.request.SolicitacaoDuvidaCriacaoRequest;
 import br.com.sgpj.dto.request.SolicitacaoAceiteRequest;
+import br.com.sgpj.dto.response.Processos.SincronizacaoProcessoResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoCandidatoDuplicidadeResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoClientePreenchimentoResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaDetalhesResponse;
@@ -14,6 +15,7 @@ import br.com.sgpj.service.useCases.solicitacaoDuvida.FiltrarSolicitacoes;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.ListarSolicitacoesPendentes;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.NegarSolicitacao;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.ReadSolicitacaoDuvida;
+import br.com.sgpj.service.useCases.solicitacaoDuvida.SolicitarSincronizacaoSolicitacao;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,6 +56,9 @@ class SolicitacaoDuvidaServiceTest {
 
     @Mock
     private BuscarCandidatosDuplicidadeSolicitacao buscarCandidatosDuplicidadeSolicitacao;
+
+    @Mock
+    private SolicitarSincronizacaoSolicitacao solicitarSincronizacaoSolicitacao;
 
     @InjectMocks
     private SolicitacaoDuvidaService solicitacaoDuvidaService;
@@ -147,5 +152,17 @@ class SolicitacaoDuvidaServiceTest {
 
         assertEquals(pagina, resultado);
         verify(filtrarSolicitacoes).filtrar("SP", null, "maria", null, null, pageable);
+    }
+
+    @Test
+    @DisplayName("solicitarSincronizacaoDataJud deve delegar ao use case SolicitarSincronizacaoSolicitacao")
+    void deveDelegarSincronizacaoAoUseCase() {
+        SincronizacaoProcessoResponse resposta = mock(SincronizacaoProcessoResponse.class);
+        when(solicitarSincronizacaoSolicitacao.solicitar(1L)).thenReturn(resposta);
+
+        SincronizacaoProcessoResponse resultado = solicitacaoDuvidaService.solicitarSincronizacaoDataJud(1L);
+
+        assertEquals(resposta, resultado);
+        verify(solicitarSincronizacaoSolicitacao).solicitar(1L);
     }
 }

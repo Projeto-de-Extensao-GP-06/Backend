@@ -17,9 +17,12 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import br.com.sgpj.dto.response.Processos.SincronizacaoProcessoResponse;
+import br.com.sgpj.service.SincronizacaoStatusService;
+import org.springframework.http.MediaType;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -60,17 +63,20 @@ public class SolicitacaoDuvidaController {
     private final RateLimiter rateLimiter;
     private final CloudflareTurnstileService cloudflareTurnstileService;
     private final AuthorizationUtil authorizationUtil;
+    private final SincronizacaoStatusService sincronizacaoStatusService;
 
     public SolicitacaoDuvidaController(
             SolicitacaoDuvidaService solicitacaoDuvidaService,
             RateLimiter rateLimiter,
             CloudflareTurnstileService cloudflareTurnstileService,
-            AuthorizationUtil authorizationUtil
+            AuthorizationUtil authorizationUtil,
+            SincronizacaoStatusService sincronizacaoStatusService
     ) {
         this.solicitacaoDuvidaService = solicitacaoDuvidaService;
         this.rateLimiter = rateLimiter;
         this.cloudflareTurnstileService = cloudflareTurnstileService;
         this.authorizationUtil = authorizationUtil;
+        this.sincronizacaoStatusService = sincronizacaoStatusService;
     }
 
     @PostMapping
@@ -214,5 +220,20 @@ public class SolicitacaoDuvidaController {
     public ResponseEntity<Void> negar(@PathVariable Long id) {
         solicitacaoDuvidaService.negar(id);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @PostMapping("/{id}/atualizar-dados")
+    @PreAuthorize("hasAuthority('ACEITAR SOLICITAÇÃO') || hasAuthority('NEGAR SOLICITAÇÃO') || hasAuthority('TODAS AS PERMISSÕES')")
+    @SecurityRequirement(name = "Bearer")
+    @Operation(summary = "Solicita a sincronização dos dados oficiais do processo da solicitação no DataJud")
+    public ResponseEntity<SincronizacaoProcessoResponse> atualizarDadosOficiais(@PathVariable Long id) {
+        SincronizacaoProcessoResponse response = solicitacaoDuvidaService.solicitarSincronizacaoDataJud(id);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+    }
+
+    @GetMapping(value = "/{id}/sincronizacao-status", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "Acompanha o status de sincronização da solicitação em tempo real via SSE")
+    public SseEmitter statusSincronizacaoEmTempoReal(@PathVariable Long id) {
+        return sincronizacaoStatusService.criarConexao(id);
     }
 }

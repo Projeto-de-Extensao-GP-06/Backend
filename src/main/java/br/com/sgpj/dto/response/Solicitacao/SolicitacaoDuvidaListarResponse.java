@@ -20,6 +20,7 @@ public record SolicitacaoDuvidaListarResponse(
         Boolean isPF,
         String nomeRazaoSocial,
         String nomeContato,
-        String cnpj
+        String cnpj,
+        LocalDateTime ultimaAtualizacao
 ) {
 }

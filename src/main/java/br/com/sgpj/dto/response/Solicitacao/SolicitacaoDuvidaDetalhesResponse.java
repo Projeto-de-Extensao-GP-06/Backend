@@ -24,6 +24,7 @@ public record SolicitacaoDuvidaDetalhesResponse(
         Boolean isPF,
         String nomeRazaoSocial,
         String nomeContato,
-        String cnpj
+        String cnpj,
+        LocalDateTime ultimaAtualizacao
 ) {
 }

@@ -35,6 +35,7 @@ public class ProcessoAppToSolicitacaoDuvidaMapper {
         solicitacao.setComoConheceu(cliente.getComoConheceu());
         solicitacao.setAceitouTermos(true);
         solicitacao.setDataSolicitacao(processoApp.getDataHoraInicio());
+        solicitacao.setUltimaAtualizacao(processoApp.getUltimaAtualizacao());
         solicitacao.setDataResposta(cliente.getDataHoraTransformacaoEmCliente());
         solicitacao.setStatus(toSolicitacaoStatus(cliente));
         solicitacao.setProcessoApi(processoApi);

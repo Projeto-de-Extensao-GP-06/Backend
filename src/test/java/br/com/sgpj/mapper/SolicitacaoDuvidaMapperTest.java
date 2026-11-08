@@ -83,6 +83,7 @@ class SolicitacaoDuvidaMapperTest {
         solicitacao.setDescricao("Dúvida trabalhista");
         solicitacao.setComoConheceu(ComoConheceuEnum.INDICACAO);
         solicitacao.setDataSolicitacao(agora);
+        solicitacao.setUltimaAtualizacao(agora);
         solicitacao.setStatus(SolicitacaoStatus.PENDENTE);
 
         SolicitacaoDuvidaListarResponse response = SolicitacaoDuvidaMapper.toListarResponse(solicitacao);
@@ -92,6 +93,7 @@ class SolicitacaoDuvidaMapperTest {
         assertEquals("Lucas Santos", response.nomeCompleto());
         assertEquals("lucas@email.com", response.email());
         assertEquals(SolicitacaoStatus.PENDENTE, response.status());
+        assertEquals(agora, response.ultimaAtualizacao());
     }
 
     @Test
@@ -110,6 +112,7 @@ class SolicitacaoDuvidaMapperTest {
         solicitacao.setComoConheceu(ComoConheceuEnum.OUTROS);
         solicitacao.setAceitouTermos(true);
         solicitacao.setDataSolicitacao(agora);
+        solicitacao.setUltimaAtualizacao(agora);
         solicitacao.setStatus(SolicitacaoStatus.ACEITA);
         solicitacao.setDataResposta(agora.plusDays(1));
 
@@ -119,5 +122,6 @@ class SolicitacaoDuvidaMapperTest {
         assertEquals("Julia Mendes", response.nomeCompleto());
         assertTrue(response.aceitouTermos());
         assertEquals(SolicitacaoStatus.ACEITA, response.status());
+        assertEquals(agora, response.ultimaAtualizacao());
     }
 }

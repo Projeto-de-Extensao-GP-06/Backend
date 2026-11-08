@@ -6,6 +6,7 @@ import br.com.sgpj.dto.response.Solicitacao.SolicitacaoCandidatoDuplicidadeRespo
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoClientePreenchimentoResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaDetalhesResponse;
 import br.com.sgpj.dto.response.Solicitacao.SolicitacaoDuvidaListarResponse;
+import br.com.sgpj.dto.response.Processos.SincronizacaoProcessoResponse;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.AceitarSolicitacao;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.BuscarCandidatosDuplicidadeSolicitacao;
@@ -14,6 +15,7 @@ import br.com.sgpj.service.useCases.solicitacaoDuvida.FiltrarSolicitacoes;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.ListarSolicitacoesPendentes;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.NegarSolicitacao;
 import br.com.sgpj.service.useCases.solicitacaoDuvida.ReadSolicitacaoDuvida;
+import br.com.sgpj.service.useCases.solicitacaoDuvida.SolicitarSincronizacaoSolicitacao;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -32,6 +34,7 @@ public class SolicitacaoDuvidaService {
     private final ReadSolicitacaoDuvida readSolicitacaoDuvida;
     private final FiltrarSolicitacoes filtrarSolicitacoes;
     private final BuscarCandidatosDuplicidadeSolicitacao buscarCandidatosDuplicidadeSolicitacao;
+    private final SolicitarSincronizacaoSolicitacao solicitarSincronizacaoSolicitacao;
 
     public SolicitacaoDuvidaService(CreateSolicitacaoDuvida createSolicitacaoDuvida,
                                      ListarSolicitacoesPendentes listarSolicitacoesPendentes,
@@ -39,7 +42,8 @@ public class SolicitacaoDuvidaService {
                                      NegarSolicitacao negarSolicitacao,
                                      ReadSolicitacaoDuvida readSolicitacaoDuvida,
                                      FiltrarSolicitacoes filtrarSolicitacoes,
-                                     BuscarCandidatosDuplicidadeSolicitacao buscarCandidatosDuplicidadeSolicitacao) {
+                                     BuscarCandidatosDuplicidadeSolicitacao buscarCandidatosDuplicidadeSolicitacao,
+                                     SolicitarSincronizacaoSolicitacao solicitarSincronizacaoSolicitacao) {
         this.createSolicitacaoDuvida = createSolicitacaoDuvida;
         this.listarSolicitacoesPendentes = listarSolicitacoesPendentes;
         this.aceitarSolicitacao = aceitarSolicitacao;
@@ -47,6 +51,7 @@ public class SolicitacaoDuvidaService {
         this.readSolicitacaoDuvida = readSolicitacaoDuvida;
         this.filtrarSolicitacoes = filtrarSolicitacoes;
         this.buscarCandidatosDuplicidadeSolicitacao = buscarCandidatosDuplicidadeSolicitacao;
+        this.solicitarSincronizacaoSolicitacao = solicitarSincronizacaoSolicitacao;
     }
 
     // CREATE OPERATIONS
@@ -91,5 +96,10 @@ public class SolicitacaoDuvidaService {
     @Transactional
     public void negar(Long id) {
         negarSolicitacao.negar(id);
+    }
+
+    @Transactional
+    public SincronizacaoProcessoResponse solicitarSincronizacaoDataJud(Long id) {
+        return solicitarSincronizacaoSolicitacao.solicitar(id);
     }
 }

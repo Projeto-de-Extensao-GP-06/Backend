@@ -31,7 +31,8 @@ public class SolicitacaoDuvidaMapper {
                 solicitacao.getPF(),
                 Boolean.FALSE.equals(solicitacao.getPF()) ? solicitacao.getNomeCompleto() : null,
                 solicitacao.getNomeContato(),
-                solicitacao.getCnpj()
+                solicitacao.getCnpj(),
+                solicitacao.getUltimaAtualizacao()
         );
     }
 
@@ -54,7 +55,8 @@ public class SolicitacaoDuvidaMapper {
                 solicitacao.getPF(),
                 Boolean.FALSE.equals(solicitacao.getPF()) ? solicitacao.getNomeCompleto() : null,
                 solicitacao.getNomeContato(),
-                solicitacao.getCnpj()
+                solicitacao.getCnpj(),
+                solicitacao.getUltimaAtualizacao()
         );
     }
 

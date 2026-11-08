@@ -23,6 +23,7 @@ public class SolicitacaoDuvida {
     private String cnpj;
     private String nomeContato;
     private Boolean isPF;
+    private LocalDateTime ultimaAtualizacao;
 
     public Boolean getPF() {
         return isPF;
@@ -158,5 +159,13 @@ public class SolicitacaoDuvida {
 
     public void setNomeContato(String nomeContato) {
         this.nomeContato = nomeContato;
+    }
+
+    public LocalDateTime getUltimaAtualizacao() {
+        return ultimaAtualizacao;
+    }
+
+    public void setUltimaAtualizacao(LocalDateTime ultimaAtualizacao) {
+        this.ultimaAtualizacao = ultimaAtualizacao;
     }
 }

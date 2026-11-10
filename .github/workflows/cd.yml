@@ -1,6 +1,7 @@
 name: CD - Backend (Build e Deploy)
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -18,7 +19,7 @@ jobs:
       image: ${{ steps.build-push.outputs.image }}
 
     steps:
-      - name: Checkout do código
+      - name: Checkout do codigo
         uses: actions/checkout@v4
 
       - name: Configurar JDK 21
@@ -28,7 +29,7 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Gerar JAR (sem testes, já validados no CI)
+      - name: Gerar JAR (sem testes, ja validados no CI)
         run: mvn clean package -DskipTests --file pom.xml
 
       - name: Configurar credenciais AWS
@@ -67,32 +68,31 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Descobrir instâncias de Backend e atualizar containers via SSM
+      - name: Descobrir instancias de Backend e atualizar containers via SSM
         run: |
-          echo "Buscando instâncias ativas de backend..."
+          echo "Buscando instancias ativas de backend..."
           INSTANCE_IDS=$(aws ec2 describe-instances \
             --filters "Name=tag:Name,Values=ec2-backend-a,ec2-backend-b" "Name=instance-state-name,Values=running" \
             --query "Reservations[*].Instances[*].InstanceId" \
             --output text 2>/dev/null || echo "")
 
-          # Trata casos de saída vazia, nula ou "None"
           if [ -z "$INSTANCE_IDS" ] || [ "$INSTANCE_IDS" = "None" ]; then
-            echo "⚠️ Nenhuma EC2 de backend ativa encontrada no momento (ambiente desligado/destroy)."
-            echo "✅ A nova imagem já foi publicada no Amazon ECR com sucesso! Quando a infraestrutura for recriada, ela subirá com essa versão."
+            echo "Nenhuma EC2 de backend ativa encontrada no momento (ambiente desligado/destroy)."
+            echo "A nova imagem ja foi publicada no Amazon ECR com sucesso! Quando a infraestrutura for recriada, ela subira com essa versao."
             exit 0
           fi
 
-          echo "Instâncias encontradas: $INSTANCE_IDS"
+          echo "Instancias encontradas: $INSTANCE_IDS"
 
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids $INSTANCE_IDS \
             --document-name "AWS-RunShellScript" \
-            --parameters 'commands=["cd /opt/app-backend && docker compose pull backend && docker compose up -d backend"]' \
+            --parameters 'commands=["cd /opt/app-backend && if docker info | grep -q '\''Swarm: active'\''; then aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 487375662162.dkr.ecr.us-east-1.amazonaws.com && docker service update --with-registry-auth --image 487375662162.dkr.ecr.us-east-1.amazonaws.com/sgpj-backend:latest sgpj_backend_backend; else docker compose pull backend && docker compose up -d backend; fi"]' \
             --query "Command.CommandId" \
             --output text)
 
           echo "SSM Command ID: $COMMAND_ID"
-          echo "Aguardando execução nas instâncias..."
+          echo "Aguardando execucao nas instancias..."
           sleep 25
 
           FAILED=0
@@ -108,8 +108,8 @@ jobs:
           done
 
           if [ $FAILED -ne 0 ]; then
-            echo "❌ Deploy falhou em uma ou mais instâncias!"
+            echo "Deploy falhou em uma ou mais instancias!"
             exit 1
           fi
 
-          echo "✅ Deploy realizado com sucesso em todas as instâncias de Backend!"
+          echo "Deploy realizado com sucesso em todas as instancias de Backend!"

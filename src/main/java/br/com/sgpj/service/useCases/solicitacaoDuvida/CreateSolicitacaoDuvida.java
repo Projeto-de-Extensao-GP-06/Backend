@@ -73,7 +73,7 @@ public class CreateSolicitacaoDuvida {
                 request.nomeCompleto().trim(),
                 request.email().trim(),
                 telefone,
-                null,
+                normalizarOpcional(request.profissao()),
                 true,
                 cliente
         );

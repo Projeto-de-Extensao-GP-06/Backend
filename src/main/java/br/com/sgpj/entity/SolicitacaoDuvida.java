@@ -22,6 +22,7 @@ public class SolicitacaoDuvida {
     private ProcessoApi processoApi;
     private String cnpj;
     private String nomeContato;
+    private String profissao;
     private Boolean isPF;
     private LocalDateTime ultimaAtualizacao;
 
@@ -159,6 +160,14 @@ public class SolicitacaoDuvida {
 
     public void setNomeContato(String nomeContato) {
         this.nomeContato = nomeContato;
+    }
+
+    public String getProfissao() {
+        return profissao;
+    }
+
+    public void setProfissao(String profissao) {
+        this.profissao = profissao;
     }
 
     public LocalDateTime getUltimaAtualizacao() {

@@ -81,6 +81,7 @@ class SolicitacaoDuvidaMapperTest {
         solicitacao.setEstado("RJ");
         solicitacao.setNumeroProcesso("00000020020268260001");
         solicitacao.setDescricao("Dúvida trabalhista");
+        solicitacao.setProfissao("Analista");
         solicitacao.setComoConheceu(ComoConheceuEnum.INDICACAO);
         solicitacao.setDataSolicitacao(agora);
         solicitacao.setUltimaAtualizacao(agora);
@@ -91,6 +92,7 @@ class SolicitacaoDuvidaMapperTest {
         assertEquals(3L, response.id());
         assertEquals(30L, response.clienteId());
         assertEquals("Lucas Santos", response.nomeCompleto());
+        assertEquals("Analista", response.profissao());
         assertEquals("lucas@email.com", response.email());
         assertEquals(SolicitacaoStatus.PENDENTE, response.status());
         assertEquals(agora, response.ultimaAtualizacao());
@@ -109,6 +111,7 @@ class SolicitacaoDuvidaMapperTest {
         solicitacao.setEstado("MG");
         solicitacao.setNumeroProcesso(null);
         solicitacao.setDescricao("Caso cível");
+        solicitacao.setProfissao("Advogada");
         solicitacao.setComoConheceu(ComoConheceuEnum.OUTROS);
         solicitacao.setAceitouTermos(true);
         solicitacao.setDataSolicitacao(agora);
@@ -120,6 +123,7 @@ class SolicitacaoDuvidaMapperTest {
 
         assertEquals(4L, response.id());
         assertEquals("Julia Mendes", response.nomeCompleto());
+        assertEquals("Advogada", response.profissao());
         assertTrue(response.aceitouTermos());
         assertEquals(SolicitacaoStatus.ACEITA, response.status());
         assertEquals(agora, response.ultimaAtualizacao());

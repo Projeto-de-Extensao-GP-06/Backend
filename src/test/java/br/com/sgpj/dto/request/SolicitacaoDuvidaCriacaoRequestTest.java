@@ -33,9 +33,10 @@ class SolicitacaoDuvidaCriacaoRequestTest {
     void deveManterTokenExplicitoSemCampoEstadoNoFormularioPublico() {
         SolicitacaoDuvidaCriacaoRequest request = new SolicitacaoDuvidaCriacaoRequest(
                 "Cliente de Teste", "cliente@example.com", true, "11999999999",
-                null, "Descricao do caso", ComoConheceuEnum.SITE, true, null, null, "token-explicito");
+                null, "Descricao do caso", ComoConheceuEnum.SITE, true, null, null, "Advogada", "token-explicito");
 
         assertEquals("token-explicito", request.turnstileToken());
+        assertEquals("Advogada", request.profissao());
         assertTrue(validator.validate(request).isEmpty());
         assertFalse(Arrays.stream(SolicitacaoDuvidaCriacaoRequest.class.getRecordComponents())
                 .anyMatch(component -> component.getName().equals("estado")));

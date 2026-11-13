@@ -48,6 +48,7 @@ class ProcessoAppToSolicitacaoDuvidaMapperTest {
         contatoPrincipal.setNome("Carlos Gerente");
         contatoPrincipal.setEmail("carlos@empresa.com");
         contatoPrincipal.setTelefone("11999998888");
+        contatoPrincipal.setProfissao("Diretor Executivo");
         contatoPrincipal.setPrincipal(true);
 
         cliente.setContatos(List.of(contatoSecundario, contatoPrincipal));
@@ -72,17 +73,20 @@ class ProcessoAppToSolicitacaoDuvidaMapperTest {
         assertEquals(10L, solicitacao.getClienteId());
         assertEquals("Tecnologia LTDA", solicitacao.getNomeCompleto());
         assertEquals("Carlos Gerente", solicitacao.getNomeContato());
+        assertEquals("Diretor Executivo", solicitacao.getProfissao());
         assertEquals(false, solicitacao.getPF());
         var detalhes = SolicitacaoDuvidaMapper.toDetalhesResponse(solicitacao);
         var listagem = SolicitacaoDuvidaMapper.toListarResponse(solicitacao);
         assertEquals(false, detalhes.isPF());
         assertEquals("Tecnologia LTDA", detalhes.nomeRazaoSocial());
         assertEquals("Carlos Gerente", detalhes.nomeContato());
+        assertEquals("Diretor Executivo", detalhes.profissao());
         assertEquals("12345678000195", detalhes.cnpj());
         assertEquals(inicio, detalhes.ultimaAtualizacao());
         assertEquals(false, listagem.isPF());
         assertEquals("Tecnologia LTDA", listagem.nomeRazaoSocial());
         assertEquals("Carlos Gerente", listagem.nomeContato());
+        assertEquals("Diretor Executivo", listagem.profissao());
         assertEquals("12345678000195", listagem.cnpj());
         assertEquals(inicio, listagem.ultimaAtualizacao());
         assertEquals(inicio, solicitacao.getUltimaAtualizacao());

@@ -97,6 +97,7 @@ class CreateSolicitacaoDuvidaTest {
                     true,
                     null,
                     null,
+                    "Advogado",
                     "dummy-test-token"
             );
 
@@ -122,13 +123,17 @@ class CreateSolicitacaoDuvidaTest {
 
             ArgumentCaptor<ProcessoApp> processoCaptor = ArgumentCaptor.forClass(ProcessoApp.class);
             verify(processoAppRepository).save(processoCaptor.capture());
+            ArgumentCaptor<Contato> contatoCaptor = ArgumentCaptor.forClass(Contato.class);
+            verify(contatoRepository).save(contatoCaptor.capture());
 
             ProcessoApp salvo = processoCaptor.getValue();
             verify(clienteCaminhoArmazenamento).registrar(salvo.getCliente());
+            assertEquals("Advogado", contatoCaptor.getValue().getProfissao());
             assertEquals(StatusProcesso.SOLICITACAO, salvo.getStatus());
             assertEquals("Descrição da dúvida", salvo.getDescricaoCaso());
             assertEquals("Solicitação enviada pelo formulário público.", salvo.getObservacao());
             assertNotNull(response);
+            assertEquals("Advogado", response.profissao());
             assertNull(response.estado());
             verify(sincronizacaoProducer, never()).enviarAposCommit(any());
         }

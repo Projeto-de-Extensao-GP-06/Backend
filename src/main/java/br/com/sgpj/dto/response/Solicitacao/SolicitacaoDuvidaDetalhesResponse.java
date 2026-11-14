@@ -25,6 +25,7 @@ public record SolicitacaoDuvidaDetalhesResponse(
         String nomeRazaoSocial,
         String nomeContato,
         String cnpj,
-        LocalDateTime ultimaAtualizacao
+        LocalDateTime ultimaAtualizacao,
+        String profissao
 ) {
 }

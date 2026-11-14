@@ -284,7 +284,8 @@ class SolicitacaoDuvidaControllerTest {
                 null,
                 null,
                 null,
-                LocalDateTime.of(2026, 5, 30, 10, 0)
+                LocalDateTime.of(2026, 5, 30, 10, 0),
+                null
         );
     }
 
@@ -332,7 +333,8 @@ class SolicitacaoDuvidaControllerTest {
                 null,
                 null,
                 null,
-                LocalDateTime.of(2026, 5, 30, 10, 0)
+                LocalDateTime.of(2026, 5, 30, 10, 0),
+                null
         );
     }
 }

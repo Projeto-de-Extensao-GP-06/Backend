@@ -5,17 +5,14 @@ import br.com.sgpj.dto.response.Cliente.ClienteDetalhesResponse;
 import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Contato;
 import br.com.sgpj.entity.Endereco;
-import br.com.sgpj.entity.StatusCliente;
 import br.com.sgpj.exception.ClienteJaExistenteException;
 import br.com.sgpj.exception.ClienteNaoEncontradoException;
-import br.com.sgpj.exception.StatusClienteNaoEncontradoException;
 import br.com.sgpj.mapper.ClienteMapper;
 import br.com.sgpj.mapper.ContatoMapper;
 import br.com.sgpj.mapper.EnderecoMapper;
 import br.com.sgpj.repository.ClienteRepository;
 import br.com.sgpj.repository.ContatoRepository;
 import br.com.sgpj.repository.EnderecoRepository;
-import br.com.sgpj.repository.StatusClienteRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,16 +24,14 @@ public class UpdateCliente {
 
     private final ClienteRepository clienteRepository;
     private final ContatoRepository contatoRepository;
-    private final StatusClienteRepository statusClienteRepository;
     private final EnderecoRepository enderecoRepository;
     private final AtualizarStatusClientePorProcessos atualizarStatusClientePorProcessos;
 
     public UpdateCliente(ClienteRepository clienteRepository, ContatoRepository contatoRepository,
-                         StatusClienteRepository statusClienteRepository, EnderecoRepository enderecoRepository,
+                         EnderecoRepository enderecoRepository,
                          AtualizarStatusClientePorProcessos atualizarStatusClientePorProcessos) {
         this.clienteRepository = clienteRepository;
         this.contatoRepository = contatoRepository;
-        this.statusClienteRepository = statusClienteRepository;
         this.enderecoRepository = enderecoRepository;
         this.atualizarStatusClientePorProcessos = atualizarStatusClientePorProcessos;
     }
@@ -50,7 +45,6 @@ public class UpdateCliente {
         cliente.setCpfCnpj(request.cpfCnpj());
         cliente.setRg(request.rg());
         cliente.setComoConheceu(request.comoConheceu());
-        cliente.setStatusCliente(buscarStatusCliente(request.statusClienteId()));
 
         if (request.endereco() != null) {
             cliente.setEndereco(montarEndereco(request, cliente.getEndereco()));
@@ -74,11 +68,6 @@ public class UpdateCliente {
         if (!Objects.equals(cpfCnpjAtual, cpfCnpjNovo) && clienteRepository.existsByCpfCnpj(cpfCnpjNovo)) {
             throw new ClienteJaExistenteException(cpfCnpjNovo);
         }
-    }
-
-    private StatusCliente buscarStatusCliente(Long statusClienteId) {
-        return statusClienteRepository.findById(statusClienteId)
-                .orElseThrow(() -> new StatusClienteNaoEncontradoException(statusClienteId));
     }
 
     private Endereco montarEndereco(ClienteAtualizacaoRequest request, Endereco enderecoExistente) {

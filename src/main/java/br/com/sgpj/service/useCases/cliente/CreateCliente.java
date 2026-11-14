@@ -6,6 +6,7 @@ import br.com.sgpj.entity.Cliente;
 import br.com.sgpj.entity.Contato;
 import br.com.sgpj.entity.Endereco;
 import br.com.sgpj.entity.StatusCliente;
+import br.com.sgpj.entity.StatusClienteEnum;
 import br.com.sgpj.exception.ClienteJaExistenteException;
 import br.com.sgpj.exception.ClienteNaoEncontradoException;
 import br.com.sgpj.exception.StatusClienteNaoEncontradoException;
@@ -53,8 +54,9 @@ public class CreateCliente {
             throw new ClienteJaExistenteException(request.cpfCnpj());
         }
 
-        StatusCliente statusCliente = statusClienteRepository.findById(request.statusClienteId())
-                .orElseThrow(() -> new StatusClienteNaoEncontradoException(request.statusClienteId()));
+        String statusInicial = StatusClienteEnum.INATIVO.getNome();
+        StatusCliente statusCliente = statusClienteRepository.findByNomeIgnoreCase(statusInicial)
+                .orElseThrow(() -> new StatusClienteNaoEncontradoException(statusInicial));
 
         Endereco endereco = request.endereco() != null ? montarEndereco(request) : null;
         Cliente clienteSalvo = montarCliente(request, statusCliente, endereco);

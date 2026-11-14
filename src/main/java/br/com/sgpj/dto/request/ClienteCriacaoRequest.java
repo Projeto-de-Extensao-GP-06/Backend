@@ -36,10 +36,6 @@ public record ClienteCriacaoRequest(
         @NotNull(message = "Como conheceu é obrigatório")
         ComoConheceuEnum comoConheceu,
 
-        @Schema(description = "ID do status do cliente", example = "1")
-        @NotNull(message = "Status do cliente é obrigatório")
-        Long statusClienteId,
-
         @Schema(description = "Endereço do cliente")
         @Valid
         EnderecoRequest endereco,

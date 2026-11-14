@@ -32,7 +32,21 @@ jobs:
       - name: Gerar JAR (sem testes, ja validados no CI)
         run: mvn clean package -DskipTests --file pom.xml
 
+      - name: Verificar credenciais AWS
+        id: check-aws
+        run: |
+          if [ -n "${{ secrets.AWS_ACCESS_KEY_ID }}" ] && [ -n "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; then
+            echo "has_credentials=true" >> $GITHUB_OUTPUT
+            echo "Credenciais AWS encontradas no repositorio."
+          else
+            echo "has_credentials=false" >> $GITHUB_OUTPUT
+            echo "Aviso: Credenciais AWS ausentes nos secrets. As etapas de ECR e Deploy serao ignoradas (JAR compilado com sucesso)."
+          fi
+
       - name: Configurar credenciais AWS
+        if: steps.check-aws.outputs.has_credentials == 'true'
+        id: aws-auth
+        continue-on-error: true
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -41,10 +55,12 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login no Amazon ECR
+        if: steps.check-aws.outputs.has_credentials == 'true' && steps.aws-auth.outcome == 'success'
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build e Push da imagem para o ECR
+        if: steps.check-aws.outputs.has_credentials == 'true' && steps.aws-auth.outcome == 'success'
         id: build-push
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -54,10 +70,16 @@ jobs:
           docker push $IMAGE_URI
           echo "image=$IMAGE_URI" >> $GITHUB_OUTPUT
 
+      - name: Aviso de credenciais expiradas ou ausentes
+        if: steps.check-aws.outputs.has_credentials != 'true' || steps.aws-auth.outcome != 'success'
+        run: |
+          echo "::warning::Credenciais AWS invalidas ou expiradas (comum no AWS Academy). O JAR foi gerado com sucesso, mas o push para o ECR foi ignorado."
+
   deploy:
     name: Deploy nas EC2s via SSM
     runs-on: ubuntu-latest
     needs: build-and-push
+    if: needs.build-and-push.outputs.image != ''
 
     steps:
       - name: Configurar credenciais AWS

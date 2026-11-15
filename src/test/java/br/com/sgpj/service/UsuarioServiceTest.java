@@ -3,6 +3,7 @@ package br.com.sgpj.service;
 import br.com.sgpj.dto.request.DefinirNovaSenhaRequest;
 import br.com.sgpj.dto.request.UsuarioAlterarSenhaRequest;
 import br.com.sgpj.dto.request.UsuarioAtualizacaoRequest;
+import br.com.sgpj.dto.request.UsuarioAtualizarPerfilRequest;
 import br.com.sgpj.dto.request.UsuarioCriacaoRequest;
 import br.com.sgpj.dto.request.UsuarioLoginRequest;
 import br.com.sgpj.dto.request.ValidarOtpRequest;
@@ -11,6 +12,7 @@ import br.com.sgpj.dto.response.Usuario.UsuarioListarResponse;
 import br.com.sgpj.dto.response.Usuario.UsuarioTokenResponse;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.service.useCases.usuario.AlterarMinhaSenha;
+import br.com.sgpj.service.useCases.usuario.AtualizarMeuPerfil;
 import br.com.sgpj.service.useCases.usuario.AutenticarOtp;
 import br.com.sgpj.service.useCases.usuario.AutenticarUsuario;
 import br.com.sgpj.service.useCases.usuario.CreateUsuario;
@@ -57,6 +59,9 @@ class UsuarioServiceTest {
 
     @Mock
     private ReativarUsuario reativarUsuario;
+
+    @Mock
+    private AtualizarMeuPerfil atualizarMeuPerfil;
 
     @Mock
     private AutenticarUsuario autenticarUsuario;
@@ -234,6 +239,19 @@ class UsuarioServiceTest {
 
         assertEquals(resp, res);
         verify(reativarUsuario).executar(2L);
+    }
+
+    @Test
+    @DisplayName("atualizarMeuPerfil delega para AtualizarMeuPerfil e retorna resposta")
+    void atualizarMeuPerfilDelegaERetorna() {
+        UsuarioAtualizarPerfilRequest req = mock(UsuarioAtualizarPerfilRequest.class);
+        UsuarioListarResponse resp = mock(UsuarioListarResponse.class);
+        when(atualizarMeuPerfil.executar(req)).thenReturn(resp);
+
+        UsuarioListarResponse res = usuarioService.atualizarMeuPerfil(req);
+
+        assertEquals(resp, res);
+        verify(atualizarMeuPerfil, times(1)).executar(req);
     }
 
     @Test

@@ -1,9 +1,12 @@
 package br.com.sgpj.service.useCases.cargo;
 
+import br.com.sgpj.dto.request.AtribuirPermissoesRequest;
 import br.com.sgpj.dto.request.RenomearCargoRequest;
 import br.com.sgpj.entity.Cargo;
+import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.exception.CargoJaExisteException;
 import br.com.sgpj.exception.OperacaoInvalidaException;
+import br.com.sgpj.exception.UltimoAdministradorException;
 import br.com.sgpj.repository.CargoPermissaoRepository;
 import br.com.sgpj.repository.CargoRepository;
 import br.com.sgpj.repository.PermissaoRepository;
@@ -79,6 +82,33 @@ class UpdateCargoTest {
         assertThatThrownBy(() -> updateCargo.renomearCargo(3L, new RenomearCargoRequest("Outro cargo")))
                 .isInstanceOf(CargoJaExisteException.class)
                 .hasMessageContaining("já existe");
+    }
+
+    @Test
+    void naoAtualizaPermissoesDeCargosDoSistema() {
+        assertThatThrownBy(() -> updateCargo.atualizarPermissoesCargo(1L, new AtribuirPermissoesRequest(List.of()), "admin@sgpj.com"))
+                .isInstanceOf(OperacaoInvalidaException.class)
+                .hasMessageContaining("ADMIN");
+        assertThatThrownBy(() -> updateCargo.atualizarPermissoesCargo(2L, new AtribuirPermissoesRequest(List.of()), "admin@sgpj.com"))
+                .isInstanceOf(OperacaoInvalidaException.class)
+                .hasMessageContaining("Sem Cargo");
+    }
+
+    @Test
+    void naoRemovePermissoesDeAdministradorSeCargoConterUnicoAdminAtivo() {
+        Cargo cargoCustomAdmin = cargo(3L, "Diretor");
+        Usuario unicoAdmin = new Usuario(10L, "Diretor", "diretor@sgpj.com", "hash", cargoCustomAdmin, LocalDateTime.now(), true);
+
+        when(cargoRepository.existsById(3L)).thenReturn(true);
+        when(cargoRepository.getReferenceById(3L)).thenReturn(cargoCustomAdmin);
+        when(usuarioRepository.findByEmail("diretor@sgpj.com")).thenReturn(unicoAdmin);
+        when(cargoPermissaoRepository.existsById_CargoIdAndId_PermissaoId(3L, 18L)).thenReturn(true);
+        when(usuarioRepository.findAllByCargo_Id(3L)).thenReturn(List.of(unicoAdmin));
+        when(usuarioRepository.findAll()).thenReturn(List.of(unicoAdmin));
+
+        assertThatThrownBy(() -> updateCargo.atualizarPermissoesCargo(3L, new AtribuirPermissoesRequest(List.of(1L, 2L)), "diretor@sgpj.com"))
+                .isInstanceOf(UltimoAdministradorException.class)
+                .hasMessageContaining("único administrador ativo");
     }
 
     private Cargo cargo(Long id, String nome) {

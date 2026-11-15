@@ -3,6 +3,7 @@ package br.com.sgpj.service;
 import br.com.sgpj.dto.request.DefinirNovaSenhaRequest;
 import br.com.sgpj.dto.request.UsuarioAlterarSenhaRequest;
 import br.com.sgpj.dto.request.UsuarioAtualizacaoRequest;
+import br.com.sgpj.dto.request.UsuarioAtualizarPerfilRequest;
 import br.com.sgpj.dto.request.UsuarioCriacaoRequest;
 import br.com.sgpj.dto.request.UsuarioLoginRequest;
 import br.com.sgpj.dto.request.ValidarOtpRequest;
@@ -12,6 +13,7 @@ import br.com.sgpj.dto.response.Usuario.UsuarioTokenResponse;
 import br.com.sgpj.dto.response.Usuario.UsuarioSessaoResponse;
 import br.com.sgpj.entity.Usuario;
 import br.com.sgpj.service.useCases.usuario.AlterarMinhaSenha;
+import br.com.sgpj.service.useCases.usuario.AtualizarMeuPerfil;
 import br.com.sgpj.service.useCases.usuario.AutenticarOtp;
 import br.com.sgpj.service.useCases.usuario.AutenticarUsuario;
 import br.com.sgpj.service.useCases.usuario.CreateUsuario;
@@ -36,6 +38,7 @@ public class UsuarioService {
   private final UpdateUsuario updateUsuario;
   private final DeleteUsuario deleteUsuario;
   private final ReativarUsuario reativarUsuario;
+  private final AtualizarMeuPerfil atualizarMeuPerfil;
 
   private final AutenticarUsuario autenticarUsuario;
   private final AutenticarOtp autenticarOtp;
@@ -51,6 +54,7 @@ public class UsuarioService {
           UpdateUsuario updateUsuario,
           DeleteUsuario deleteUsuario,
           ReativarUsuario reativarUsuario,
+          AtualizarMeuPerfil atualizarMeuPerfil,
           AutenticarUsuario autenticarUsuario,
           AutenticarOtp autenticarOtp,
           EnviarRedefinirSenhaOtp enviarRedefinirSenhaOtp,
@@ -64,6 +68,7 @@ public class UsuarioService {
     this.updateUsuario = updateUsuario;
     this.deleteUsuario = deleteUsuario;
     this.reativarUsuario = reativarUsuario;
+    this.atualizarMeuPerfil = atualizarMeuPerfil;
     this.autenticarUsuario = autenticarUsuario;
     this.autenticarOtp = autenticarOtp;
     this.enviarRedefinirSenhaOtp = enviarRedefinirSenhaOtp;
@@ -112,6 +117,12 @@ public class UsuarioService {
           UsuarioAtualizacaoRequest request
   ) {
     return updateUsuario.executar(request, id);
+  }
+
+  public UsuarioListarResponse atualizarMeuPerfil(
+          UsuarioAtualizarPerfilRequest request
+  ) {
+    return atualizarMeuPerfil.executar(request);
   }
 
   public UsuarioListarResponse reativarUsuario(Long id) {

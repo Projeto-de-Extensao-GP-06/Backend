@@ -151,6 +151,11 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.UNPROCESSABLE_CONTENT, ex.getMessage());
     }
 
+    @ExceptionHandler(UltimoAdministradorException.class)
+    public ResponseEntity<Map<String, Object>> handleUltimoAdministradorException(UltimoAdministradorException ex) {
+        return buildResponse(HttpStatus.UNPROCESSABLE_CONTENT, ex.getMessage());
+    }
+
     @ExceptionHandler(PermissaoNaoEncontradaException.class)
     public ResponseEntity<Map<String, Object>> handlePermissaoNaoEncontradaException(PermissaoNaoEncontradaException ex) {
         return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());

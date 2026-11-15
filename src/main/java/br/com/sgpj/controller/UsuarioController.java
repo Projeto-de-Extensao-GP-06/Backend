@@ -2,6 +2,7 @@ package br.com.sgpj.controller;
 
 import br.com.sgpj.dto.request.UsuarioAlterarSenhaRequest;
 import br.com.sgpj.dto.request.UsuarioAtualizacaoRequest;
+import br.com.sgpj.dto.request.UsuarioAtualizarPerfilRequest;
 import br.com.sgpj.dto.request.UsuarioCriacaoRequest;
 import br.com.sgpj.dto.response.Usuario.UsuarioListarResponse;
 import br.com.sgpj.service.UsuarioService;
@@ -91,6 +92,17 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarios);
     }
 
+    @RequestMapping(value = "/meu-perfil", method = {RequestMethod.PUT, RequestMethod.PATCH})
+    @Operation(summary = "Atualiza os dados pessoais (nome e e-mail) do usuário atualmente autenticado")
+    public ResponseEntity<UsuarioListarResponse> atualizarMeuPerfil(
+            @RequestBody @Valid UsuarioAtualizarPerfilRequest request
+    ) {
+        UsuarioListarResponse usuario =
+                usuarioService.atualizarMeuPerfil(request);
+
+        return ResponseEntity.ok(usuario);
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize(
             "hasAuthority('EDITAR USUÁRIO') || hasAuthority('TODAS AS PERMISSÕES')"
@@ -121,7 +133,7 @@ public class UsuarioController {
 
     @PostMapping("/reactivate/{id}")
     @PreAuthorize(
-            "hasAuthority('EDITAR USUÁRIO') || hasAuthority('TODAS AS PERMISSÕES')"
+            "hasAuthority('EDITAR USUÁRIO') || hasAuthority('EXCLUIR USUÁRIO') || hasAuthority('TODAS AS PERMISSÕES')"
     )
     public ResponseEntity<UsuarioListarResponse> reativar(
             @PathVariable Long id

@@ -8,12 +8,14 @@ import br.com.sgpj.exception.CargoJaExisteException;
 import br.com.sgpj.exception.CargoNaoEncontradoException;
 import br.com.sgpj.exception.OperacaoInvalidaException;
 import br.com.sgpj.exception.PermissaoNaoEncontradaException;
+import br.com.sgpj.exception.UltimoAdministradorException;
 import br.com.sgpj.exception.UsuarioNaoEncontradoException;
 import br.com.sgpj.mapper.CargoMapper;
 import br.com.sgpj.repository.CargoPermissaoRepository;
 import br.com.sgpj.repository.CargoRepository;
 import br.com.sgpj.repository.PermissaoRepository;
 import br.com.sgpj.repository.UsuarioRepository;
+import br.com.sgpj.service.useCases.usuario.AdministradorValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -61,6 +63,13 @@ public class UpdateCargo {
     }
 
     public CargoResponse atualizarPermissoesCargo(Long cargoId, AtribuirPermissoesRequest request, String emailUsuario){
+        if (ConstantesValidation.CARGO_ADMIN_ID.equals(cargoId)) {
+            throw new OperacaoInvalidaException("As permissões do cargo 'ADMIN' não podem ser alteradas");
+        }
+        if (ConstantesValidation.SEM_CARGO_ID.equals(cargoId)) {
+            throw new OperacaoInvalidaException("As permissões do cargo 'Sem Cargo' não podem ser alteradas");
+        }
+
         if (!cargoRepository.existsById(cargoId)) {
             throw new CargoNaoEncontradoException("Cargo não encontrado: " + cargoId);
         }
@@ -72,9 +81,25 @@ public class UpdateCargo {
             throw new UsuarioNaoEncontradoException(emailUsuario);
         }
 
-        cargoPermissaoRepository.deleteAllById_CargoId(cargoId);
-
         List<Long> permissaoIds = request.permissaoIds();
+        boolean mantemTodasPermissoes = permissaoIds.size() == ConstantesValidation.TOTAL_PERMISSOES_NORMAIS
+                || permissaoIds.contains(ConstantesValidation.TODAS_PERMISSOES_ID);
+
+        if (!mantemTodasPermissoes
+                && cargoPermissaoRepository.existsById_CargoIdAndId_PermissaoId(cargoId, ConstantesValidation.TODAS_PERMISSOES_ID)) {
+            boolean possuiAdminAtivoNoCargo = usuarioRepository.findAllByCargo_Id(cargoId)
+                    .stream()
+                    .anyMatch(u -> u.isAtivo() && !u.isUsuarioSistema());
+
+            if (possuiAdminAtivoNoCargo
+                    && !AdministradorValidator.existeAdministradorAtivoForaDoCargo(usuarioRepository, cargoId)) {
+                throw new UltimoAdministradorException(
+                        "Não é possível remover as permissões de administrador deste cargo pois ele contém o único administrador ativo do sistema."
+                );
+            }
+        }
+
+        cargoPermissaoRepository.deleteAllById_CargoId(cargoId);
 
         if (permissaoIds.isEmpty()) {
             atribuirPermissaoEspecial.execute(cargoId, ConstantesValidation.SEM_PERMISSOES_ID, cargo, atribuidoPor);
